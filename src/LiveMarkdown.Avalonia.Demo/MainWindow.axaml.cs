@@ -12,7 +12,8 @@ public partial class MainWindow : Window
 
     public string? SelectedMarkdown
     {
-        set => _ = RenderMarkdownAsync(value);
+        get;
+        set => _ = RenderMarkdownAsync(field = value);
     }
 
     public ObservableStringBuilder MarkdownBuilder { get; } = new();

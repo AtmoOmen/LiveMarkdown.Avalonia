@@ -1,5 +1,20 @@
 # Markdown Render Test
 
+Playwright有两层含义：
+
+1. 剧作家：在传统意义上，playwright指“剧作家”，即编写戏剧、话剧剧本的人。比如莎士比亚就是著名的英国剧作家（playwright）。
+
+2. Web 测试框架：在技术领域，Playwright 是一个流行的开源端到端测试（E2E）和自动化框架。它可以在所有主流浏览器（如 Chromium、Firefox 和 WebKit）上运行自动化测试，主要用于现代 Web 应用的功能测试和界面测试。Playwright 支持多种语言（JavaScript、TypeScript、Python、C# 等），能够进行高效、可靠的自动化操作，比如页面点击、表单填写、截图、网络拦截等。
+
+Playwright 框架的主要特点有：
+- 跨浏览器支持（Chromium、Firefox、WebKit）
+- 支持移动设备模拟
+- 极强的测试隔离和并行执行能力
+- 自动等待、自动重试，提升测试的稳定性
+- 提供丰富的调试工具和报告功能
+
+总结：Playwright可以是“剧作家”，在 IT 领域内更多指的是现代 Web 自动化测试的专业工具。
+
 ## 1. List
 
 - Item One

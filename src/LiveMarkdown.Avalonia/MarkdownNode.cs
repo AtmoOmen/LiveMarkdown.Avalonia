@@ -25,7 +25,7 @@ public abstract class MarkdownNode
     /// </summary>
     private SourceSpan span;
 
-    public bool IsDirty(MarkdownObject markdownObject, in ObservableStringBuilderChangedEventArgs change)
+    private bool IsDirty(MarkdownObject markdownObject, in ObservableStringBuilderChangedEventArgs change)
     {
         return !span.Equals(markdownObject.Span) || span.End >= change.StartIndex && change.StartIndex + change.Length > span.Start;
     }
@@ -36,13 +36,19 @@ public abstract class MarkdownNode
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
+        // type check
+        if (!IsCompatible(markdownObject))
+        {
+            return false;
+        }
+
         if (!IsDirty(markdownObject, change))
         {
             // No need to update, the change does not affect this node
             return true;
         }
 
-        var result = IsCompatible(markdownObject) && UpdateCore(documentNode, markdownObject, change, cancellationToken);
+        var result = UpdateCore(documentNode, markdownObject, change, cancellationToken);
         span = markdownObject.Span;
 
         if (TextBlock is { } textBlock)
@@ -278,7 +284,7 @@ public class ContainerInlineNode() : InlinesNode(new AvaloniaDocs.Span())
 {
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject is ContainerInline;
+        return markdownObject is ContainerInline and not EmphasisInline; // EmphasisInline is handled separately
     }
 }
 
@@ -309,7 +315,7 @@ public class CodeInlineNode : InlineNode
 
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject is CodeInline;
+        return markdownObject.GetType() == typeof(CodeInline);
     }
 
     protected override bool UpdateCore(
@@ -331,7 +337,7 @@ public class LinkInlineNode() : InlinesNode(new InlineHyperlink
 {
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject is LinkInline;
+        return markdownObject.GetType() == typeof(LinkInline);
     }
 
     protected override bool UpdateCore(
@@ -378,7 +384,7 @@ public class EmphasisInlineNode : ContainerInlineNode
 {
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject is EmphasisInline;
+        return markdownObject.GetType() == typeof(EmphasisInline);
     }
 
     protected override bool UpdateCore(
@@ -517,7 +523,7 @@ public class TableNode : BlockNode
 
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject is Table;
+        return markdownObject.GetType() == typeof(Table);
     }
 
     protected override bool UpdateCore(
@@ -655,7 +661,7 @@ public class TableCellNode : ContainerBlockNode
 
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject is TableCell;
+        return markdownObject.GetType() == typeof(TableCell);
     }
 }
 
@@ -682,7 +688,7 @@ public class ListBlockNode : BlockNode
 
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject is ListBlock;
+        return markdownObject.GetType() == typeof(ListBlock);
     }
 
     protected override bool UpdateCore(
@@ -848,7 +854,7 @@ public class CodeBlockNode : BlockNode
 
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject is Markdig.Syntax.CodeBlock;
+        return markdownObject.GetType() == typeof(Markdig.Syntax.CodeBlock);
     }
 
     protected override bool UpdateCore(
@@ -955,7 +961,7 @@ public class QuoteBlockNode : ContainerBlockNode
 
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject is QuoteBlock;
+        return markdownObject.GetType() == typeof(QuoteBlock);
     }
 }
 
@@ -977,7 +983,7 @@ public class HeadingBlockNode : BlockNode
 
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject is HeadingBlock;
+        return markdownObject.GetType() == typeof(HeadingBlock);
     }
 
     protected override bool UpdateCore(
@@ -1006,7 +1012,7 @@ public class ParagraphBlockNode : InlineCollectionNode
 
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject is ParagraphBlock;
+        return markdownObject.GetType() == typeof(ParagraphBlock);
     }
 
     protected override bool UpdateCore(
@@ -1041,7 +1047,12 @@ public class ContainerBlockNode : BlockNode
 
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject is ContainerBlock;
+        return markdownObject is ContainerBlock and
+            not MarkdownDocument and
+            not QuoteBlock and
+            not Table and
+            not TableCell and
+            not ListBlock;
     }
 
     protected override bool UpdateCore(
@@ -1063,7 +1074,6 @@ public class ContainerBlockNode : BlockNode
             if (i < proxy.Count)
             {
                 var oldNode = proxy[i];
-                if (!oldNode.IsDirty(block, change)) continue;
                 if (oldNode.Update(documentNode, block, change, cancellationToken)) continue;
 
                 // if Update returned false, it means the block needs to be removed
@@ -1095,7 +1105,7 @@ public class HtmlBlockNode : BlockNode
 
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject is HtmlBlock;
+        return markdownObject.GetType() == typeof(HtmlBlock);
     }
 
     protected override bool UpdateCore(
@@ -1121,7 +1131,7 @@ public class DocumentNode : ContainerBlockNode
 
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject is MarkdownDocument;
+        return markdownObject.GetType() == typeof(MarkdownDocument);
     }
 
     protected override bool UpdateCore(
