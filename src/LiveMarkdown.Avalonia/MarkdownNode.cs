@@ -547,6 +547,7 @@ public class TableNode : BlockNode
         }
 
         var rowIndex = 0;
+        var cellIndex = 0;
         foreach (var row in table.OfType<TableRow>())
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -563,7 +564,6 @@ public class TableNode : BlockNode
                 Control? cellControl = null;
                 do
                 {
-                    var cellIndex = rowIndex * table.ColumnDefinitions.Count + columnIndex;
                     if (proxy.Count > cellIndex)
                     {
                         // existing item block node, update it
@@ -594,6 +594,7 @@ public class TableNode : BlockNode
 
                 if (cellControl is null) continue;
 
+                cellIndex++;
                 Grid.SetRow(cellControl, rowIndex);
                 Grid.SetColumn(cellControl, columnIndex);
 
@@ -854,7 +855,7 @@ public class CodeBlockNode : BlockNode
 
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject.GetType() == typeof(Markdig.Syntax.CodeBlock);
+        return markdownObject is Markdig.Syntax.CodeBlock;
     }
 
     protected override bool UpdateCore(
