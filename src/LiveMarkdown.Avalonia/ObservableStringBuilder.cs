@@ -41,6 +41,23 @@ public class ObservableStringBuilder
     }
 
     /// <summary>
+    /// Appends a string followed by a newline to the string builder and raises an event.
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public ObservableStringBuilder AppendLine(string? value = null)
+    {
+        if (string.IsNullOrEmpty(value)) return this;
+        stringBuilder.AppendLine(value);
+        Changed?.Invoke(
+            new ObservableStringBuilderChangedEventArgs(
+                ToString(),
+                stringBuilder.Length - value!.Length - Environment.NewLine.Length,
+                value.Length + Environment.NewLine.Length));
+        return this;
+    }
+
+    /// <summary>
     /// Clears the string builder and raises an event with the previous content.
     /// </summary>
     /// <returns></returns>
