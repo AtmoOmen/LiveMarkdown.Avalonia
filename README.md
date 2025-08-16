@@ -43,7 +43,7 @@ It supports **real-time rendering** of Markdown content, so it's ideal for appli
   - [x] SVG
   - [x] Online images
   - [x] Local images
-  - [x] `avarse` images
+  - [x] `avares` images
 - [x] Selectable text across elements
 - [ ] LaTeX support
 - [ ] HTML rendering
