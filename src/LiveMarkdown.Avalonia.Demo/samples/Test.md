@@ -136,12 +136,22 @@ jobs:
 
 ## 3. Table
 
-| Name   | Age | City    |
-| ------ | --- | ------- |
-| Alice  | 24  | London  |
-| Bob    | 29  | B`erli`n  |
-| Carol  | 31  | Madrid  |
+| Name  | Age | City     |
+|-------|-----|----------|
+| Alice | 24  | London   |
+| Bob   | 29  | B`erli`n |
+| Carol | 31  | Madrid   |
 
 ## 4. Image
 
+Online image example:
+
 ![Sample Image](https://raw.githubusercontent.com/DearVa/Everywhere/refs/heads/main/img/banner.webp)
+
+Local image example:
+
+![Local Image](./Avatar.png)
+
+Avalonia image example:
+
+![Avalonia Image](avares://LiveMarkdown.Avalonia.Demo/Assets/Antelcat.png)

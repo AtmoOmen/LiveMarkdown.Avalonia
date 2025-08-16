@@ -23,6 +23,9 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        MarkdownRenderer.ImageBasePath = Path.Combine(AppContext.BaseDirectory, "samples");
+
         _ = new AutoScrollHelper(RawMarkdownTextBlockScrollViewer);
         _ = new AutoScrollHelper(MarkdownRendererScrollViewer);
     }
@@ -30,8 +33,7 @@ public partial class MainWindow : Window
     [RelayCommand]
     private async Task OpenUriAsync(InlineHyperlinkClickedEventArgs args)
     {
-        var launcher = GetTopLevel(this)?.Launcher;
-        if (launcher is not null && args.HRef is { } url)
+        if (args.HRef is { IsAbsoluteUri: true, Scheme: "http" or "https" } url && GetTopLevel(this)?.Launcher is { } launcher)
         {
             await launcher.LaunchUriAsync(url);
         }

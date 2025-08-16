@@ -351,8 +351,7 @@ public class LinkInlineNode() : InlinesNode(new InlineHyperlink
 
         var inlineHyperlink = Unsafe.As<InlineHyperlink>(Inline);
 
-        Uri.TryCreate(linkInline.Url, UriKind.Absolute, out var uri);
-        inlineHyperlink.HRef = uri;
+        Uri.TryCreate(linkInline.Url, UriKind.RelativeOrAbsolute, out var uri);
 
         if (linkInline.IsImage)
         {
@@ -368,10 +367,27 @@ public class LinkInlineNode() : InlinesNode(new InlineHyperlink
                     Classes = { "Link" },
                 };
             }
-            AsyncImageLoader.SetSource(img, linkInline.Url);
+
+            if (uri is { IsAbsoluteUri: false })
+            {
+                if (documentNode.Owner.ImageBasePath is { } imageBasePath)
+                {
+                    // If the URL is a relative path, combine it with the base path
+                    Uri.TryCreate(Path.GetFullPath(Path.Combine(imageBasePath, linkInline.Url)), UriKind.Absolute, out uri);
+                }
+                else
+                {
+                    // If no base path is set, set the URI to null, preventing unexpected behavior
+                    uri = null;
+                }
+            }
+
+            inlineHyperlink.HRef = uri;
+            AsyncImageLoader.SetSource(img, uri?.ToString());
         }
         else
         {
+            inlineHyperlink.HRef = uri;
             inlineHyperlink.Image = null;
             base.UpdateCore(documentNode, markdownObject, change, cancellationToken);
         }
@@ -1121,12 +1137,15 @@ public class HtmlBlockNode : BlockNode
 
 public class DocumentNode : ContainerBlockNode
 {
+    public MarkdownRenderer Owner { get; }
+
     public IReadOnlyCollection<MarkdownTextBlock> TextBlocks => textBlocks;
 
     internal readonly HashSet<MarkdownTextBlock> textBlocks = [];
 
-    public DocumentNode()
+    public DocumentNode(MarkdownRenderer owner)
     {
+        Owner = owner;
         Classes[0] = "MarkdownDocument";
     }
 

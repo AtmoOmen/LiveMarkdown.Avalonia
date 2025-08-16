@@ -32,5 +32,13 @@
       <None Update="samples\Test.md">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
+      <None Update="samples\Avatar.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Assets\Antelcat.png" />
+      <AvaloniaResource Include="Assets\Antelcat.png" />
     </ItemGroup>
 </Project>

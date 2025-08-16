@@ -28,8 +28,11 @@ public class InlineHyperlink : InlineUIContainer
         }
     }
 
-    public static readonly DirectProperty<InlineHyperlink, Uri?> HRefProperty = AvaloniaProperty.RegisterDirect<InlineHyperlink, Uri?>(
-        nameof(HRef), o => o.HRef, (o, v) => o.HRef = v);
+    public static readonly DirectProperty<InlineHyperlink, Uri?> HRefProperty =
+        AvaloniaProperty.RegisterDirect<InlineHyperlink, Uri?>(
+            nameof(HRef),
+            o => o.HRef,
+            (o, v) => o.HRef = v);
 
     /// <summary>
     /// Gets or sets the hyperlink reference (HRef) of the hyperlink. This must be called from the UI thread.

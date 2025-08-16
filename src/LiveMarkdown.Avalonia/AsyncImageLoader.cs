@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Svg;
 using Avalonia.Threading;
 using Svg.Model;
@@ -80,7 +81,33 @@ public class AsyncImageLoader
     /// <returns></returns>
     public static AsyncImageLoaderCache? GetCache(Image obj) => obj.GetValue(CacheProperty);
 
-    public static HttpClient HttpClient { get; set; } = new();
+    /// <summary>
+    /// Attached property for custom image loaders.
+    /// </summary>
+    public static readonly AttachedProperty<IReadOnlyCollection<AsyncImageLoaderHandler>> HandlersProperty =
+        AvaloniaProperty.RegisterAttached<AsyncImageLoader, Image, IReadOnlyCollection<AsyncImageLoaderHandler>>(
+            "Handlers",
+            [
+                HttpAsyncImageLoaderHandler.Shared,
+                LocalFileAsyncImageLoaderHandler.Shared,
+                AvaloniaResourceAsyncImageLoaderHandler.Shared
+            ]);
+
+    /// <summary>
+    /// Sets the custom image loader handlers.
+    /// You can add your own handlers to support custom URI schemes.
+    /// Default is `Http`, `LocalFile`, `AvaloniaResource`. (HTTP supports redirects and HTTPS)
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <param name="value"></param>
+    public static void SetHandlers(Image obj, IReadOnlyCollection<AsyncImageLoaderHandler> value) => obj.SetValue(HandlersProperty, value);
+
+    /// <summary>
+    /// Gets the custom image loader handlers.
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <returns></returns>
+    public static IReadOnlyCollection<AsyncImageLoaderHandler> GetHandlers(Image obj) => obj.GetValue(HandlersProperty);
 
     private readonly static Dictionary<Image, (Task task, CancellationTokenSource cts)> ImageLoadTasks = new();
 
@@ -100,16 +127,23 @@ public class AsyncImageLoader
         }
 
         var newSource = args.NewValue as string;
-        if (string.IsNullOrEmpty(newSource))
+        if (!Uri.TryCreate(newSource, UriKind.RelativeOrAbsolute, out var uri))
         {
-            sender.Source = null; // Clear the image source if the new value is null or empty
+            sender.Source = null; // Clear the image source if the new value is not a valid URI
             return;
         }
 
         var cache = sender.GetValue(CacheProperty);
-        if (cache?.GetImage(newSource!) is { } cachedImage)
+        if (cache?.GetImage(uri) is { } cachedImage)
         {
             sender.Source = cachedImage; // Use the cached image if available
+            return;
+        }
+
+        var handler = GetHandlers(sender).FirstOrDefault(h => h.SupportedSchemes.Contains(uri.Scheme, StringComparer.OrdinalIgnoreCase));
+        if (handler is null)
+        {
+            sender.Source = null; // No handler found for the URI scheme
             return;
         }
 
@@ -127,11 +161,16 @@ public class AsyncImageLoader
             css = $":nth-child(0) {{ font-size: {fontSize}px; font-family: {fontFamily}; color: #{color.R:X2}{color.G:X2}{color.B:X2}; }}";
         }
 
-        var newPair = CreateLoadPair(sender, newSource!, css, cache);
+        var newPair = CreateLoadPair(sender, uri, css, handler, cache);
         ImageLoadTasks.Add(sender, newPair);
     }
 
-    private static (Task task, CancellationTokenSource cts) CreateLoadPair(Image image, string source, string? css, AsyncImageLoaderCache? cache)
+    private static (Task task, CancellationTokenSource cts) CreateLoadPair(
+        Image image,
+        Uri uri,
+        string? css,
+        AsyncImageLoaderHandler handler,
+        AsyncImageLoaderCache? cache)
     {
         var cts = new CancellationTokenSource();
         var task = Task.Run(
@@ -139,16 +178,13 @@ public class AsyncImageLoader
                 {
                     try
                     {
-                        using var response = await HttpClient.GetAsync(source, cts.Token);
-                        response.EnsureSuccessStatusCode();
-
                         // check if the stream is svg
                         var buffer = new byte[16];
 #if NETSTANDARD2_0
-                        using var stream = await response.Content.ReadAsStreamAsync();
+                        using var stream = await handler.LoadAsync(uri, cts.Token);
                         var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cts.Token);
 #else
-                        await using var stream = await response.Content.ReadAsStreamAsync(cts.Token);
+                        await using var stream = await handler.LoadAsync(uri, cts.Token);
                         var bytesRead = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), cts.Token);
 #endif
                         if (bytesRead == 0)
@@ -198,7 +234,7 @@ public class AsyncImageLoader
                             _ => null // Clear the image source if the result is not a valid image
                         };
 
-                        if (result is not null) cache?.SetImage(source, result);
+                        if (result is not null) cache?.SetImage(uri, result);
 
                         image.Source = result;
                     });
@@ -257,27 +293,99 @@ public class AsyncImageLoaderCacheTypeConverter : TypeConverter
 }
 #endif
 
+/// <summary>
+/// Handler for loading images from specific URI schemes.
+/// </summary>
+public abstract class AsyncImageLoaderHandler
+{
+    /// <summary>
+    /// Supported URI schemes (e.g., "http", "https", "file").
+    /// </summary>
+    public abstract IEnumerable<string> SupportedSchemes { get; }
+
+    public abstract Task<Stream> LoadAsync(Uri uri, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// Handler for loading images over HTTP and HTTPS.
+/// Supports redirects.
+/// </summary>
+/// <param name="httpClient"></param>
+public class HttpAsyncImageLoaderHandler(HttpClient httpClient) : AsyncImageLoaderHandler
+{
+    public static HttpAsyncImageLoaderHandler Shared { get; } = new();
+
+    public override IEnumerable<string> SupportedSchemes => ["http", "https"];
+
+    public HttpAsyncImageLoaderHandler() : this(new HttpClient(new HttpClientHandler { AllowAutoRedirect = true })) { }
+
+    public override async Task<Stream> LoadAsync(Uri uri, CancellationToken cancellationToken)
+    {
+        if (uri.Scheme != "http" && uri.Scheme != "https") throw new NotSupportedException("Only HTTP and HTTPS URIs are supported.");
+
+        var response = await httpClient.GetAsync(uri, cancellationToken);
+        response.EnsureSuccessStatusCode();
+#if NETSTANDARD2_0
+        return await response.Content.ReadAsStreamAsync();
+#else
+        return await response.Content.ReadAsStreamAsync(cancellationToken);
+#endif
+    }
+}
+
+/// <summary>
+/// Handler for loading images from local file URIs.
+/// </summary>
+public class LocalFileAsyncImageLoaderHandler : AsyncImageLoaderHandler
+{
+    public static LocalFileAsyncImageLoaderHandler Shared { get; } = new();
+
+    public override IEnumerable<string> SupportedSchemes => ["file"];
+
+    public override Task<Stream> LoadAsync(Uri uri, CancellationToken cancellationToken)
+    {
+        if (!uri.IsFile) throw new NotSupportedException("Only file URIs are supported.");
+
+        Stream stream = File.OpenRead(uri.LocalPath);
+        return Task.FromResult(stream);
+    }
+}
+
+public class AvaloniaResourceAsyncImageLoaderHandler : AsyncImageLoaderHandler
+{
+    public static AvaloniaResourceAsyncImageLoaderHandler Shared { get; } = new();
+
+    public override IEnumerable<string> SupportedSchemes => ["avares"];
+
+    public override Task<Stream> LoadAsync(Uri uri, CancellationToken cancellationToken)
+    {
+        if (uri.Scheme != "avares") throw new NotSupportedException("Only avares URIs are supported.");
+
+        return Task.FromResult(AssetLoader.Open(uri));
+    }
+}
+
 [TypeConverter(typeof(AsyncImageLoaderCacheTypeConverter))]
 public abstract class AsyncImageLoaderCache
 {
-    public abstract IImage? GetImage(string source);
+    public abstract IImage? GetImage(Uri uri);
 
-    public abstract void SetImage(string source, IImage image);
+    public abstract void SetImage(Uri uri, IImage image);
 }
 
 public class RamBasedAsyncImageLoaderCache : AsyncImageLoaderCache
 {
     public static RamBasedAsyncImageLoaderCache Shared { get; } = new();
 
-    private readonly Dictionary<string, WeakReference<IImage>> _cache = new();
+    private readonly Dictionary<Uri, WeakReference<IImage>> _cache = new();
 
     private int _checkThreshold = 16;
 
-    public override IImage? GetImage(string source)
+    public override IImage? GetImage(Uri uri)
     {
         lock (_cache)
         {
-            if (_cache.TryGetValue(source, out var weakRef) && weakRef.TryGetTarget(out var image))
+            if (_cache.TryGetValue(uri, out var weakRef) && weakRef.TryGetTarget(out var image))
             {
                 return image;
             }
@@ -286,11 +394,11 @@ public class RamBasedAsyncImageLoaderCache : AsyncImageLoaderCache
         }
     }
 
-    public override void SetImage(string source, IImage image)
+    public override void SetImage(Uri uri, IImage image)
     {
         lock (_cache)
         {
-            _cache[source] = new WeakReference<IImage>(image);
+            _cache[uri] = new WeakReference<IImage>(image);
 
             if (_cache.Count <= _checkThreshold) return;
 
