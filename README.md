@@ -23,14 +23,8 @@ It supports **real-time rendering** of Markdown content, so it's ideal for appli
 - 🔗 **Hyperlink support**: Clickable links with customizable behavior
 - 📊 **Table support**: Render tables with proper formatting
 - 📜 **Code block syntax highlighting**: Supports multiple languages with [ColorCode](https://github.com/CommunityToolkit/ColorCode-Universal)
-- 🖼️ **Image support**: Load images asynchronously with [AsyncImageLoader.Avalonia](https://github.com/AvaloniaUtils/AsyncImageLoader.Avalonia)
+- 🖼️ **Image support**: Load online, local even `avares` images asynchronously
 - ✍️ **Selectable text**: Text can be selected across different Markdown elements
-
-> [!NOTE]
-> There is a bug when selecting text inside an inline that holds a `InlineUIElement`,
-> causing the selection is offset by 1 character after each `InlineUIElement`.
-> This bug is Avalonia's, and they set all related classes as `internal`,
-> so I can do nothing with it.
 
 > [!NOTE]
 > This library currently only supports `Append` and `Clear` operations on the Markdown content, which is enough for LLM streaming scenarios.
@@ -47,6 +41,9 @@ It supports **real-time rendering** of Markdown content, so it's ideal for appli
 - [x] Image support
   - [x] Bitmap
   - [x] SVG
+  - [x] Online images
+  - [x] Local images
+  - [x] `avarse` images
 - [x] Selectable text across elements
 - [ ] LaTeX support
 - [ ] HTML rendering
@@ -112,6 +109,8 @@ markdownBuilder.Append("\n\nThis is a **live** Markdown viewer for Avalonia appl
 markdownBuilder.Clear();
 ```
 
+If you want to load local images with relative paths, you can set the `MarkdownRenderer.ImageBasePath` property.
+
 ---
 
 ## 🪄 Style Customization
@@ -146,6 +145,3 @@ Distributed under the Apache 2.0 License. See [LICENSE](LICENSE) for more inform
     - Syntax highlighting for code blocks
     - Source repo: https://github.com/CommunityToolkit/ColorCode-Universal
 
----
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
