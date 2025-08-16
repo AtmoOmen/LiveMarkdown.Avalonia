@@ -38,20 +38,12 @@ public partial class MarkdownRenderer : Control
     }
 
     /// <summary>
-    /// Routed event that is raised when an inline hyperlink is clicked.
-    /// </summary>
-    public static readonly RoutedEvent<InlineHyperlinkClickedEventArgs> InlineHyperlinkClickedEvent =
-        RoutedEvent.Register<InlineHyperlink, InlineHyperlinkClickedEventArgs>(
-            nameof(InlineHyperlinkClicked),
-            RoutingStrategies.Bubble);
-
-    /// <summary>
     /// Raised when an inline hyperlink is clicked.
     /// </summary>
-    public event EventHandler<InlineHyperlinkClickedEventArgs>? InlineHyperlinkClicked
+    public event EventHandler<InlineHyperlinkClickedEventArgs>? InlineHyperlinkClick
     {
-        add => AddHandler(InlineHyperlinkClickedEvent, value);
-        remove => RemoveHandler(InlineHyperlinkClickedEvent, value);
+        add => AddHandler(InlineHyperlink.ClickEvent, value);
+        remove => RemoveHandler(InlineHyperlink.ClickEvent, value);
     }
 
     public static readonly StyledProperty<ICommand?> InlineHyperlinkCommandProperty = AvaloniaProperty.Register<MarkdownRenderer, ICommand?>(
@@ -79,6 +71,17 @@ public partial class MarkdownRenderer : Control
     static MarkdownRenderer()
     {
         VerboseLogger = Logger.TryGet(LogEventLevel.Verbose, $"{nameof(MarkdownRenderer)}");
+
+        InlineHyperlink.ClickEvent.AddClassHandler<MarkdownRenderer>(HandleInlineHyperlinkClick);
+    }
+
+    private static void HandleInlineHyperlinkClick(MarkdownRenderer sender, InlineHyperlinkClickedEventArgs args)
+    {
+        if (args.Handled ||
+            sender.InlineHyperlinkCommand is not { } inlineHyperlinkCommand ||
+            !inlineHyperlinkCommand.CanExecute(args)) return;
+
+        inlineHyperlinkCommand.Execute(args);
     }
 
     public MarkdownRenderer()
@@ -133,13 +136,6 @@ public partial class MarkdownRenderer : Control
         }
 
         InvalidateArrange();
-    }
-
-    internal void RaiseInlineHyperlinkClicked(InlineHyperlink sender)
-    {
-        var args = new InlineHyperlinkClickedEventArgs(InlineHyperlinkClickedEvent, sender, sender.HRef);
-        RaiseEvent(args);
-        if (InlineHyperlinkCommand?.CanExecute(args) is true) InlineHyperlinkCommand.Execute(args);
     }
 }
 

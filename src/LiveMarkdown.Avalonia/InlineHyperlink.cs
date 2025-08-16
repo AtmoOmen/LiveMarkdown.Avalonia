@@ -5,7 +5,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Interactivity;
-using Avalonia.LogicalTree;
 
 namespace LiveMarkdown.Avalonia;
 
@@ -46,6 +45,23 @@ public class InlineHyperlink : InlineUIContainer
         }
     }
 
+    /// <summary>
+    /// Routed event that is raised when clicked.
+    /// </summary>
+    public static readonly RoutedEvent<InlineHyperlinkClickedEventArgs> ClickEvent =
+        RoutedEvent.Register<InlineHyperlink, InlineHyperlinkClickedEventArgs>(
+            nameof(Click),
+            RoutingStrategies.Bubble);
+
+    /// <summary>
+    /// Raised when clicked.
+    /// </summary>
+    public event EventHandler<InlineHyperlinkClickedEventArgs>? Click
+    {
+        add => button.AddHandler(ClickEvent, value);
+        remove => button.RemoveHandler(ClickEvent, value);
+    }
+
     public MarkdownTextBlock TextBlock { get; }
 
     private readonly Button button;
@@ -72,11 +88,13 @@ public class InlineHyperlink : InlineUIContainer
 
     private void HandleButtonClick(object? sender, RoutedEventArgs e)
     {
-        this.GetLogicalAncestors().OfType<MarkdownRenderer>().FirstOrDefault()?.RaiseInlineHyperlinkClicked(this);
+        var args = new InlineHyperlinkClickedEventArgs(ClickEvent, this, HRef);
+        button.RaiseEvent(args);
     }
 
     private void UpdatePseudoClasses()
     {
         PseudoClasses.Set(":disabled", HRef is null);
     }
+
 }
