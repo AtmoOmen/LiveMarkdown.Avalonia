@@ -8,8 +8,6 @@
 
 ![demo.gif](https://raw.githubusercontent.com/DearVa/LiveMarkdown.Avalonia/main/img/demo.gif)
 
----
-
 ## 👋 Introduction
 
 `LiveMarkdown.Avalonia` is a High-performance Markdown viewer for Avalonia applications.
@@ -29,8 +27,6 @@ It supports **real-time rendering** of Markdown content, so it's ideal for appli
 > [!NOTE]
 > This library currently only supports `Append` and `Clear` operations on the Markdown content, which is enough for LLM streaming scenarios.
 
----
-
 ## ✈️ Roadmap
 
 - [x] Basic Markdown rendering
@@ -47,8 +43,6 @@ It supports **real-time rendering** of Markdown content, so it's ideal for appli
 - [x] Selectable text across elements
 - [ ] LaTeX support
 - [ ] HTML rendering
-
----
 
 ## 🚀 Getting Started
 
@@ -84,9 +78,9 @@ or use the NuGet Package Manager in your IDE.
 </Application>
 ```
 
-### 3. Use the `MarkdownView` control in your XAML
+### 3. Use the `MarkdownRenderer` control in your XAML
 
-Add the `MarkdownView` control to your `.axaml` file:
+Add the `MarkdownRenderer` control to your `.axaml` file:
 ```xml
 <YourControl
   xmlns:md="clr-namespace:LiveMarkdown.Avalonia;assembly=LiveMarkdown.Avalonia">
@@ -111,8 +105,6 @@ markdownBuilder.Clear();
 
 If you want to load local images with relative paths, you can set the `MarkdownRenderer.ImageBasePath` property.
 
----
-
 ## 🪄 Style Customization
 
 Markdown elements can be styled using Avalonia's powerful styling system. You can override the [default styles](https://github.com/DearVa/LiveMarkdown.Avalonia/blob/main/src/LiveMarkdown.Avalonia/Styles.axaml) by defining your own styles in your application styles.
@@ -121,13 +113,14 @@ Avalonia Styling Docs:
 - [Avalonia Styles](https://docs.avaloniaui.net/docs/styling)
 - [Style selector syntax](https://docs.avaloniaui.net/docs/reference/styles/style-selector-syntax)
 
----
+## 🤔 FAQ
+
+- Q: Why some emojis not rendered correctly (rendered in single color)?
+- A: This is a known issue caused by Skia (the render backend of Avalonia). You can upgrade SkiaSharp version (e.g. >= 3.117.0) to fix this. [Related issue](https://github.com/AvaloniaUI/Avalonia/issues/18677)
 
 ## 🤝 Contributing
 
 We welcome issues, feature ideas, and PRs! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
----
 
 ## 📄 License
 
