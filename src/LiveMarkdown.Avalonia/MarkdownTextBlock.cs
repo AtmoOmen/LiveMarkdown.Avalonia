@@ -114,7 +114,7 @@ public class MarkdownTextBlock : SelectableTextBlock
             }
         }
 
-        base.RenderTextLayout(context, origin);
+        TextLayout.Draw(context, origin);
     }
 
     private static readonly FieldInfo TextLinesFieldInfo = typeof(TextLayout)
@@ -193,7 +193,7 @@ public class MarkdownTextBlock : SelectableTextBlock
         }
     }
 
-    public IEnumerable<Rect> TextLayoutHitTestTextRange(int start, int length)
+    private IEnumerable<Rect> TextLayoutHitTestTextRange(int start, int length)
     {
         if (start + length <= 0) yield break;
 
@@ -242,201 +242,6 @@ public class MarkdownTextBlock : SelectableTextBlock
             currentY += textLine.Height;
         }
     }
-
-    // public override IReadOnlyList<TextBounds> TextLineGetTextBounds(TextLine textLine, int firstTextSourceIndex, int textLength)
-    // {
-    //     if (_indexedTextRuns is null || _indexedTextRuns.Count == 0)
-    //     {
-    //         return Array.Empty<TextBounds>();
-    //     }
-    //
-    //     var result = new List<TextBounds>();
-    //
-    //     var currentPosition = textLine.FirstTextSourceIndex;
-    //     var remainingLength = textLength;
-    //
-    //     TextBounds? lastBounds = null;
-    //
-    //     static FlowDirection GetDirection(TextRun textRun, FlowDirection currentDirection)
-    //     {
-    //         if (textRun is ShapedTextRun shapedTextRun)
-    //         {
-    //             return shapedTextRun.ShapedBuffer.IsLeftToRight ?
-    //                 FlowDirection.LeftToRight :
-    //                 FlowDirection.RightToLeft;
-    //         }
-    //
-    //         return currentDirection;
-    //     }
-    //
-    //     IndexedTextRun FindIndexedRun()
-    //     {
-    //         var i = 0;
-    //
-    //         IndexedTextRun currentIndexedRun = _indexedTextRuns[i];
-    //
-    //         while (currentIndexedRun.TextSourceCharacterIndex != currentPosition)
-    //         {
-    //             if (i + 1 == _indexedTextRuns.Count)
-    //             {
-    //                 break;
-    //             }
-    //
-    //             i++;
-    //
-    //             currentIndexedRun = _indexedTextRuns[i];
-    //         }
-    //
-    //         return currentIndexedRun;
-    //     }
-    //
-    //     double GetPreceedingDistance(int firstIndex)
-    //     {
-    //         var distance = 0.0;
-    //
-    //         for (var i = 0; i < firstIndex; i++)
-    //         {
-    //             var currentRun = _textRuns[i];
-    //
-    //             if (currentRun is DrawableTextRun drawableTextRun)
-    //             {
-    //                 distance += drawableTextRun.Size.Width;
-    //             }
-    //         }
-    //
-    //         return distance;
-    //     }
-    //
-    //     bool TryMergeWithLastBounds(TextBounds currentBounds)
-    //     {
-    //         if (currentBounds.FlowDirection != lastBounds.FlowDirection)
-    //         {
-    //             return false;
-    //         }
-    //
-    //         if (currentBounds.Rectangle.Left == lastBounds.Rectangle.Right)
-    //         {
-    //             foreach (var runBounds in currentBounds.TextRunBounds)
-    //             {
-    //                 lastBounds.TextRunBounds.Add(runBounds);
-    //             }
-    //
-    //             lastBounds.Rectangle = lastBounds.Rectangle.Union(currentBounds.Rectangle);
-    //
-    //             return true;
-    //         }
-    //
-    //         if (currentBounds.Rectangle.Right == lastBounds.Rectangle.Left)
-    //         {
-    //             for (int i = 0; i < currentBounds.TextRunBounds.Count; i++)
-    //             {
-    //                 lastBounds.TextRunBounds.Insert(i, currentBounds.TextRunBounds[i]);
-    //             }
-    //
-    //             lastBounds.Rectangle = lastBounds.Rectangle.Union(currentBounds.Rectangle);
-    //
-    //             return true;
-    //         }
-    //
-    //         return false;
-    //     }
-    //
-    //     while (remainingLength > 0 && currentPosition < textLine.FirstTextSourceIndex + textLine.Length)
-    //     {
-    //         var currentIndexedRun = FindIndexedRun();
-    //
-    //         if (currentIndexedRun == null)
-    //         {
-    //             break;
-    //         }
-    //
-    //         var directionalWidth = 0.0;
-    //         var firstRunIndex = currentIndexedRun.RunIndex;
-    //         var lastRunIndex = firstRunIndex;
-    //         var currentTextRun = currentIndexedRun.TextRun;
-    //
-    //         if (currentTextRun == null)
-    //         {
-    //             break;
-    //         }
-    //
-    //         var currentDirection = GetDirection(currentTextRun, _resolvedFlowDirection);
-    //
-    //         if (currentIndexedRun.TextSourceCharacterIndex + currentTextRun.Length <= firstTextSourceIndex)
-    //         {
-    //             currentPosition += currentTextRun.Length;
-    //
-    //             continue;
-    //         }
-    //
-    //         var currentX = textLine.Start + GetPreceedingDistance(currentIndexedRun.RunIndex);
-    //
-    //         if (currentTextRun is DrawableTextRun currentDrawable)
-    //         {
-    //             directionalWidth = currentDrawable.Size.Width;
-    //         }
-    //
-    //         int coveredLength;
-    //         TextBounds? currentBounds;
-    //
-    //         switch (currentDirection)
-    //         {
-    //             case FlowDirection.RightToLeft:
-    //             {
-    //                 currentBounds = GetTextRunBoundsRightToLeft(
-    //                     firstRunIndex,
-    //                     lastRunIndex,
-    //                     currentX + directionalWidth,
-    //                     firstTextSourceIndex,
-    //                     currentPosition,
-    //                     remainingLength,
-    //                     out coveredLength,
-    //                     out currentPosition);
-    //
-    //                 break;
-    //             }
-    //             default:
-    //             {
-    //                 currentBounds = GetTextBoundsLeftToRight(
-    //                     firstRunIndex,
-    //                     lastRunIndex,
-    //                     currentX,
-    //                     firstTextSourceIndex,
-    //                     currentPosition,
-    //                     remainingLength,
-    //                     out coveredLength,
-    //                     out currentPosition);
-    //
-    //                 break;
-    //             }
-    //         }
-    //
-    //         if (coveredLength == 0)
-    //         {
-    //             //This should never happen
-    //             break;
-    //         }
-    //
-    //         if (lastBounds != null && TryMergeWithLastBounds(currentBounds, lastBounds))
-    //         {
-    //             currentBounds = lastBounds;
-    //
-    //             result[result.Count - 1] = currentBounds;
-    //         }
-    //         else
-    //         {
-    //             result.Add(currentBounds);
-    //         }
-    //
-    //         lastBounds = currentBounds;
-    //
-    //         remainingLength -= coveredLength;
-    //     }
-    //
-    //     result.Sort(TextBoundsComparer);
-    //
-    //     return result;
-    // }
 
     public new void SelectAll()
     {

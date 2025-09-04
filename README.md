@@ -1,5 +1,3 @@
-<a id="readme-top"></a>
-
 [![netstandard2.0](https://img.shields.io/badge/netstandard-2.0-blue.svg)](https://docs.microsoft.com/en-us/dotnet/standard/net-standard)
 [![Avalonia](https://img.shields.io/badge/Avalonia-11-blue.svg)](https://avaloniaui.net/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)

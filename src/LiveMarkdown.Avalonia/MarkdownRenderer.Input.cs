@@ -118,6 +118,8 @@ public partial class MarkdownRenderer
 
     private void HandlePointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        Focus();
+
         if (!IsClickInsideMarkdownTextBlock(e))
         {
             // if the click is not inside a MarkdownTextBlock, we do not handle the event
@@ -125,19 +127,27 @@ public partial class MarkdownRenderer
         }
 
         var clickInfo = e.GetCurrentPoint(this);
-        if (clickInfo.Properties.IsLeftButtonPressed)
-        {
-            foreach (var selectionBlock in selectionBlocks) selectionBlock.ClearSelection();
-            selectionBlocks.Clear();
-        }
-
-        Focus();
-
         selectionStartBlock = FindMarkdownTextBlockAtPoint(e, clickInfo.Position);
         if (selectionStartBlock is null)
         {
             // if no MarkdownTextBlock was found, we do not handle the event
             return;
+        }
+
+        if (clickInfo.Properties.IsLeftButtonPressed)
+        {
+            foreach (var selectionBlock in selectionBlocks)
+            {
+                // We do not clear selection on the selection start block.
+                // Or the selection start block will lose its selection and cause remeasure
+                // which will make the selection jumpy and render incorrectly.
+                if (!ReferenceEquals(selectionBlock, selectionStartBlock))
+                {
+                    selectionBlock.ClearSelection();
+                }
+            }
+
+            selectionBlocks.Clear();
         }
 
         startBlockGlobalBounds = TranslateBoundsToGlobal(selectionStartBlock);
