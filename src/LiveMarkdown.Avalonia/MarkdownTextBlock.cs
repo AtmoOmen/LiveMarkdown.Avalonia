@@ -243,6 +243,13 @@ public class MarkdownTextBlock : SelectableTextBlock
         }
     }
 
+    protected override void OnMeasureInvalidated()
+    {
+        var textRuns = _textRuns;
+        base.OnMeasureInvalidated();
+        _textRuns = textRuns;
+    }
+
     public new void SelectAll()
     {
         SetCurrentValue(SelectionStartProperty, 0);
