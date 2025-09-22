@@ -350,7 +350,6 @@ public class LinkInlineNode() : InlinesNode(new InlineHyperlink
         if (linkInline.Url == null) return false;
 
         var inlineHyperlink = Unsafe.As<InlineHyperlink>(Inline);
-
         Uri.TryCreate(linkInline.Url, UriKind.RelativeOrAbsolute, out var uri);
 
         if (linkInline.IsImage)
@@ -489,7 +488,6 @@ public class InlineCollectionNode : BlockNode
         inlinesNode = new InlinesNode(new AvaloniaDocs.Span());
         textBlock = new MarkdownTextBlock
         {
-            Classes = { "InlineCollection" },
             Inlines = inlinesNode.Inlines
         };
     }
@@ -668,7 +666,7 @@ public class TableCellNode : ContainerBlockNode
 {
     public TableCellNode()
     {
-        Classes[0] = "TableCell";
+        Classes.Add("TableCell");
         control = new Border
         {
             Classes = { "TableCell" },
@@ -792,17 +790,7 @@ public class ListBlockNode : BlockNode
 
                 Grid.SetRow(bulletIcon, i);
                 Grid.SetColumn(bulletIcon, 0);
-                var bulletClass = "Level" + (listBlock.Column / 2) % 4;
-                if (bulletIcon.Classes.Count > 1)
-                {
-                    // Update existing bullet class
-                    bulletIcon.Classes[1] = bulletClass;
-                }
-                else
-                {
-                    // Add new bullet class
-                    bulletIcon.Classes.Add(bulletClass);
-                }
+                bulletIcon.Classes.EnsureClassName("Level", (listBlock.Column / 2) % 4);
             }
 
             // item part
@@ -968,7 +956,7 @@ public class QuoteBlockNode : ContainerBlockNode
 {
     public QuoteBlockNode()
     {
-        Classes[0] = "QuoteBlock";
+        Classes.Add("QuoteBlock");
         control = new Border
         {
             Classes = { "QuoteBlock" },
@@ -986,15 +974,15 @@ public class HeadingBlockNode : BlockNode
 {
     public override Control Control { get; }
 
-    private readonly InlineCollectionNode headingText;
+    private readonly InlineCollectionNode headingInlines;
 
     public HeadingBlockNode()
     {
-        headingText = new InlineCollectionNode();
+        headingInlines = new InlineCollectionNode();
         Control = new Border
         {
             Classes = { "HeadingBlock" },
-            Child = headingText.Control
+            Child = headingInlines.Control
         };
     }
 
@@ -1012,10 +1000,10 @@ public class HeadingBlockNode : BlockNode
         var headingBlock = Unsafe.As<HeadingBlock>(markdownObject);
         if (headingBlock.Inline is null) return false;
 
-        if (!headingText.Update(documentNode, headingBlock.Inline, change, cancellationToken)) return false;
+        if (!headingInlines.Update(documentNode, headingBlock.Inline, change, cancellationToken)) return false;
 
         cancellationToken.ThrowIfCancellationRequested();
-        headingText.Classes[0] = "Heading" + headingBlock.Level;
+        headingInlines.Classes.EnsureClassName("Heading", headingBlock.Level);
         return true;
     }
 }
@@ -1024,7 +1012,7 @@ public class ParagraphBlockNode : InlineCollectionNode
 {
     public ParagraphBlockNode()
     {
-        Classes[0] = "ParagraphBlock";
+        Classes.Add("ParagraphBlock");
     }
 
     protected override bool IsCompatible(MarkdownObject markdownObject)
@@ -1055,8 +1043,7 @@ public class ContainerBlockNode : BlockNode
     {
         var container = new StackPanel
         {
-            Orientation = Orientation.Vertical,
-            Classes = { "ContainerBlock" }
+            Orientation = Orientation.Vertical
         };
         control = container;
         proxy = new MarkdownRenderer.BlocksProxy(container.Children);
@@ -1079,7 +1066,6 @@ public class ContainerBlockNode : BlockNode
         CancellationToken cancellationToken)
     {
         var containerBlock = Unsafe.As<ContainerBlock>(markdownObject);
-
         if (containerBlock.Count == 0) return false;
 
         var i = 0;
@@ -1146,7 +1132,7 @@ public class DocumentNode : ContainerBlockNode
     public DocumentNode(MarkdownRenderer owner)
     {
         Owner = owner;
-        Classes[0] = "MarkdownDocument";
+        Classes.Add("MarkdownDocument");
     }
 
     protected override bool IsCompatible(MarkdownObject markdownObject)

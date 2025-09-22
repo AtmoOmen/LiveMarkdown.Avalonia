@@ -410,3 +410,51 @@ public partial class MarkdownRenderer
         }
     }
 }
+
+internal static class ClassesExtension
+{
+    /// <summary>
+    /// Ensures that the specified class name is present in the given <see cref="Classes"/> collection.
+    /// </summary>
+    /// <param name="classes"></param>
+    /// <param name="name"></param>
+    public static void EnsureClassName(this Classes classes, string name)
+    {
+        if (!classes.Contains(name))
+        {
+            classes.Add(name);
+        }
+    }
+
+    /// <summary>
+    /// Ensures that the specified class name with prefix and suffix is present in the given <see cref="Classes"/> collection.
+    /// </summary>
+    /// <param name="classes"></param>
+    /// <param name="prefix"></param>
+    /// <param name="suffix"></param>
+    public static void EnsureClassName<TSuffix>(this Classes classes, string prefix, TSuffix suffix)
+    {
+        var index = -1;
+        for (var i = 0; i < classes.Count; i++)
+        {
+            var cls = classes[i];
+            if (cls.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                index = i;
+                break;
+            }
+        }
+
+        var name = prefix + suffix;
+        if (index == -1)
+        {
+            classes.Add(name);
+        }
+        else if (classes[index] != name)
+        {
+            // classes[index] = name; // This may not work in Avalonia
+            classes.RemoveAt(index);
+            classes.Add(name);
+        }
+    }
+}
