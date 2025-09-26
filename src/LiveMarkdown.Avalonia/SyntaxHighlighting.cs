@@ -1,116 +1,133 @@
-﻿// @author https://github.com/SlimeNull
-// @author https://github.com/AuroraZiling
-// @author https://github.com/DearVa
-
-using Avalonia.Controls.Documents;
+﻿using Avalonia.Controls.Documents;
 using Avalonia.Media;
-using ColorCode;
-using ColorCode.Common;
-using ColorCode.Parsing;
-using ColorCode.Styling;
+using TextMateSharp.Grammars;
+using TextMateSharp.Registry;
+using TextMateSharp.Themes;
+using FontStyle = Avalonia.Media.FontStyle;
 
 namespace LiveMarkdown.Avalonia;
 
-public class SyntaxHighlighting(InlineCollection inlines, StyleDictionary? styles = null, ILanguageParser? languageParser = null)
-    : CodeColorizerBase(styles, languageParser)
+/// <summary>
+/// Handles syntax highlighting for source code using TextMateSharp
+/// and renders it into an Avalonia InlineCollection.
+/// </summary>
+public class SyntaxHighlighting
 {
-    public void FormatInlines(string sourceCode, ILanguage language)
+    private readonly Theme _theme;
+    private readonly IGrammar? _grammar;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SyntaxHighlighting"/> class.
+    /// </summary>
+    /// <param name="languageName"></param>
+    public SyntaxHighlighting(string languageName)
     {
-        languageParser.Parse(sourceCode, language, Write);
+        // Initialize the registry with the DarkPlus theme.
+        var options = new RegistryOptions(ThemeName.DarkPlus);
+        var registry = new Registry(options);
+        _theme = registry.GetTheme();
+
+        // Get the scope name from the language name (e.g., "csharp" -> "source.cs") and load the grammar.
+        var scopeName = options.GetScopeByLanguageId(languageName) ?? options.GetScopeByExtension('.' + languageName);
+        if (scopeName == null) return;
+
+        _grammar = registry.LoadGrammar(scopeName);
     }
 
-    protected override void Write(string parsedSourceCode, IList<Scope> scopes)
+    /// <summary>
+    /// Formats the source code and populates the InlineCollection with styled runs.
+    /// </summary>
+    public void FormatInlines(InlineCollection inlines)
     {
-        var styleInsertions = new List<TextInsertion>();
+        if (_grammar is null) return;
 
-        foreach (var scope in scopes)
-            GetStyleInsertionsForCapturedStyle(scope, styleInsertions);
+        IStateStack? ruleStack = null;
 
-        styleInsertions.SortStable((x, y) => x.Index.CompareTo(y.Index));
-
-        var offset = 0;
-
-        Scope? previousScope = null;
-
-        foreach (var styleInsertion in styleInsertions)
+        // Tokenize each line of the source code.
+        for (var i = 0; i < inlines.Count; i++)
         {
-            var text = parsedSourceCode.Substring(offset, styleInsertion.Index - offset);
-            CreateSpan(text, previousScope);
-            if (!string.IsNullOrWhiteSpace(styleInsertion.Text))
+            if (inlines[i] is not Run { Text: { } line }) continue;
+
+            var result = _grammar.TokenizeLine(line, ruleStack, TimeSpan.MaxValue);
+            ruleStack = result.RuleStack;
+
+            // Create and style a Run for each token.
+            Span span;
+            inlines[i] = span = new Span();
+            foreach (var token in result.Tokens)
             {
-                CreateSpan(text, previousScope);
+                var text = line.Substring(token.StartIndex, Math.Min(token.EndIndex - token.StartIndex, line.Length - token.StartIndex));
+                var run = new Run(text);
+                StyleRun(run, token.Scopes);
+                span.Inlines.Add(run);
             }
-            offset = styleInsertion.Index;
-
-            previousScope = styleInsertion.Scope;
-        }
-
-        var remaining = parsedSourceCode[offset..];
-        // Ensures that those loose carriages don't run away!
-        if (remaining != "\r")
-        {
-            CreateSpan(remaining, null);
         }
     }
 
-    private void CreateSpan(string text, Scope? scope)
+    /// <summary>
+    /// Applies styling to a Run based on the token's scopes and the current theme.
+    /// </summary>
+    /// <param name="run">The Run to style.</param>
+    /// <param name="scopes">The scopes associated with the token.</param>
+    private void StyleRun(Run run, IList<string> scopes)
     {
-        var span = new Span();
-        var run = new Run
+        var themeRules = _theme.Match(scopes);
+
+        var foregroundId = -1;
+        var backgroundId = -1;
+        var fontStyle = TextMateSharp.Themes.FontStyle.NotSet;
+
+        // Determine the style from the matched theme rules.
+        foreach (var themeRule in themeRules)
         {
-            Text = text
-        };
+            if (foregroundId == -1 && themeRule.foreground > 0)
+                foregroundId = themeRule.foreground;
 
-        // Styles and writes the text to the span.
-        if (scope != null)
-            StyleRun(run, scope);
-        span.Inlines.Add(run);
+            if (backgroundId == -1 && themeRule.background > 0)
+                backgroundId = themeRule.background;
 
-        inlines.Add(span);
-    }
-
-    private void StyleRun(Run run, Scope scope)
-    {
-#if NETSTANDARD2_0
-        if (!Styles.Contains(scope.Name)) return;
-        var style = Styles[scope.Name];
-#else
-            if (!Styles.TryGetValue(scope.Name, out var style)) return;
-#endif
-
-        if (Color.TryParse(style.Foreground, out var color))
-        {
-            run.Foreground = new SolidColorBrush(color);
+            if (fontStyle == TextMateSharp.Themes.FontStyle.NotSet && themeRule.fontStyle > 0)
+                fontStyle = themeRule.fontStyle;
         }
 
-        if (Color.TryParse(style.Background, out var backgroundColor))
+        // Apply foreground color.
+        if (foregroundId != -1)
         {
-            run.Background = new SolidColorBrush(backgroundColor);
-        }
-
-        if (style.Italic)
-            run.FontStyle = FontStyle.Italic;
-
-        if (style.Bold)
-            run.FontWeight = FontWeight.Bold;
-    }
-
-    private static void GetStyleInsertionsForCapturedStyle(Scope scope, ICollection<TextInsertion> styleInsertions)
-    {
-        styleInsertions.Add(
-            new TextInsertion
+            var colorStr = _theme.GetColor(foregroundId);
+            if (Color.TryParse(colorStr, out var color))
             {
-                Index = scope.Index,
-                Scope = scope
-            });
+                run.Foreground = new SolidColorBrush(color);
+            }
+        }
 
-        foreach (var childScope in scope.Children)
-            GetStyleInsertionsForCapturedStyle(childScope, styleInsertions);
-
-        styleInsertions.Add(
-            new TextInsertion
+        // Apply background color.
+        if (backgroundId != -1)
+        {
+            var colorStr = _theme.GetColor(backgroundId);
+            if (Color.TryParse(colorStr, out var color))
             {
-                Index = scope.Index + scope.Length
-            });
+                run.Background = new SolidColorBrush(color);
+            }
+        }
+
+        // Apply font styles.
+        if (fontStyle == TextMateSharp.Themes.FontStyle.NotSet) return;
+
+        if ((fontStyle & TextMateSharp.Themes.FontStyle.Italic) != 0) run.FontStyle = FontStyle.Italic;
+        if ((fontStyle & TextMateSharp.Themes.FontStyle.Bold) != 0) run.FontWeight = FontWeight.Bold;
+        if ((fontStyle & TextMateSharp.Themes.FontStyle.Underline) != 0) ApplyDecoration(TextDecorations.Underline);
+        if ((fontStyle & TextMateSharp.Themes.FontStyle.Strikethrough) != 0) ApplyDecoration(TextDecorations.Strikethrough);
+
+        void ApplyDecoration(TextDecorationCollection decorations)
+        {
+            if (run.TextDecorations is null)
+            {
+                run.TextDecorations = decorations;
+            }
+            else
+            {
+                run.TextDecorations.AddRange(decorations);
+            }
+        }
     }
 }

@@ -15,12 +15,13 @@
     <ItemGroup>
         <PackageReference Include="Avalonia"/>
         <PackageReference Include="Avalonia.Svg" />
-        <PackageReference Include="ColorCode.Core"/>
         <PackageReference Include="Markdig"/>
         <PackageReference Include="PolySharp">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="TextMateSharp" />
+        <PackageReference Include="TextMateSharp.Grammars" />
     </ItemGroup>
 
     <ItemGroup>

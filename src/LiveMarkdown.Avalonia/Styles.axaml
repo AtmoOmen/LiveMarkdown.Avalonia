@@ -185,7 +185,7 @@
                   VerticalScrollBarVisibility="Auto">
                   <md:MarkdownTextBlock
                     x:Name="PART_CodeTextBlock" Margin="4"
-                    TextWrapping="NoWrap"/>
+                    FontFamily="Consolas, 'Courier New', monospace" TextWrapping="NoWrap"/>
                 </ScrollViewer>
               </Border>
             </StackPanel>

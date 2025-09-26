@@ -3,8 +3,6 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
-using ColorCode;
-using ColorCode.Styling;
 using Markdig.Extensions.Tables;
 using Markdig.Extensions.TaskLists;
 using Markdig.Syntax;
@@ -935,26 +933,13 @@ public class CodeBlockNode : BlockNode
         if (codeBlock is not FencedCodeBlock fencedCodeBlock) return true;
         _codeBlock.Language = fencedCodeBlock.Info;
 
-        if (fencedCodeBlock is not { IsOpen: false, Info.Length: > 0 }) return true;
+        if (fencedCodeBlock is not { Info.Length: > 0 }) return true;
         cancellationToken.ThrowIfCancellationRequested();
 
         // FencedCodeBlock with Info, use syntax highlighting
         var languageName = fencedCodeBlock.Info.TrimEnd().ToLower();
-        var language = Languages.FindById(
-            languageName switch
-            {
-                "ts" => "typescript",
-                "tsx" => "typescript",
-                "js" => "javascript",
-                "jsx" => "typescript",
-                "c#" => "csharp",
-                _ => languageName
-            });
-        if (language is null) return true;
-
-        inlines.Clear();
-        syntaxHighlighting ??= new SyntaxHighlighting(inlines, StyleDictionary.DefaultDark);
-        syntaxHighlighting.FormatInlines(fencedCodeBlock.Lines.ToString(), language);
+        syntaxHighlighting ??= new SyntaxHighlighting(languageName);
+        syntaxHighlighting.FormatInlines(inlines);
         return true;
     }
 }

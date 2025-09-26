@@ -132,7 +132,7 @@ Distributed under the Apache 2.0 License. See [LICENSE](LICENSE) for more inform
 - **Svg.Skia** - [MIT License](https://github.com/wieslawsoltes/Svg.Skia/blob/master/LICENSE.TXT)
     - Svg rendering for images
     - Source repo: https://github.com/wieslawsoltes/Svg.Skia
-- **ColorCode** - [MIT License](https://github.com/CommunityToolkit/ColorCode-Universal/blob/main/license.md)
+- **TextMateSharp** - [MIT License](https://github.com/danipen/TextMateSharp/blob/master/LICENSE.md)
     - Syntax highlighting for code blocks
-    - Source repo: https://github.com/CommunityToolkit/ColorCode-Universal
+    - Source repo: https://github.com/danipen/TextMateSharp
 
