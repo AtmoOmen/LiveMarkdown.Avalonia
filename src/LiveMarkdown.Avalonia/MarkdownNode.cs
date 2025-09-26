@@ -96,13 +96,13 @@ public abstract class InlineNode : MarkdownNode
 
     public Classes Classes => Inline.Classes;
 
-    protected static InlineNode? CreateInlineNode(
+    protected static InlineNode CreateInlineNode(
         DocumentNode documentNode,
         Inline inline,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        InlineNode? node = inline switch
+        InlineNode node = inline switch
         {
             LiteralInline => new FuncInlineNode<LiteralInline, AvaloniaDocs.Run>((literal, run) =>
             {
@@ -125,11 +125,12 @@ public abstract class InlineNode : MarkdownNode
                 else
                 {
                     inlineHyperlink.Inlines.Clear();
-                    inlineHyperlink.Inlines.Add(new AvaloniaDocs.Run
-                    {
-                        Classes = { "Autolink" },
-                        Text = autolink.Url
-                    });
+                    inlineHyperlink.Inlines.Add(
+                        new AvaloniaDocs.Run
+                        {
+                            Classes = { "Autolink" },
+                            Text = autolink.Url
+                        });
                 }
 
                 return true;
@@ -169,14 +170,13 @@ public abstract class InlineNode : MarkdownNode
             {
                 Classes = { "HtmlEntity" }
             },
-            HtmlInline => new FuncInlineNode<HtmlInline, AvaloniaDocs.Run>((_, _) => true), // documentNode: Implement HTML rendering
             CodeInline => new CodeInlineNode(),
             LinkInline => new LinkInlineNode(),
             EmphasisInline => new EmphasisInlineNode(),
             ContainerInline => new ContainerInlineNode(),
-            _ => null
+            _ => new NotImplementedInlineNode(inline)
         };
-        node?.Update(documentNode, inline, change, cancellationToken);
+        node.Update(documentNode, inline, change, cancellationToken);
         return node;
     }
 }
@@ -255,17 +255,12 @@ public class InlinesNode : InlineNode
                 if (oldInlineNode.Update(documentNode, inline, change, cancellationToken)) continue;
 
                 // else, remove the old node and create a new one
-                if (CreateInlineNode(documentNode, inline, change, cancellationToken) is not { } newInlineNode)
-                {
-                    proxy.RemoveAt(i);
-                    continue;
-                }
-
+                var newInlineNode = CreateInlineNode(documentNode, inline, change, cancellationToken);
                 proxy[i] = newInlineNode;
             }
             else
             {
-                if (CreateInlineNode(documentNode, inline, change, cancellationToken) is not { } newInlineNode) continue;
+                var newInlineNode = CreateInlineNode(documentNode, inline, change, cancellationToken);
                 proxy.Add(newInlineNode);
             }
         }
@@ -277,14 +272,6 @@ public class InlinesNode : InlineNode
         }
 
         return i >= 0; // Return true if at least one inline was processed
-    }
-}
-
-public class ContainerInlineNode() : InlinesNode(new AvaloniaDocs.Span())
-{
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject is ContainerInline and not EmphasisInline; // EmphasisInline is handled separately
     }
 }
 
@@ -330,10 +317,11 @@ public class CodeInlineNode : InlineNode
     }
 }
 
-public class LinkInlineNode() : InlinesNode(new InlineHyperlink
-{
-    Classes = { "Link" }
-})
+public class LinkInlineNode() : InlinesNode(
+    new InlineHyperlink
+    {
+        Classes = { "Link" }
+    })
 {
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
@@ -441,19 +429,49 @@ public class EmphasisInlineNode : ContainerInlineNode
     }
 }
 
+public class ContainerInlineNode() : InlinesNode(new AvaloniaDocs.Span())
+{
+    protected override bool IsCompatible(MarkdownObject markdownObject)
+    {
+        return markdownObject is ContainerInline and not EmphasisInline; // EmphasisInline is handled separately
+    }
+}
+
+public class NotImplementedInlineNode(Inline markdownInline) : InlineNode
+{
+    public override AvaloniaDocs.Inline Inline { get; } = new AvaloniaDocs.Run
+    {
+        Classes = { "NotImplementedInline" }
+    };
+
+    protected override bool IsCompatible(MarkdownObject markdownObject)
+    {
+        return markdownObject.GetType() == markdownInline.GetType();
+    }
+
+    protected override bool UpdateCore(
+        DocumentNode documentNode,
+        MarkdownObject markdownObject,
+        in ObservableStringBuilderChangedEventArgs change,
+        CancellationToken cancellationToken)
+    {
+        return true;
+    }
+}
+
 public abstract class BlockNode : MarkdownNode
 {
     public abstract Control Control { get; }
 
     public Classes Classes => Control.Classes;
 
-    protected static BlockNode? CreateBlockNode(
+    protected static BlockNode CreateBlockNode(
         DocumentNode documentNode,
         Block block,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        BlockNode? node = block switch
+        BlockNode node = block switch
         {
             Table => new TableNode(),
             TableCell => new TableCellNode(),
@@ -463,10 +481,10 @@ public abstract class BlockNode : MarkdownNode
             HeadingBlock => new HeadingBlockNode(),
             ParagraphBlock => new ParagraphBlockNode(),
             ContainerBlock => new ContainerBlockNode(),
-            HtmlBlock => new HtmlBlockNode(),
-            _ => null
+            ThematicBreakBlock => new ThematicBreakBlockNode(),
+            _ => new NotImplementedBlockNode(block)
         };
-        node?.Update(documentNode, block, change, cancellationToken);
+        node.Update(documentNode, block, change, cancellationToken);
         return node;
     }
 }
@@ -575,7 +593,7 @@ public class TableNode : BlockNode
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                Control? cellControl = null;
+                Control cellControl;
                 do
                 {
                     if (proxy.Count > cellIndex)
@@ -588,25 +606,18 @@ public class TableNode : BlockNode
                         if (oldCellBlockNode.Update(documentNode, cell, change, cancellationToken)) break;
 
                         // else, remove the old node and create a new one
-                        if (CreateBlockNode(documentNode, cell, change, cancellationToken) is not { } newCellBlockNode)
-                        {
-                            proxy.RemoveAt(cellIndex);
-                            break;
-                        }
-
+                        var newCellBlockNode = CreateBlockNode(documentNode, cell, change, cancellationToken);
                         proxy[cellIndex] = newCellBlockNode;
                         cellControl = newCellBlockNode.Control;
                     }
                     else
                     {
-                        if (CreateBlockNode(documentNode, cell, change, cancellationToken) is not { } newCellBlockNode) break;
+                        var newCellBlockNode = CreateBlockNode(documentNode, cell, change, cancellationToken);
                         proxy.Add(newCellBlockNode);
                         cellControl = newCellBlockNode.Control;
                     }
                 }
                 while (false);
-
-                if (cellControl is null) continue;
 
                 cellIndex++;
                 Grid.SetRow(cellControl, rowIndex);
@@ -804,19 +815,14 @@ public class ListBlockNode : BlockNode
                 if (oldItemBlockNode.Update(documentNode, itemBlock, change, cancellationToken)) continue;
 
                 // else, remove the old node and create a new one
-                if (CreateBlockNode(documentNode, itemBlock, change, cancellationToken) is not { } newItemBlockNode)
-                {
-                    proxy.RemoveAt(itemIndex);
-                    continue;
-                }
-
+                var newItemBlockNode = CreateBlockNode(documentNode, itemBlock, change, cancellationToken);
                 proxy[itemIndex] = newItemBlockNode;
                 Grid.SetRow(newItemBlockNode.Control, i);
                 Grid.SetColumn(newItemBlockNode.Control, 1);
             }
             else
             {
-                if (CreateBlockNode(documentNode, itemBlock, change, cancellationToken) is not { } newItemBlockNode) continue;
+                var newItemBlockNode = CreateBlockNode(documentNode, itemBlock, change, cancellationToken);
                 proxy.Add(newItemBlockNode);
                 Grid.SetRow(newItemBlockNode.Control, i);
                 Grid.SetColumn(newItemBlockNode.Control, 1);
@@ -934,15 +940,16 @@ public class CodeBlockNode : BlockNode
 
         // FencedCodeBlock with Info, use syntax highlighting
         var languageName = fencedCodeBlock.Info.TrimEnd().ToLower();
-        var language = Languages.FindById(languageName switch
-        {
-            "ts" => "typescript",
-            "tsx" => "typescript",
-            "js" => "javascript",
-            "jsx" => "typescript",
-            "c#" => "csharp",
-            _ => languageName
-        });
+        var language = Languages.FindById(
+            languageName switch
+            {
+                "ts" => "typescript",
+                "tsx" => "typescript",
+                "js" => "javascript",
+                "jsx" => "typescript",
+                "c#" => "csharp",
+                _ => languageName
+            });
         if (language is null) return true;
 
         inlines.Clear();
@@ -1081,13 +1088,12 @@ public class ContainerBlockNode : BlockNode
 
                 // if Update returned false, it means the block needs to be removed
                 var newNode = CreateBlockNode(documentNode, block, change, cancellationToken);
-                if (newNode is not null) proxy[i] = newNode;
-                else proxy.RemoveAt(i);
+                proxy[i] = newNode;
             }
             else
             {
                 var newNode = CreateBlockNode(documentNode, block, change, cancellationToken);
-                if (newNode is not null) proxy.Add(newNode);
+                proxy.Add(newNode);
             }
         }
 
@@ -1102,13 +1108,38 @@ public class ContainerBlockNode : BlockNode
     }
 }
 
-public class HtmlBlockNode : BlockNode
+public class ThematicBreakBlockNode : BlockNode
 {
-    public override Control Control { get; } = new(); // documentNode: Implement HTML rendering
+    public override Control Control { get; } = new Border
+    {
+        Classes = { "ThematicBreak" }
+    };
 
     protected override bool IsCompatible(MarkdownObject markdownObject)
     {
-        return markdownObject.GetType() == typeof(HtmlBlock);
+        return markdownObject.GetType() == typeof(ThematicBreakBlock);
+    }
+
+    protected override bool UpdateCore(
+        DocumentNode documentNode,
+        MarkdownObject markdownObject,
+        in ObservableStringBuilderChangedEventArgs change,
+        CancellationToken cancellationToken)
+    {
+        return true;
+    }
+}
+
+public class NotImplementedBlockNode(Block markdownBlock) : BlockNode
+{
+    public override Control Control { get; } = new()
+    {
+        Classes = { "NotImplementedBlock" }
+    };
+
+    protected override bool IsCompatible(MarkdownObject markdownObject)
+    {
+        return markdownObject.GetType() == markdownBlock.GetType();
     }
 
     protected override bool UpdateCore(

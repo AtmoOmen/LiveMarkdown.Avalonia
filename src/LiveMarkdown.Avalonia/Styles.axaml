@@ -257,4 +257,10 @@
       <Setter Property="Background" Value="Transparent"/>
     </Style>
   </Style>
+
+  <Style Selector="Border.ThematicBreak">
+    <Setter Property="Margin" Value="0,2"/>
+    <Setter Property="Height" Value="1"/>
+    <Setter Property="Background" Value="{DynamicResource BorderColor}"/>
+  </Style>
 </Styles>
