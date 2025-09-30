@@ -97,6 +97,7 @@ public partial class MarkdownRenderer : Control
         VerboseLogger = Logger.TryGet(LogEventLevel.Verbose, $"{nameof(MarkdownRenderer)}");
 
         InlineHyperlink.ClickEvent.AddClassHandler<MarkdownRenderer>(HandleInlineHyperlinkClick);
+        RequestBringIntoViewEvent.AddClassHandler<MarkdownRenderer>(BringIntoViewRequested);
     }
 
     private static void HandleInlineHyperlinkClick(MarkdownRenderer sender, InlineHyperlinkClickedEventArgs args)
@@ -106,6 +107,12 @@ public partial class MarkdownRenderer : Control
             !inlineHyperlinkCommand.CanExecute(args)) return;
 
         inlineHyperlinkCommand.Execute(args);
+    }
+
+    private static void BringIntoViewRequested(MarkdownRenderer sender, RequestBringIntoViewEventArgs args)
+    {
+        // ignore requests from children
+        args.Handled = true;
     }
 
     public MarkdownRenderer()
