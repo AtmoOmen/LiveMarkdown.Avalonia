@@ -25,6 +25,9 @@ It supports **real-time rendering** of Markdown content, so it's ideal for appli
 > [!NOTE]
 > This library currently only supports `Append` and `Clear` operations on the Markdown content, which is enough for LLM streaming scenarios.
 
+> [!WARNING]
+> Known issue: Avalonia 11.3.5 and above changed text layout behavior, which may cause some text offset issues in certain scenarios. e.g. code inline has extra bottom margin, wried italic font rendering, etc.
+
 ## ✈️ Roadmap
 
 - [x] Basic Markdown rendering
