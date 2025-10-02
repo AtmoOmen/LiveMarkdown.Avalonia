@@ -151,7 +151,7 @@ public abstract class InlineNode : MarkdownNode
                     inlineUIContainer.Child = checkBox = new CheckBox
                     {
                         Classes = { "TaskList" },
-                        IsEnabled = false
+                        IsHitTestVisible = false
                     };
                 }
                 checkBox.IsChecked = taskList.Checked;
