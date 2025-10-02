@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Base packages -->
-    <PackageVersion Include="Svg.Controls.Avalonia" Version="11.3.0" />
+    <PackageVersion Include="Svg.Controls.Avalonia" Version="11.3.0.4" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageVersion Include="PolySharp" Version="1.15.0" />
     <!-- Avalonia packages -->
@@ -16,7 +16,7 @@
     <PackageVersion Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)" />
     <PackageVersion Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
     <!-- Markdown packages -->
-    <PackageVersion Include="Markdig" Version="0.41.3" />
+    <PackageVersion Include="Markdig" Version="0.42.0" />
     <!-- NUnit packages -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.1" />
     <PackageVersion Include="coverlet.collector" Version="6.0.3" />
