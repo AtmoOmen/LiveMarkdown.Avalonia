@@ -13,6 +13,7 @@
 
     <Style Selector="^ md|MarkdownTextBlock">
       <Setter Property="Cursor" Value="IBeam"/>
+      <Setter Property="FontFamily" Value="Arial, 'Segoe UI', sans-serif"/>
       <Setter Property="TextWrapping" Value="Wrap"/>
       <Setter Property="SelectionBrush" Value="CornflowerBlue"/>
       <Setter Property="SelectionForegroundBrush" Value="{DynamicResource ForegroundColor}"/>
@@ -50,44 +51,50 @@
 
     <Style Selector="^ Grid.ListBlock">
       <Style Selector="^ TextBlock.ListBlockNumber">
+        <Setter Property="FontFamily" Value="Arial, 'Segoe UI', sans-serif"/>
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+        <Setter Property="Margin" Value="4,0"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+      </Style>
+
+      <Style Selector="^ TextBlock.ListBlockBullet">
+        <Setter Property="FontFamily" Value="Arial, 'Segoe UI', sans-serif"/>
         <Setter Property="Margin" Value="4,0"/>
         <Setter Property="HorizontalAlignment" Value="Right"/>
         <Setter Property="VerticalAlignment" Value="Top"/>
-        <Setter Property="FontFamily" Value="Consolas, 'Courier New', monospace"/>
-      </Style>
-
-      <Style Selector="^ Border.ListBlockBullet">
-        <Setter Property="Margin" Value="4,7"/>
-        <Setter Property="Width" Value="6"/>
-        <Setter Property="Height" Value="6"/>
-        <Setter Property="VerticalAlignment" Value="Top"/>
 
         <Style Selector="^.Level0">
-          <Setter Property="CornerRadius" Value="3"/>
-          <Setter Property="Background" Value="{DynamicResource ForegroundColor}"/>
+          <Setter Property="Text" Value="●">
+          </Setter>
         </Style>
 
         <Style Selector="^.Level1">
-          <Setter Property="CornerRadius" Value="3"/>
-          <Setter Property="BorderBrush" Value="{DynamicResource ForegroundColor}"/>
-          <Setter Property="BorderThickness" Value="1"/>
+          <Setter Property="Text" Value="○">
+          </Setter>
         </Style>
 
         <Style Selector="^.Level2">
-          <Setter Property="Background" Value="{DynamicResource ForegroundColor}"/>
+          <Setter Property="Text" Value="■">
+          </Setter>
         </Style>
 
         <Style Selector="^.Level3">
-          <Setter Property="BorderBrush" Value="{DynamicResource ForegroundColor}"/>
-          <Setter Property="BorderThickness" Value="1"/>
+          <Setter Property="Text" Value="□">
+          </Setter>
         </Style>
       </Style>
     </Style>
 
     <Style Selector="^ InlineUIContainer.Code">
+      <Setter Property="BaselineAlignment" Value="Bottom">
+      </Setter>
       <Style Selector="^ Border">
-        <Setter Property="Padding" Value="2,1"/>
-        <Setter Property="Margin" Value="2,3,2,-1"/>
+        <Setter Property="ClipToBounds" Value="False">
+        </Setter>
+        <Setter Property="Margin" Value="0, -3, 0, -4">
+        </Setter>
+        <Setter Property="Padding" Value="2, 2">
+        </Setter>
         <Setter Property="CornerRadius" Value="3"/>
         <Setter Property="Background" Value="{DynamicResource SecondaryCardBackgroundColor}"/>
       </Style>
@@ -96,6 +103,38 @@
         <Setter Property="Foreground" Value="#D7BA7D"/>
         <Setter Property="FontSize" Value="15"/>
         <Setter Property="FontFamily" Value="Consolas, 'Courier New', monospace"/>
+      </Style>
+    </Style>
+
+    <Style Selector="^ md|InlineHyperlink.Link">
+      <Setter Property="BaselineAlignment" Value="Bottom"/>
+      <Style Selector="^ Button">
+        <Setter Property="ClipToBounds" Value="False">
+        </Setter>
+        <Setter Property="Padding" Value="2, 2">
+        </Setter>
+        <Setter Property="Margin" Value="0, -3, 0, -1">
+        </Setter>
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate>
+              <Border
+                Background="Transparent" Cursor="Hand">
+                <ContentPresenter Content="{TemplateBinding Content}"/>
+              </Border>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+
+        <Style Selector="^ md|MarkdownTextBlock">
+          <Setter Property="Foreground" Value="DodgerBlue"/>
+          <Setter Property="TextDecorations" Value="Underline"/>
+          <Setter Property="IsHitTestVisible" Value="False"/>
+        </Style>
+      </Style>
+
+      <Style Selector="^:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
       </Style>
     </Style>
 
@@ -232,29 +271,6 @@
           <Setter Property="FontSize" Value="16"/>
         </Style>
       </Style>
-    </Style>
-  </Style>
-
-  <Style Selector="Button.InlineHyperlink">
-    <Setter Property="Template">
-      <Setter.Value>
-        <ControlTemplate>
-          <Border
-            Background="Transparent" Cursor="Hand">
-            <ContentPresenter Content="{TemplateBinding Content}"/>
-          </Border>
-        </ControlTemplate>
-      </Setter.Value>
-    </Setter>
-
-    <Style Selector="^ md|MarkdownTextBlock">
-      <Setter Property="Foreground" Value="DodgerBlue"/>
-      <Setter Property="TextDecorations" Value="Underline"/>
-      <Setter Property="IsHitTestVisible" Value="False"/>
-    </Style>
-
-    <Style Selector="^:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="Transparent"/>
     </Style>
   </Style>
 

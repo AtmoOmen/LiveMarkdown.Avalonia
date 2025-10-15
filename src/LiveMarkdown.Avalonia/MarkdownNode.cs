@@ -289,11 +289,7 @@ public class CodeInlineNode : InlineNode
             Classes = { "Code" },
             Child = new Border
             {
-                Classes = { "Code" },
-                Child = textBlock = new MarkdownTextBlock
-                {
-                    Classes = { "Code" }
-                }
+                Child = textBlock = new MarkdownTextBlock()
             }
         };
     }
@@ -736,70 +732,42 @@ public class ListBlockNode : BlockNode
 
             var itemBlock = listBlock[i];
             var numberIndex = i * 2;
-
-            // number part
-            if (listBlock.IsOrdered)
+            
+            TextBlock itemControl;
+            if (proxy.Count > numberIndex && proxy[numberIndex].Control is TextBlock existingItemControl)
             {
-                // number is no need to be selected
-                TextBlock numberControl;
-                if (proxy.Count > numberIndex && proxy[numberIndex].Control is TextBlock existingNumberControl)
-                {
-                    // existing number block node, update it
-                    numberControl = existingNumberControl;
-                }
-                else
-                {
-                    // create a new number block node
-                    numberControl = new TextBlock
-                    {
-                        Classes = { "ListBlockNumber" },
-                    };
-
-                    if (proxy.Count > numberIndex)
-                    {
-                        // replace the existing number block node
-                        proxy.SetControlAt(numberIndex, numberControl);
-                    }
-                    else
-                    {
-                        // add a new number block node
-                        proxy.Add(numberControl);
-                    }
-                }
-
-                Grid.SetRow(numberControl, i);
-                Grid.SetColumn(numberControl, 0);
-                numberControl.Text = $"{number++}.";
+                // existing item block node, update it
+                itemControl = existingItemControl;
             }
             else
             {
-                Border bulletIcon;
-                if (proxy.Count > numberIndex && proxy[numberIndex].Control is Border existingBulletIcon)
+                // create a new item block node
+                itemControl = new TextBlock
                 {
-                    // existing bullet block node, update it
-                    bulletIcon = existingBulletIcon;
+                    Classes = { listBlock.IsOrdered ? "ListBlockNumber" : "ListBlockBullet" },
+                };
+
+                if (proxy.Count > numberIndex)
+                {
+                    // replace the existing item block node
+                    proxy.SetControlAt(numberIndex, itemControl);
                 }
                 else
                 {
-                    // create a new bullet block node
-                    bulletIcon = new Border
-                    {
-                        Classes = { "ListBlockBullet" }
-                    };
-
-                    if (proxy.Count > numberIndex)
-                    {
-                        proxy.SetControlAt(numberIndex, bulletIcon);
-                    }
-                    else
-                    {
-                        proxy.Add(bulletIcon);
-                    }
+                    // add a new item block node
+                    proxy.Add(itemControl);
                 }
+            }
 
-                Grid.SetRow(bulletIcon, i);
-                Grid.SetColumn(bulletIcon, 0);
-                bulletIcon.Classes.EnsureClassName("Level", (listBlock.Column / 2) % 4);
+            Grid.SetRow(itemControl, i);
+            Grid.SetColumn(itemControl, 0);
+            if (listBlock.IsOrdered)
+            {
+                itemControl.Text = $"{number++}.";
+            }
+            else
+            {
+                itemControl.Classes.EnsureClassName("Level", (listBlock.Column / 2) % 4);
             }
 
             // item part
