@@ -64,37 +64,29 @@
         <Setter Property="VerticalAlignment" Value="Top"/>
 
         <Style Selector="^.Level0">
-          <Setter Property="Text" Value="●">
-          </Setter>
+          <Setter Property="Text" Value="●"/>
         </Style>
 
         <Style Selector="^.Level1">
-          <Setter Property="Text" Value="○">
-          </Setter>
+          <Setter Property="Text" Value="○"/>
         </Style>
 
         <Style Selector="^.Level2">
-          <Setter Property="Text" Value="■">
-          </Setter>
+          <Setter Property="Text" Value="■"/>
         </Style>
 
         <Style Selector="^.Level3">
-          <Setter Property="Text" Value="□">
-          </Setter>
+          <Setter Property="Text" Value="□"/>
         </Style>
       </Style>
     </Style>
 
     <Style Selector="^ InlineUIContainer.Code">
-      <Setter Property="BaselineAlignment" Value="Bottom">
-      </Setter>
+      <Setter Property="BaselineAlignment" Value="Bottom"/>
       <Style Selector="^ Border">
-        <Setter Property="ClipToBounds" Value="False">
-        </Setter>
-        <Setter Property="Margin" Value="0, -3, 0, -4">
-        </Setter>
-        <Setter Property="Padding" Value="2, 2">
-        </Setter>
+        <Setter Property="ClipToBounds" Value="False"/>
+        <Setter Property="Margin" Value="0, -3, 0, -4"/>
+        <Setter Property="Padding" Value="2, 2"/>
         <Setter Property="CornerRadius" Value="3"/>
         <Setter Property="Background" Value="{DynamicResource SecondaryCardBackgroundColor}"/>
       </Style>
@@ -109,12 +101,9 @@
     <Style Selector="^ md|InlineHyperlink.Link">
       <Setter Property="BaselineAlignment" Value="Bottom"/>
       <Style Selector="^ Button">
-        <Setter Property="ClipToBounds" Value="False">
-        </Setter>
-        <Setter Property="Padding" Value="2, 2">
-        </Setter>
-        <Setter Property="Margin" Value="0, -3, 0, -1">
-        </Setter>
+        <Setter Property="ClipToBounds" Value="False"/>
+        <Setter Property="Padding" Value="2, 2"/>
+        <Setter Property="Margin" Value="0, -3, 0, -1"/>
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate>
