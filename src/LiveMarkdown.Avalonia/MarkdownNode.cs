@@ -906,7 +906,7 @@ public class CodeBlockNode : BlockNode
 
         // FencedCodeBlock with Info, use syntax highlighting
         var languageName = fencedCodeBlock.Info.TrimEnd().ToLower();
-        syntaxHighlighting ??= new SyntaxHighlighting(languageName);
+        syntaxHighlighting ??= SyntaxHighlighting.Create(languageName);
         syntaxHighlighting.FormatInlines(inlines);
         return true;
     }

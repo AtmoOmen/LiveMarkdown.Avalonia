@@ -7,31 +7,73 @@ using FontStyle = Avalonia.Media.FontStyle;
 
 namespace LiveMarkdown.Avalonia;
 
+internal record RegistryContext
+{
+    public static RegistryContext DarkPlus { get; } = new(ThemeName.DarkPlus);
+
+    public RegistryOptions Options { get; }
+
+    public Registry Registry { get; }
+
+    public Theme Theme { get; }
+
+    private readonly Dictionary<Color, SolidColorBrush> _colorBrushCache = new();
+
+    private RegistryContext(ThemeName themeName)
+    {
+        Options = new RegistryOptions(themeName);
+        Registry = new Registry(Options);
+        Theme = Registry.GetTheme();
+    }
+
+    public SolidColorBrush GetBrush(Color color)
+    {
+        if (_colorBrushCache.TryGetValue(color, out var brush)) return brush;
+        brush = new SolidColorBrush(color);
+        _colorBrushCache[color] = brush;
+        return brush;
+    }
+}
+
 /// <summary>
 /// Handles syntax highlighting for source code using TextMateSharp
 /// and renders it into an Avalonia InlineCollection.
 /// </summary>
 public class SyntaxHighlighting
 {
-    private readonly Theme _theme;
+    private readonly static Dictionary<string, WeakReference<SyntaxHighlighting>> Cache = [];
+
     private readonly IGrammar? _grammar;
+
+    public static SyntaxHighlighting Create(string languageName)
+    {
+        lock (Cache)
+        {
+            if (Cache.TryGetValue(languageName, out var weakRef) && weakRef.TryGetTarget(out var cached))
+            {
+                return cached;
+            }
+        }
+
+        var instance = new SyntaxHighlighting(languageName);
+        lock (Cache) Cache[languageName] = new WeakReference<SyntaxHighlighting>(instance);
+        return instance;
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SyntaxHighlighting"/> class.
     /// </summary>
     /// <param name="languageName"></param>
-    public SyntaxHighlighting(string languageName)
+    private SyntaxHighlighting(string languageName)
     {
         // Initialize the registry with the DarkPlus theme.
-        var options = new RegistryOptions(ThemeName.DarkPlus);
-        var registry = new Registry(options);
-        _theme = registry.GetTheme();
+        var context = RegistryContext.DarkPlus;
 
         // Get the scope name from the language name (e.g., "csharp" -> "source.cs") and load the grammar.
-        var scopeName = options.GetScopeByLanguageId(languageName) ?? options.GetScopeByExtension('.' + languageName);
+        var scopeName = context.Options.GetScopeByLanguageId(languageName) ?? context.Options.GetScopeByExtension('.' + languageName);
         if (scopeName == null) return;
 
-        _grammar = registry.LoadGrammar(scopeName);
+        _grammar = context.Registry.LoadGrammar(scopeName);
     }
 
     /// <summary>
@@ -51,15 +93,22 @@ public class SyntaxHighlighting
             var result = _grammar.TokenizeLine(line, ruleStack, TimeSpan.MaxValue);
             ruleStack = result.RuleStack;
 
-            // Create and style a Run for each token.
-            Span span;
-            inlines[i] = span = new Span();
-            foreach (var token in result.Tokens)
+            if (result.Tokens.Length == 1 && inlines[i] is Run run)
             {
-                var text = line.Substring(token.StartIndex, Math.Min(token.EndIndex - token.StartIndex, line.Length - token.StartIndex));
-                var run = new Run(text);
-                StyleRun(run, token.Scopes);
-                span.Inlines.Add(run);
+                StyleRun(run, result.Tokens[0].Scopes);
+            }
+            else
+            {
+                // Create and style a Run for each token.
+                Span span;
+                inlines[i] = span = new Span();
+                foreach (var token in result.Tokens)
+                {
+                    var text = line.Substring(token.StartIndex, Math.Min(token.EndIndex - token.StartIndex, line.Length - token.StartIndex));
+                    run = new Run(text);
+                    StyleRun(run, token.Scopes);
+                    span.Inlines.Add(run);
+                }
             }
         }
     }
@@ -69,9 +118,10 @@ public class SyntaxHighlighting
     /// </summary>
     /// <param name="run">The Run to style.</param>
     /// <param name="scopes">The scopes associated with the token.</param>
-    private void StyleRun(Run run, IList<string> scopes)
+    private static void StyleRun(Run run, IList<string> scopes)
     {
-        var themeRules = _theme.Match(scopes);
+        var context = RegistryContext.DarkPlus;
+        var themeRules = context.Theme.Match(scopes);
 
         var foregroundId = -1;
         var backgroundId = -1;
@@ -93,20 +143,20 @@ public class SyntaxHighlighting
         // Apply foreground color.
         if (foregroundId != -1)
         {
-            var colorStr = _theme.GetColor(foregroundId);
+            var colorStr = context.Theme.GetColor(foregroundId);
             if (Color.TryParse(colorStr, out var color))
             {
-                run.Foreground = new SolidColorBrush(color);
+                run.Foreground = context.GetBrush(color);
             }
         }
 
         // Apply background color.
         if (backgroundId != -1)
         {
-            var colorStr = _theme.GetColor(backgroundId);
+            var colorStr = context.Theme.GetColor(backgroundId);
             if (Color.TryParse(colorStr, out var color))
             {
-                run.Background = new SolidColorBrush(color);
+                run.Background = context.GetBrush(color);
             }
         }
 
