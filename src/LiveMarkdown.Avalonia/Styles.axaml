@@ -13,11 +13,11 @@
   </Style>
 
   <Style Selector="md|CodeBlock">
+    <Setter Property="FontFamily" Value="Consolas, 'Courier New', monospace"/>
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="md:CodeBlock">
-          <StackPanel
-            Orientation="Vertical" Spacing="0">
+          <StackPanel Orientation="Vertical">
             <Border
               Background="{DynamicResource BorderColor}"
               BorderBrush="{DynamicResource BorderBrush}"
@@ -36,7 +36,8 @@
                     x:Name="PART_ToggleTextWrapButton" Width="20"
                     Height="20" MinWidth="20"
                     MinHeight="20" Padding="0"
-                    Focusable="False">
+                    CornerRadius="3" Focusable="False"
+                    IsChecked="{TemplateBinding IsCodeWrapped, Mode=TwoWay}">
                     <Viewbox
                       Width="16" Height="16">
                       <Path
@@ -58,7 +59,7 @@
                     x:Name="PART_CopyButton" Width="20"
                     Height="20" MinWidth="20"
                     MinHeight="20" Padding="0"
-                    Focusable="False">
+                    CornerRadius="3" Focusable="False">
                     <Viewbox
                       Width="16" Height="16">
                       <Path
@@ -85,11 +86,13 @@
               BorderBrush="{DynamicResource BorderBrush}"
               BorderThickness="1,0,1,1" CornerRadius="0,0,4,4">
               <ScrollViewer
-                x:Name="PART_ScrollViewer" HorizontalScrollBarVisibility="Auto"
+                x:Name="PART_ScrollViewer"
+                HorizontalScrollBarVisibility="{TemplateBinding HorizontalScrollBarVisibility}"
                 VerticalScrollBarVisibility="Auto">
                 <md:MarkdownTextBlock
                   x:Name="PART_CodeTextBlock" Margin="4"
-                  FontFamily="Consolas, 'Courier New', monospace" TextWrapping="NoWrap"/>
+                  FontFamily="{TemplateBinding FontFamily}"
+                  TextWrapping="{TemplateBinding TextWrapping}"/>
               </ScrollViewer>
             </Border>
           </StackPanel>

@@ -65,6 +65,37 @@ public class CodeBlock : TemplatedControl
         (o, v) => o.Code = v);
 
     /// <summary>
+    /// Defines the <see cref="IsCodeWrapped"/> property.
+    /// </summary>
+    public static readonly StyledProperty<bool> IsCodeWrappedProperty =
+        AvaloniaProperty.Register<CodeBlock, bool>(nameof(IsCodeWrapped), true);
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the code content is wrapped.
+    /// </summary>
+    public bool IsCodeWrapped
+    {
+        get => GetValue(IsCodeWrappedProperty);
+        set => SetValue(IsCodeWrappedProperty, value);
+    }
+
+    public static readonly DirectProperty<CodeBlock, TextWrapping> TextWrappingProperty =
+        AvaloniaProperty.RegisterDirect<CodeBlock, TextWrapping>(
+            nameof(TextWrapping),
+            o => o.TextWrapping);
+
+    public TextWrapping TextWrapping =>
+        IsCodeWrapped ? TextWrapping.Wrap : TextWrapping.NoWrap;
+
+    public static readonly DirectProperty<CodeBlock, ScrollBarVisibility> HorizontalScrollBarVisibilityProperty =
+        AvaloniaProperty.RegisterDirect<CodeBlock, ScrollBarVisibility>(
+        nameof(HorizontalScrollBarVisibility),
+        o => o.HorizontalScrollBarVisibility);
+
+    public ScrollBarVisibility HorizontalScrollBarVisibility =>
+        IsCodeWrapped ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto;
+
+    /// <summary>
     /// An alternative property of <see cref="Inlines"/> to set the code content and apply syntax highlighting automatically.
     /// </summary>
     public string? Code
@@ -77,9 +108,11 @@ public class CodeBlock : TemplatedControl
 
             // pause applying syntax highlighting while adding lines
             isApplyingSyntaxHighlighting = true;
-            foreach (var line in value.Split(["\r\n", "\r", "\n"], StringSplitOptions.None))
+            var lines = value.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
+            for (var i = 0; i < lines.Length; i++)
             {
-                Inlines.Add(line);
+                Inlines.Add(lines[i]);
+                if (i < lines.Length - 1) Inlines.Add(new LineBreak());
             }
             isApplyingSyntaxHighlighting = false;
 
@@ -108,7 +141,6 @@ public class CodeBlock : TemplatedControl
     internal MarkdownTextBlock? CodeTextBlock { get; private set; }
 
     private ScrollViewer? _scrollViewer;
-    private IDisposable? _toggleTextWrapButtonIsCheckedChangedSubscription;
     private IDisposable? _copyButtonClickedSubscription;
     private bool isApplyingSyntaxHighlighting; // prevent re-entrancy
 
@@ -126,12 +158,6 @@ public class CodeBlock : TemplatedControl
     {
         base.OnApplyTemplate(e);
 
-        if (_toggleTextWrapButtonIsCheckedChangedSubscription is not null)
-        {
-            _toggleTextWrapButtonIsCheckedChangedSubscription.Dispose();
-            _toggleTextWrapButtonIsCheckedChangedSubscription = null;
-        }
-
         if (_copyButtonClickedSubscription is not null)
         {
             _copyButtonClickedSubscription.Dispose();
@@ -148,15 +174,6 @@ public class CodeBlock : TemplatedControl
 
         _scrollViewer = e.NameScope.Find<ScrollViewer>(ScrollViewerName);
 
-        if (e.NameScope.Find<ToggleButton>(ToggleTextWrapButtonName) is { } toggleTextWrapButton)
-        {
-            _toggleTextWrapButtonIsCheckedChangedSubscription = toggleTextWrapButton.AddDisposableHandler(
-                ToggleButton.IsCheckedChangedEvent,
-                HandleToggleTextWrapButtonIsCheckedChanged,
-                RoutingStrategies.Bubble,
-                true);
-        }
-
         if (e.NameScope.Find<Button>(CopyButtonName) is { } copyButton)
         {
             _copyButtonClickedSubscription = copyButton.AddDisposableHandler(
@@ -171,12 +188,11 @@ public class CodeBlock : TemplatedControl
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property == LanguageProperty && AutoSyntaxHighlight)
+        if (change.Property == LanguageProperty)
         {
-            HighlightSyntax();
+            if (AutoSyntaxHighlight) HighlightSyntax();
         }
-
-        if (change.Property == AutoSyntaxHighlightProperty)
+        else if (change.Property == AutoSyntaxHighlightProperty)
         {
             if (change.NewValue is true)
             {
@@ -185,6 +201,27 @@ public class CodeBlock : TemplatedControl
             else
             {
                 Inlines.CollectionChanged -= HandleInlinesChanged;
+            }
+        }
+        else if (change.Property == IsCodeWrappedProperty)
+        {
+            var isCodeWrapped = change.NewValue is true;
+
+            var (textWrappingOldValue, textWrappingNewValue) = isCodeWrapped ?
+                (TextWrapping.NoWrap, TextWrapping.Wrap) :
+                (TextWrapping.Wrap, TextWrapping.NoWrap);
+            RaisePropertyChanged(TextWrappingProperty, textWrappingOldValue, textWrappingNewValue);
+
+            var (scrollBarVisibilityOldValue, scrollBarVisibilityNewValue) = isCodeWrapped ?
+                (ScrollBarVisibility.Auto, ScrollBarVisibility.Disabled) :
+                (ScrollBarVisibility.Disabled, ScrollBarVisibility.Auto);
+            RaisePropertyChanged(HorizontalScrollBarVisibilityProperty, scrollBarVisibilityOldValue, scrollBarVisibilityNewValue);
+
+            if (_scrollViewer is not null && CodeTextBlock is not null)
+            {
+                CodeTextBlock.Width = _scrollViewer.Viewport.Width;
+                CodeTextBlock.UpdateLayout(); // fix bug that the text block does not resize correctly
+                CodeTextBlock.Width = double.NaN;
             }
         }
     }
@@ -205,21 +242,6 @@ public class CodeBlock : TemplatedControl
         finally
         {
             isApplyingSyntaxHighlighting = false;
-        }
-    }
-
-    private void HandleToggleTextWrapButtonIsCheckedChanged(object? sender, RoutedEventArgs e)
-    {
-        if (CodeTextBlock is null) return;
-
-        var isChecked = (sender as ToggleButton)?.IsChecked ?? false;
-        CodeTextBlock.TextWrapping = isChecked ? TextWrapping.Wrap : TextWrapping.NoWrap;
-        if (_scrollViewer is not null)
-        {
-            _scrollViewer.HorizontalScrollBarVisibility = isChecked ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto;
-            CodeTextBlock.Width = _scrollViewer.Viewport.Width;
-            CodeTextBlock.UpdateLayout(); // fix bug that the text block does not resize correctly
-            CodeTextBlock.Width = double.NaN;
         }
     }
 

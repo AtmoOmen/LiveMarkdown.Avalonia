@@ -94,7 +94,7 @@ public partial class MarkdownRenderer : Control
 
     static MarkdownRenderer()
     {
-        VerboseLogger = Logger.TryGet(LogEventLevel.Verbose, $"{nameof(MarkdownRenderer)}");
+        VerboseLogger = Logger.TryGet(LogEventLevel.Verbose, nameof(MarkdownRenderer));
 
         InlineHyperlink.ClickEvent.AddClassHandler<MarkdownRenderer>(HandleInlineHyperlinkClick);
         RequestBringIntoViewEvent.AddClassHandler<MarkdownRenderer>(BringIntoViewRequested);
