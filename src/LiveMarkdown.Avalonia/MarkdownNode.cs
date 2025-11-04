@@ -824,7 +824,8 @@ public class CodeBlockNode : BlockNode
     {
         Control = _codeBlock = new CodeBlock
         {
-            Classes = { "CodeBlock" }
+            Classes = { "CodeBlock" },
+            AutoSyntaxHighlight = false
         };
         _codeBlock.ApplyTemplate(); // Ensure the template is applied to initialize the CodeTextBlock
     }
@@ -869,6 +870,7 @@ public class CodeBlockNode : BlockNode
             {
                 // Update existing run
                 run.Text = slice.ToString();
+                run.Classes.Remove(SyntaxHighlighting.FormattedClassName);
             }
             else
             {
@@ -898,10 +900,10 @@ public class CodeBlockNode : BlockNode
         }
 
         // Highlighting only works for closed FencedCodeBlock with Info
-        if (codeBlock is FencedCodeBlock fencedCodeBlock)
-        {
-            _codeBlock.Language = fencedCodeBlock.Info?.Trim();
-        }
+        if (codeBlock is not FencedCodeBlock fencedCodeBlock) return true;
+
+        _codeBlock.Language = fencedCodeBlock.Info?.Trim();
+        _codeBlock.HighlightSyntax();
 
         return true;
     }

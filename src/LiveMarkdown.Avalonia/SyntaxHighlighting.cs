@@ -41,6 +41,10 @@ internal record RegistryContext
 /// </summary>
 public class SyntaxHighlighting
 {
+    public const string FormattedClassName = "formatted";
+
+    public static bool IsRunFormatted(Run run) => run.Classes.Contains(FormattedClassName);
+
     private readonly static Dictionary<string, WeakReference<SyntaxHighlighting>> Cache = [];
 
     private readonly IGrammar? _grammar;
@@ -89,7 +93,7 @@ public class SyntaxHighlighting
         for (var i = 0; i < inlines.Count; i++)
         {
             if (inlines[i] is not Run { Text: { } line } run) continue;
-            if (run.Classes.Contains("formatted")) continue;
+            if (IsRunFormatted(run)) continue;
 
             var result = _grammar.TokenizeLine(line, ruleStack, TimeSpan.MaxValue);
             ruleStack = result.RuleStack;
@@ -121,7 +125,7 @@ public class SyntaxHighlighting
     /// <param name="scopes">The scopes associated with the token.</param>
     private static void StyleRun(Run run, IList<string> scopes)
     {
-        if (!run.Classes.Contains("formatted")) run.Classes.Add("formatted");
+        if (!IsRunFormatted(run)) run.Classes.Add(FormattedClassName);
 
         var context = RegistryContext.DarkPlus;
         var themeRules = context.Theme.Match(scopes);

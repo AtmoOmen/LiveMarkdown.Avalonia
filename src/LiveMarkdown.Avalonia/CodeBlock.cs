@@ -27,6 +27,21 @@ public class CodeBlock : TemplatedControl
     private const string CopyButtonName = "PART_CopyButton";
 
     /// <summary>
+    /// Defines the <see cref="AutoSyntaxHighlight"/> property.
+    /// </summary>
+    public static readonly StyledProperty<bool> AutoSyntaxHighlightProperty =
+        AvaloniaProperty.Register<CodeBlock, bool>(nameof(AutoSyntaxHighlight), true);
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to automatically apply syntax highlighting when the code or language changes.
+    /// </summary>
+    public bool AutoSyntaxHighlight
+    {
+        get => GetValue(AutoSyntaxHighlightProperty);
+        set => SetValue(AutoSyntaxHighlightProperty, value);
+    }
+
+    /// <summary>
     /// Defines the <see cref="Language"/> property.
     /// </summary>
     public static readonly StyledProperty<string?> LanguageProperty =
@@ -68,7 +83,7 @@ public class CodeBlock : TemplatedControl
             }
             isApplyingSyntaxHighlighting = false;
 
-            ApplySyntaxHighlighting();
+            if (AutoSyntaxHighlight) HighlightSyntax();
         }
     }
 
@@ -104,7 +119,7 @@ public class CodeBlock : TemplatedControl
 
     private void HandleInlinesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        ApplySyntaxHighlighting();
+        HighlightSyntax();
     }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -156,13 +171,28 @@ public class CodeBlock : TemplatedControl
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property == LanguageProperty)
+        if (change.Property == LanguageProperty && AutoSyntaxHighlight)
         {
-            ApplySyntaxHighlighting();
+            HighlightSyntax();
+        }
+
+        if (change.Property == AutoSyntaxHighlightProperty)
+        {
+            if (change.NewValue is true)
+            {
+                Inlines.CollectionChanged += HandleInlinesChanged;
+            }
+            else
+            {
+                Inlines.CollectionChanged -= HandleInlinesChanged;
+            }
         }
     }
 
-    private void ApplySyntaxHighlighting()
+    /// <summary>
+    /// Applies syntax highlighting to the code block based on the specified language.
+    /// </summary>
+    public void HighlightSyntax()
     {
         if (isApplyingSyntaxHighlighting) return;
         if (string.IsNullOrWhiteSpace(Language) || Inlines.Count == 0) return;
