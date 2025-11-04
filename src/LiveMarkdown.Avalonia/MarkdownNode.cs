@@ -819,7 +819,6 @@ public class CodeBlockNode : BlockNode
     public override Control Control { get; }
 
     private readonly CodeBlock _codeBlock;
-    private SyntaxHighlighting? syntaxHighlighting;
 
     public CodeBlockNode()
     {
@@ -899,16 +898,11 @@ public class CodeBlockNode : BlockNode
         }
 
         // Highlighting only works for closed FencedCodeBlock with Info
-        if (codeBlock is not FencedCodeBlock fencedCodeBlock) return true;
-        _codeBlock.Language = fencedCodeBlock.Info;
+        if (codeBlock is FencedCodeBlock fencedCodeBlock)
+        {
+            _codeBlock.Language = fencedCodeBlock.Info?.Trim();
+        }
 
-        if (fencedCodeBlock is not { Info.Length: > 0 }) return true;
-        cancellationToken.ThrowIfCancellationRequested();
-
-        // FencedCodeBlock with Info, use syntax highlighting
-        var languageName = fencedCodeBlock.Info.TrimEnd().ToLower();
-        syntaxHighlighting ??= SyntaxHighlighting.Create(languageName);
-        syntaxHighlighting.FormatInlines(inlines);
         return true;
     }
 }

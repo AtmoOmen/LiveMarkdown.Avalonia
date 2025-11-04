@@ -1,4 +1,5 @@
-﻿using Avalonia;
+﻿using System.Collections.Specialized;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Controls.Metadata;
@@ -40,6 +41,37 @@ public class CodeBlock : TemplatedControl
         set => SetValue(LanguageProperty, value);
     }
 
+    /// <summary>
+    /// Backing field for the <see cref="Code"/> property.
+    /// </summary>
+    public static readonly DirectProperty<CodeBlock, string?> CodeProperty = AvaloniaProperty.RegisterDirect<CodeBlock, string?>(
+        nameof(Code),
+        o => o.Code,
+        (o, v) => o.Code = v);
+
+    /// <summary>
+    /// An alternative property of <see cref="Inlines"/> to set the code content and apply syntax highlighting automatically.
+    /// </summary>
+    public string? Code
+    {
+        get => Inlines.Text;
+        set
+        {
+            Inlines.Clear();
+            if (value is null) return;
+
+            // pause applying syntax highlighting while adding lines
+            isApplyingSyntaxHighlighting = true;
+            foreach (var line in value.Split(["\r\n", "\r", "\n"], StringSplitOptions.None))
+            {
+                Inlines.Add(line);
+            }
+            isApplyingSyntaxHighlighting = false;
+
+            ApplySyntaxHighlighting();
+        }
+    }
+
     public InlineCollection Inlines { get; } = new();
 
     /// <summary>
@@ -63,6 +95,17 @@ public class CodeBlock : TemplatedControl
     private ScrollViewer? _scrollViewer;
     private IDisposable? _toggleTextWrapButtonIsCheckedChangedSubscription;
     private IDisposable? _copyButtonClickedSubscription;
+    private bool isApplyingSyntaxHighlighting; // prevent re-entrancy
+
+    public CodeBlock()
+    {
+        Inlines.CollectionChanged += HandleInlinesChanged;
+    }
+
+    private void HandleInlinesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        ApplySyntaxHighlighting();
+    }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
@@ -106,6 +149,32 @@ public class CodeBlock : TemplatedControl
                 HandleCopyButtonClick,
                 RoutingStrategies.Bubble,
                 true);
+        }
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        if (change.Property == LanguageProperty)
+        {
+            ApplySyntaxHighlighting();
+        }
+    }
+
+    private void ApplySyntaxHighlighting()
+    {
+        if (isApplyingSyntaxHighlighting) return;
+        if (string.IsNullOrWhiteSpace(Language) || Inlines.Count == 0) return;
+
+        isApplyingSyntaxHighlighting = true;
+        try
+        {
+            SyntaxHighlighting.Create(Language!.ToLower()).FormatInlines(Inlines);
+        }
+        finally
+        {
+            isApplyingSyntaxHighlighting = false;
         }
     }
 

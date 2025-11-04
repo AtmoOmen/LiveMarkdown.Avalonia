@@ -88,12 +88,13 @@ public class SyntaxHighlighting
         // Tokenize each line of the source code.
         for (var i = 0; i < inlines.Count; i++)
         {
-            if (inlines[i] is not Run { Text: { } line }) continue;
+            if (inlines[i] is not Run { Text: { } line } run) continue;
+            if (run.Classes.Contains("formatted")) continue;
 
             var result = _grammar.TokenizeLine(line, ruleStack, TimeSpan.MaxValue);
             ruleStack = result.RuleStack;
 
-            if (result.Tokens.Length == 1 && inlines[i] is Run run)
+            if (result.Tokens.Length == 1)
             {
                 StyleRun(run, result.Tokens[0].Scopes);
             }
@@ -120,6 +121,8 @@ public class SyntaxHighlighting
     /// <param name="scopes">The scopes associated with the token.</param>
     private static void StyleRun(Run run, IList<string> scopes)
     {
+        if (!run.Classes.Contains("formatted")) run.Classes.Add("formatted");
+
         var context = RegistryContext.DarkPlus;
         var themeRules = context.Theme.Match(scopes);
 
