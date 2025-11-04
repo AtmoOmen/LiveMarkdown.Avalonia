@@ -8,6 +8,7 @@ using Markdig.Extensions.TaskLists;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using AvaloniaDocs = Avalonia.Controls.Documents;
+// ReSharper disable InconsistentNaming
 
 namespace LiveMarkdown.Avalonia;
 

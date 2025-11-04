@@ -35,6 +35,7 @@ public class ObservableStringBuilder
         Changed?.Invoke(
             new ObservableStringBuilderChangedEventArgs(
                 ToString(),
+                // ReSharper disable once RedundantSuppressNullableWarningExpression
                 stringBuilder.Length - value!.Length,
                 value.Length));
         return this;
@@ -52,6 +53,7 @@ public class ObservableStringBuilder
         Changed?.Invoke(
             new ObservableStringBuilderChangedEventArgs(
                 ToString(),
+                // ReSharper disable once RedundantSuppressNullableWarningExpression
                 stringBuilder.Length - value!.Length - Environment.NewLine.Length,
                 value.Length + Environment.NewLine.Length));
         return this;
