@@ -18,7 +18,7 @@ It supports **real-time rendering** of Markdown content, so it's ideal for appli
 - 🎨 **Customizable styles**: Easily style Markdown elements using Avalonia's powerful styling system
 - 🔗 **Hyperlink support**: Clickable links with customizable behavior
 - 📊 **Table support**: Render tables with proper formatting
-- 📜 **Code block syntax highlighting**: Supports multiple languages with [ColorCode](https://github.com/CommunityToolkit/ColorCode-Universal)
+- 📜 **Code block syntax highlighting**: Supports multiple languages with [TextMateSharp](https://github.com/danipen/TextMateSharp)
 - 🖼️ **Image support**: Load online, local even `avares` images asynchronously
 - ✍️ **Selectable text**: Text can be selected across different Markdown elements
 
@@ -26,7 +26,9 @@ It supports **real-time rendering** of Markdown content, so it's ideal for appli
 > This library currently only supports `Append` and `Clear` operations on the Markdown content, which is enough for LLM streaming scenarios.
 
 > [!WARNING]
-> Known issue: Avalonia 11.3.5 and above changed text layout behavior, which may cause some text offset issues in certain scenarios. e.g. code inline has extra bottom margin, wried italic font rendering, etc.
+> Known issue: Avalonia 11.3.5 and 11.3.6 changed text layout behavior, which may cause some text offset issues in certain scenarios. e.g. code inline has extra bottom margin, wried italic font rendering, etc.
+> 
+> Please use 11.3.0 ~ 11.3.4 or >= 11.3.7 to avoid this problem.
 
 ## ✈️ Roadmap
 
