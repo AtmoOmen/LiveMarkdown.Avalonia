@@ -35,14 +35,11 @@ public partial class MainViewModel : ViewModelBase
 
     public MainViewModel()
     {
-        var assembly = Assembly.GetExecutingAssembly();
-        var resourceNames = assembly.GetManifestResourceNames()
-            .Where(n => n.EndsWith(".md"));
-
-        foreach (var resource in resourceNames)
+        // We don't use embedded resources here to allow easy modification of sample files.
+        var markdownFolderPath = Path.Combine(AppContext.BaseDirectory, "samples");
+        foreach (var markdownFilePath in Directory.EnumerateFiles(markdownFolderPath, "*.md"))
         {
-            var fileName = Path.GetFileNameWithoutExtension(resource);
-            MarkdownList.Add(fileName);
+            MarkdownList.Add(Path.GetFileNameWithoutExtension(markdownFilePath));
         }
     }
 
@@ -72,6 +69,9 @@ public partial class MainViewModel : ViewModelBase
             if (string.IsNullOrWhiteSpace(markdownFileName))
                 return;
 
+            var markdownFilePath = Path.Combine(AppContext.BaseDirectory, "samples", markdownFileName + ".md");
+            if (!File.Exists(markdownFilePath)) return;
+
             ClearMarkdown();
 
             cancellationTokenSource = new CancellationTokenSource();
@@ -87,25 +87,30 @@ public partial class MainViewModel : ViewModelBase
                 return;
             }
 
-            string markdownText;
-            await using (var stream = assembly.GetManifestResourceStream(resourceName))
-            using (var reader = new StreamReader(stream ?? throw new InvalidOperationException("Failed to load resource stream.")))
+            async IAsyncEnumerable<string> ReadBlocksAsync()
             {
-                markdownText = await reader.ReadToEndAsync(cancellationToken);
+                var buffer = Array.Empty<char>();
+                using var reader = new StreamReader(markdownFilePath);
+                while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
+                {
+                    var speed = Math.Max((int)RenderSpeed, 1);
+                    if (buffer.Length != speed)
+                    {
+                        // RenderSpeed can be changed dynamically, so adjust buffer size accordingly
+                        buffer = new char[speed];
+                    }
+
+                    var readCount = await reader.ReadBlockAsync(buffer, 0, buffer.Length);
+                    if (readCount > 0)
+                    {
+                        var newText = new string(buffer, 0, readCount);
+                        RawMarkdownText += newText;
+                        yield return newText;
+                    }
+                }
             }
 
-            var cursor = 0;
-            while (!cancellationToken.IsCancellationRequested && cursor < markdownText.Length)
-            {
-                var speed = (int)RenderSpeed;
-                var newText = markdownText.Substring(cursor, Math.Min(speed, markdownText.Length - cursor));
-                cursor += speed;
-
-                RawMarkdownText += newText;
-                MarkdownBuilder.Append(newText);
-
-                await Task.Delay(100, cancellationToken);
-            }
+            await MarkdownBuilder.EnumerateAppendAsync(ReadBlocksAsync(), TimeSpan.FromMilliseconds(100), cancellationToken: cancellationToken);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
