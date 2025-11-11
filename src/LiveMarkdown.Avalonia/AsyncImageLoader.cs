@@ -39,6 +39,27 @@ public class AsyncImageLoader
     public static string? GetSource(Image obj) => obj.GetValue(SourceProperty);
 
     /// <summary>
+    /// Attached property for the SizeToContent behavior.
+    /// </summary>
+    public static readonly AttachedProperty<SizeToContent> SizeToContentProperty =
+        AvaloniaProperty.RegisterAttached<AsyncImageLoader, Image, SizeToContent>("SizeToContent", SizeToContent.WidthAndHeight);
+
+    /// <summary>
+    /// Sets the SizeToContent behavior for the image.
+    /// Indicates whether the image should size itself to its content by setting MaxWidth and MaxHeight.
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <param name="value"></param>
+    public static void SetSizeToContent(Image obj, SizeToContent value) => obj.SetValue(SizeToContentProperty, value);
+
+    /// <summary>
+    /// Gets the SizeToContent behavior for the image.
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <returns></returns>
+    public static SizeToContent GetSizeToContent(Image obj) => obj.GetValue(SizeToContentProperty);
+
+    /// <summary>
     /// Attached property for the SVG CSS styles.
     /// This only works before the image is loaded.
     /// </summary>
@@ -130,6 +151,7 @@ public class AsyncImageLoader
         if (!Uri.TryCreate(newSource, UriKind.RelativeOrAbsolute, out var uri))
         {
             sender.Source = null; // Clear the image source if the new value is not a valid URI
+            ApplySizeToContent(sender, null);
             return;
         }
 
@@ -137,6 +159,7 @@ public class AsyncImageLoader
         if (cache?.GetImage(uri) is { } cachedImage)
         {
             sender.Source = cachedImage; // Use the cached image if available
+            ApplySizeToContent(sender, cachedImage);
             return;
         }
 
@@ -144,6 +167,7 @@ public class AsyncImageLoader
         if (handler is null)
         {
             sender.Source = null; // No handler found for the URI scheme
+            ApplySizeToContent(sender, null);
             return;
         }
 
@@ -163,6 +187,34 @@ public class AsyncImageLoader
 
         var newPair = CreateLoadPair(sender, uri, css, handler, cache);
         ImageLoadTasks.Add(sender, newPair);
+    }
+
+    private static void ApplySizeToContent(Image image, IImage? loadedImage)
+    {
+        var sizeToContent = GetSizeToContent(image);
+        if (sizeToContent == SizeToContent.Manual) return;
+
+        switch (loadedImage)
+        {
+            case Bitmap bitmap:
+            {
+                image.MaxWidth = sizeToContent.HasFlag(SizeToContent.Width) ? bitmap.PixelSize.Width : double.PositiveInfinity;
+                image.MaxHeight = sizeToContent.HasFlag(SizeToContent.Height) ? bitmap.PixelSize.Height : double.PositiveInfinity;
+                break;
+            }
+            case SvgImage svgImage:
+            {
+                image.MaxWidth = sizeToContent.HasFlag(SizeToContent.Width) ? svgImage.Size.Width : double.PositiveInfinity;
+                image.MaxHeight = sizeToContent.HasFlag(SizeToContent.Height) ? svgImage.Size.Height : double.PositiveInfinity;
+                break;
+            }
+            default:
+            {
+                image.MaxWidth = double.PositiveInfinity;
+                image.MaxHeight = double.PositiveInfinity;
+                break;
+            }
+        }
     }
 
     private static (Task task, CancellationTokenSource cts) CreateLoadPair(
@@ -237,6 +289,7 @@ public class AsyncImageLoader
                         if (result is not null) cache?.SetImage(uri, result);
 
                         image.Source = result;
+                        ApplySizeToContent(image, result);
                     });
                 },
                 cts.Token);
