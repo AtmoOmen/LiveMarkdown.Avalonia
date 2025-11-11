@@ -3,6 +3,8 @@ using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using CommunityToolkit.Mvvm.Input;
+using System;
+using System.Diagnostics;
 
 namespace LiveMarkdown.Avalonia.Demo;
 
@@ -54,9 +56,11 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (cancellationTokenSource is not null) await cancellationTokenSource.CancelAsync();
+            if (cancellationTokenSource is not null)
+                await cancellationTokenSource.CancelAsync();
 
             if (markdownFileName is null) return;
+
             var markdownFilePath = Path.Combine(AppContext.BaseDirectory, "samples", markdownFileName + ".md");
             if (!File.Exists(markdownFilePath)) return;
 
@@ -64,27 +68,37 @@ public partial class MainWindow : Window
 
             cancellationTokenSource = new CancellationTokenSource();
             var cancellationToken = cancellationTokenSource.Token;
-            var markdownText = await File.ReadAllTextAsync(markdownFilePath, cancellationToken);
 
-            var cursor = 0;
-            while (!cancellationToken.IsCancellationRequested && cursor < markdownText.Length)
+            var speed = Math.Max((int)RenderSpeedSlider.Value, 1);
+
+            async IAsyncEnumerable<string> ReadBlocksAsync()
             {
-                var speed = (int)RenderSpeedSlider.Value;
-                var newText = markdownText.Substring(cursor, Math.Min(speed, markdownText.Length - cursor));
-                cursor += speed;
-
-                RawMarkdownTextBlock.Text += newText;
-                MarkdownBuilder.Append(newText);
-
-                await Task.Delay(100, cancellationToken);
+                var buffer = new char[speed];
+                using var reader = new StreamReader(markdownFilePath);
+                while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
+                {
+                    var readCount = await reader.ReadBlockAsync(buffer, 0, buffer.Length);
+                    if (readCount > 0)
+                    {
+                        var newText = new string(buffer, 0, readCount);
+                        RawMarkdownTextBlock.Text += newText;
+                        yield return newText;
+                    }
+                }
             }
+            await MarkdownBuilder.EnumerateAppendAsync(ReadBlocksAsync(), TimeSpan.FromMilliseconds(100), cancellationToken: cancellationToken);
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException)
+        {
+            
+        }
         catch (Exception ex)
         {
             await Console.Error.WriteLineAsync($"Error rendering markdown: {ex.Message}");
         }
     }
+
+
 
     private void ClearMarkdown()
     {
@@ -93,6 +107,7 @@ public partial class MainWindow : Window
     }
 
     private void HandleClearButtonClick(object? sender, RoutedEventArgs e) => ClearMarkdown();
+
 }
 
 public class AutoScrollHelper
