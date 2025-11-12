@@ -17,8 +17,7 @@ public class TaskListNode : InlineNode<TaskList>
             Classes = { "TaskList" },
             Child = checkBox = new CheckBox
             {
-                Classes = { "TaskList" },
-                IsHitTestVisible = false
+                Classes = { "TaskList" }
             }
         };
     }

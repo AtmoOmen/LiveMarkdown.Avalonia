@@ -263,11 +263,47 @@
         </Style>
       </Style>
     </Style>
-  </Style>
 
-  <Style Selector="Border.ThematicBreak">
-    <Setter Property="Margin" Value="0,2"/>
-    <Setter Property="Height" Value="1"/>
-    <Setter Property="Background" Value="{DynamicResource BorderColor}"/>
+    <Style Selector="^ CheckBox.TaskList">
+      <Setter Property="MinHeight" Value="0"/>
+      <Setter Property="IsHitTestVisible" Value="False"/>
+      <Setter Property="Template">
+        <ControlTemplate TargetType="CheckBox">
+          <Viewbox>
+            <Border
+              x:Name="Border" Width="14"
+              Height="14"
+              BorderBrush="{DynamicResource BorderColor}"
+              BorderThickness="1"
+              CornerRadius="{TemplateBinding CornerRadius}">
+              <Path
+                x:Name="CheckMark" Width="8"
+                Height="7" HorizontalAlignment="Center"
+                VerticalAlignment="Center" Data="M1145.6 430S1147 431.3 1147 431.3 1141.5 438 1141.5 438 1138 434.6 1138 434.6s1.2-1.5 1.2-1.5 2.2 2 2.2 2S1145.6 430 1145.6 430Z"
+                Fill="{DynamicResource ForegroundColor}"
+                FlowDirection="LeftToRight" Stretch="Uniform"/>
+            </Border>
+          </Viewbox>
+        </ControlTemplate>
+      </Setter>
+
+      <Style Selector="^ /template/ Path#CheckMark">
+        <Setter Property="IsVisible" Value="False"/>
+      </Style>
+
+      <Style Selector="^:checked /template/ Border#Border">
+        <Setter Property="Background" Value="DodgerBlue"/>
+      </Style>
+
+      <Style Selector="^:checked /template/ Path#CheckMark">
+        <Setter Property="IsVisible" Value="True"/>
+      </Style>
+    </Style>
+
+    <Style Selector="^ Border.ThematicBreak">
+      <Setter Property="Margin" Value="0,2"/>
+      <Setter Property="Height" Value="1"/>
+      <Setter Property="Background" Value="{DynamicResource BorderColor}"/>
+    </Style>
   </Style>
 </Styles>
