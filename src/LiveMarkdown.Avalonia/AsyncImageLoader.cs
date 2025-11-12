@@ -46,7 +46,7 @@ public class AsyncImageLoader
 
     /// <summary>
     /// Sets the SizeToContent behavior for the image.
-    /// Indicates whether the image should size itself to its content by setting MaxWidth and MaxHeight.
+    /// Indicates whether the image should size itself to its content by setting Width and Height.
     /// </summary>
     /// <param name="obj"></param>
     /// <param name="value"></param>
@@ -194,27 +194,37 @@ public class AsyncImageLoader
         var sizeToContent = GetSizeToContent(image);
         if (sizeToContent == SizeToContent.Manual) return;
 
-        switch (loadedImage)
+        var (imageWidth, imageHeight) = loadedImage switch
         {
-            case Bitmap bitmap:
-            {
-                image.MaxWidth = sizeToContent.HasFlag(SizeToContent.Width) ? bitmap.PixelSize.Width : double.PositiveInfinity;
-                image.MaxHeight = sizeToContent.HasFlag(SizeToContent.Height) ? bitmap.PixelSize.Height : double.PositiveInfinity;
-                break;
-            }
-            case SvgImage svgImage:
-            {
-                image.MaxWidth = sizeToContent.HasFlag(SizeToContent.Width) ? svgImage.Size.Width : double.PositiveInfinity;
-                image.MaxHeight = sizeToContent.HasFlag(SizeToContent.Height) ? svgImage.Size.Height : double.PositiveInfinity;
-                break;
-            }
-            default:
-            {
-                image.MaxWidth = double.PositiveInfinity;
-                image.MaxHeight = double.PositiveInfinity;
-                break;
-            }
+            Bitmap bitmap => (bitmap.PixelSize.Width, bitmap.PixelSize.Height),
+            SvgImage svgImage => (svgImage.Size.Width, svgImage.Size.Height),
+            _ => (double.NaN, double.NaN)
+        };
+
+#if NETSTANDARD2_0
+        if (double.IsInfinity(imageWidth) || double.IsNaN(imageWidth) || imageWidth <= 1d ||
+            double.IsInfinity(imageHeight) || double.IsNaN(imageHeight) || imageHeight <= 1d)
+#else
+        if (double.IsSubnormal(imageWidth) || imageWidth <= 1d || double.IsSubnormal(imageHeight) || imageHeight <= 1d)
+#endif
+        {
+            image.Width = double.NaN;
+            image.Height = double.NaN;
+            return;
         }
+
+        var actualWidth = Math.Min(imageWidth, image.MaxWidth);
+        var actualHeight = Math.Min(imageHeight, image.MaxHeight);
+
+        // Ensure aspect ratio is maintained
+        var widthRatio = actualWidth / imageWidth;
+        var heightRatio = actualHeight / imageHeight;
+        var minRatio = Math.Min(widthRatio, heightRatio);
+        actualWidth = imageWidth * minRatio;
+        actualHeight = imageHeight * minRatio;
+
+        image.Width = sizeToContent.HasFlag(SizeToContent.Width) ? actualWidth : double.NaN;
+        image.Height = sizeToContent.HasFlag(SizeToContent.Height) ? actualHeight : double.NaN;
     }
 
     private static (Task task, CancellationTokenSource cts) CreateLoadPair(

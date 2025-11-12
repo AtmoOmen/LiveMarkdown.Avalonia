@@ -16,6 +16,7 @@
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="$(AvaloniaVersion)"/>
     <PackageVersion Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)"/>
     <PackageVersion Include="Avalonia.Desktop" Version="$(AvaloniaVersion)"/>
+    <PackageVersion Include="Avalonia.Browser" Version="$(AvaloniaVersion)"/>
     <!-- Markdown packages -->
     <PackageVersion Include="Markdig" Version="0.43.0"/>
     <PackageVersion Include="TextMateSharp" Version="1.0.70"/>

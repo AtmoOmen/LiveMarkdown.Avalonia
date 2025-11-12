@@ -3,20 +3,16 @@ using Markdig.Syntax;
 
 namespace LiveMarkdown.Avalonia;
 
-public class QuoteBlockNode : ContainerBlockNode
+public sealed class QuoteBlockNode : ContainerBlockNode<QuoteBlock>
 {
+    public override Control Control { get; }
+
     public QuoteBlockNode()
     {
-        Classes.Add("QuoteBlock");
-        control = new Border
+        Control = new Border
         {
             Classes = { "QuoteBlock" },
-            Child = base.Control
+            Child = container
         };
-    }
-
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject.GetType() == typeof(QuoteBlock);
     }
 }

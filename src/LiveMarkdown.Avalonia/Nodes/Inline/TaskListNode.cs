@@ -1,18 +1,18 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Markdig.Extensions.TaskLists;
-using Markdig.Syntax;
 
 namespace LiveMarkdown.Avalonia;
 
-public class TaskListNode : InlineNode
+public class TaskListNode : InlineNode<TaskList>
 {
-    public override global::Avalonia.Controls.Documents.Inline Inline { get; }
+    public override Inline Inline { get; }
 
     private readonly CheckBox checkBox;
 
     public TaskListNode()
     {
-        Inline = new global::Avalonia.Controls.Documents.InlineUIContainer
+        Inline = new InlineUIContainer
         {
             Classes = { "TaskList" },
             Child = checkBox = new CheckBox
@@ -23,18 +23,12 @@ public class TaskListNode : InlineNode
         };
     }
 
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject.GetType() == typeof(TaskList);
-    }
-
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        MarkdownObject markdownObject,
+        TaskList taskList,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        var taskList = (TaskList)markdownObject;
         checkBox.IsChecked = taskList.Checked;
         return true;
     }

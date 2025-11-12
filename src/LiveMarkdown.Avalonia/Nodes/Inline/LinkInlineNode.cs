@@ -1,6 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
 using Avalonia.Controls;
-using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
 namespace LiveMarkdown.Avalonia;
@@ -8,24 +7,14 @@ namespace LiveMarkdown.Avalonia;
 /// <summary>
 /// A node that represents a link inline.
 /// </summary>
-public class LinkInlineNode() : InlinesNode(
-    new InlineHyperlink
-    {
-        Classes = { "Link" }
-    })
+public class LinkInlineNode() : InlinesNode<LinkInline>(new InlineHyperlink { Classes = { "Link" } })
 {
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject.GetType() == typeof(LinkInline);
-    }
-
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        MarkdownObject markdownObject,
+        LinkInline linkInline,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        var linkInline = Unsafe.As<LinkInline>(markdownObject);
         if (linkInline.Url == null) return false;
 
         var inlineHyperlink = Unsafe.As<InlineHyperlink>(Inline);
@@ -67,7 +56,7 @@ public class LinkInlineNode() : InlinesNode(
         {
             inlineHyperlink.HRef = uri;
             inlineHyperlink.Image = null;
-            base.UpdateCore(documentNode, markdownObject, change, cancellationToken);
+            base.UpdateCore(documentNode, linkInline, change, cancellationToken);
         }
 
         return true;

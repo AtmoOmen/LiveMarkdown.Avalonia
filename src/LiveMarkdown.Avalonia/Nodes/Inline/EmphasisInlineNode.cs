@@ -1,6 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using Avalonia.Controls.Documents;
 using Avalonia.Media;
-using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
 namespace LiveMarkdown.Avalonia;
@@ -8,21 +7,15 @@ namespace LiveMarkdown.Avalonia;
 /// <summary>
 /// A node that represents an emphasis inline (bold, italic, etc.).
 /// </summary>
-public class EmphasisInlineNode : ContainerInlineNode
+public class EmphasisInlineNode : ContainerInlineNode<EmphasisInline>
 {
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject.GetType() == typeof(EmphasisInline);
-    }
-
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        MarkdownObject markdownObject,
+        EmphasisInline emphasisInline,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        var emphasisInline = Unsafe.As<EmphasisInline>(markdownObject);
-        var span = (global::Avalonia.Controls.Documents.Span)Inline;
+        var span = (Span)Inline;
         switch (emphasisInline.DelimiterChar)
         {
             case '*' when emphasisInline.DelimiterCount == 2: // bold
@@ -50,6 +43,6 @@ public class EmphasisInlineNode : ContainerInlineNode
                 break;
         }
 
-        return base.UpdateCore(documentNode, markdownObject, in change, cancellationToken);
+        return base.UpdateCore(documentNode, emphasisInline, in change, cancellationToken);
     }
 }

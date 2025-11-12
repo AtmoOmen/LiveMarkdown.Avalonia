@@ -1,23 +1,18 @@
 ﻿using Avalonia.Controls;
 using Markdig.Extensions.Tables;
-using Markdig.Syntax;
 
 namespace LiveMarkdown.Avalonia;
 
-public class TableCellNode : ContainerBlockNode
+public sealed class TableCellNode : ContainerBlockNode<TableCell>
 {
+    public override Control Control { get; }
+
     public TableCellNode()
     {
-        Classes.Add("TableCell");
-        control = new Border
+        Control = new Border
         {
             Classes = { "TableCell" },
-            Child = base.Control
+            Child = container
         };
-    }
-
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject.GetType() == typeof(TableCell);
     }
 }

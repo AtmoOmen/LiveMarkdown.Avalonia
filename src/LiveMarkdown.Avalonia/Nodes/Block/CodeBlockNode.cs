@@ -1,10 +1,10 @@
-﻿using System.Runtime.CompilerServices;
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Markdig.Syntax;
 
 namespace LiveMarkdown.Avalonia;
 
-public class CodeBlockNode : BlockNode
+public class CodeBlockNode : BlockNode<Markdig.Syntax.CodeBlock>
 {
     protected override MarkdownTextBlock? TextBlock => _codeBlock.CodeTextBlock;
 
@@ -22,18 +22,15 @@ public class CodeBlockNode : BlockNode
         _codeBlock.ApplyTemplate(); // Ensure the template is applied to initialize the CodeTextBlock
     }
 
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject is Markdig.Syntax.CodeBlock;
-    }
+    // ReSharper disable once ConvertTypeCheckPatternToNullCheck
+    protected override bool MatchesBlock(Markdig.Syntax.CodeBlock block) => block is Markdig.Syntax.CodeBlock or FencedCodeBlock;
 
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        MarkdownObject markdownObject,
+        Markdig.Syntax.CodeBlock codeBlock,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        var codeBlock = Unsafe.As<Markdig.Syntax.CodeBlock>(markdownObject);
         // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (codeBlock.Lines.Lines is null) return false;
 
@@ -53,12 +50,12 @@ public class CodeBlockNode : BlockNode
                 if (inlines.Count % 2 == 1)
                 {
                     // we need to add a LineBreak before the new Run
-                    inlines.Add(new global::Avalonia.Controls.Documents.LineBreak());
+                    inlines.Add(new LineBreak());
                 }
 
-                inlines.Add(new global::Avalonia.Controls.Documents.Run(slice.ToString()));
+                inlines.Add(new Run(slice.ToString()));
             }
-            else if (inlines[inlineIndex] is global::Avalonia.Controls.Documents.Run run)
+            else if (inlines[inlineIndex] is Run run)
             {
                 // Update existing run
                 run.Text = slice.ToString();
@@ -67,7 +64,7 @@ public class CodeBlockNode : BlockNode
             else
             {
                 // Replace it with a new run if it's not a Run
-                inlines[inlineIndex] = new global::Avalonia.Controls.Documents.Run(slice.ToString());
+                inlines[inlineIndex] = new Run(slice.ToString());
             }
 
             if (lineIndex < codeBlock.Lines.Count - 1)
@@ -75,12 +72,12 @@ public class CodeBlockNode : BlockNode
                 // Add a line break after each line except the last one
                 if (inlines.Count <= inlineIndex + 1)
                 {
-                    inlines.Add(new global::Avalonia.Controls.Documents.LineBreak());
+                    inlines.Add(new LineBreak());
                 }
-                else if (inlines[inlineIndex + 1] is not global::Avalonia.Controls.Documents.LineBreak)
+                else if (inlines[inlineIndex + 1] is not LineBreak)
                 {
                     // Replace it with a LineBreak if it's not a LineBreak
-                    inlines[inlineIndex + 1] = new global::Avalonia.Controls.Documents.LineBreak();
+                    inlines[inlineIndex + 1] = new LineBreak();
                 }
             }
         }

@@ -7,39 +7,35 @@ namespace LiveMarkdown.Avalonia;
 /// <summary>
 /// Works as <see cref="MarkdownTextBlock"/>
 /// </summary>
-public class InlineCollectionNode : BlockNode
+public class InlineCollectionNode<TBlock> : BlockNode<TBlock> where TBlock : LeafBlock
 {
     protected override MarkdownTextBlock TextBlock => textBlock;
 
     public override Control Control => textBlock;
 
-    private readonly InlinesNode inlinesNode;
+    private readonly InlinesNode<ContainerInline> inlinesNode;
     private readonly MarkdownTextBlock textBlock;
 
     public InlineCollectionNode()
     {
-        inlinesNode = new InlinesNode(new global::Avalonia.Controls.Documents.Span());
+        inlinesNode = new InlinesNode<ContainerInline>(new global::Avalonia.Controls.Documents.Span());
         textBlock = new MarkdownTextBlock
         {
             Inlines = inlinesNode.Inlines
         };
     }
 
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject is IEnumerable<Inline>;
-    }
-
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        MarkdownObject markdownObject,
+        TBlock block,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        return inlinesNode.Update(
-            documentNode,
-            markdownObject,
-            change,
-            cancellationToken);
+        return block.Inline is { } inline &&
+            inlinesNode.Update(
+                documentNode,
+                inline,
+                change,
+                cancellationToken);
     }
 }

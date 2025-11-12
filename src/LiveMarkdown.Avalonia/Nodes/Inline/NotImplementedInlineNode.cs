@@ -1,23 +1,17 @@
-﻿using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+﻿using Avalonia.Controls.Documents;
+using Markdig.Syntax;
 
 namespace LiveMarkdown.Avalonia;
 
 /// <summary>
 /// A node that represents an inline that is not yet implemented.
 /// </summary>
-/// <param name="markdownInline"></param>
-public class NotImplementedInlineNode(Inline markdownInline) : InlineNode
+public class NotImplementedInlineNode(Type markdownType) : InlineNode
 {
-    public override global::Avalonia.Controls.Documents.Inline Inline { get; } = new global::Avalonia.Controls.Documents.Run
+    public override Inline Inline { get; } = new Run
     {
         Classes = { "NotImplementedInline" }
     };
-
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject.GetType() == markdownInline.GetType();
-    }
 
     protected override bool UpdateCore(
         DocumentNode documentNode,
@@ -25,6 +19,6 @@ public class NotImplementedInlineNode(Inline markdownInline) : InlineNode
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        return true;
+        return documentNode.GetType() == markdownType;
     }
 }

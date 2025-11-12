@@ -1,34 +1,29 @@
-﻿using Markdig.Syntax;
+﻿using Avalonia.Controls.Documents;
 using Markdig.Syntax.Inlines;
+using Inline = Avalonia.Controls.Documents.Inline;
 
 namespace LiveMarkdown.Avalonia;
 
-public class LiteralInlineNode : InlineNode
+public class LiteralInlineNode : InlineNode<LiteralInline>
 {
-    public override global::Avalonia.Controls.Documents.Inline Inline { get; }
+    public override Inline Inline { get; }
 
-    private readonly global::Avalonia.Controls.Documents.Run run;
+    private readonly Run run;
 
     public LiteralInlineNode()
     {
-        Inline = run = new global::Avalonia.Controls.Documents.Run
+        Inline = run = new Run
         {
             Classes = { "Literal" }
         };
     }
 
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject.GetType() == typeof(LiteralInline);
-    }
-
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        MarkdownObject markdownObject,
+        LiteralInline literal,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        var literal = (LiteralInline)markdownObject;
         run.Text = literal.Content.ToString();
         return true;
     }

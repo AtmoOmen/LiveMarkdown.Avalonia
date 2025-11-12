@@ -1,23 +1,19 @@
-﻿using Markdig.Syntax;
+﻿using Avalonia.Controls.Documents;
 using Markdig.Syntax.Inlines;
+using Inline = Avalonia.Controls.Documents.Inline;
 
 namespace LiveMarkdown.Avalonia;
 
-public class LineBreakInlineNode : InlineNode
+public class LineBreakInlineNode : InlineNode<LineBreakInline>
 {
-    public override global::Avalonia.Controls.Documents.Inline Inline { get; } = new global::Avalonia.Controls.Documents.LineBreak
+    public override Inline Inline { get; } = new LineBreak
     {
         Classes = { "LineBreak" }
     };
 
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject.GetType() == typeof(LineBreakInline);
-    }
-
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        MarkdownObject markdownObject,
+        LineBreakInline lineBreak,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {

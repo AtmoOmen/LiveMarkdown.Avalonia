@@ -113,7 +113,8 @@
     </Style>
 
     <Style Selector="^ Image.Link">
-      <Setter Property="MaxHeight" Value="300"/>
+      <Setter Property="MaxWidth" Value="800"/>
+      <Setter Property="MaxHeight" Value="600"/>
     </Style>
 
     <Style Selector="^ Border.Table">

@@ -1,4 +1,5 @@
 ﻿using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 
 // ReSharper disable InconsistentNaming
 
@@ -6,6 +7,38 @@ namespace LiveMarkdown.Avalonia;
 
 public abstract class MarkdownNode
 {
+    protected static IReadOnlyCollection<IMarkdownNodeFactory> NodeFactories => NodeFactoriesSet;
+
+    private readonly static HashSet<IMarkdownNodeFactory> NodeFactoriesSet =
+    [
+        new MarkdownNodeFactory<AutolinkInlineNode>(),
+        new MarkdownNodeFactory<CodeInlineNode>(),
+        new MarkdownNodeFactory<ContainerInlineNode<ContainerInline>>(),
+        new MarkdownNodeFactory<DelimiterInlineNode>(),
+        new MarkdownNodeFactory<EmphasisInlineNode>(),
+        new MarkdownNodeFactory<HtmlEntityInlineNode>(),
+        new MarkdownNodeFactory<LineBreakInlineNode>(),
+        new MarkdownNodeFactory<LinkInlineNode>(),
+        new MarkdownNodeFactory<LiteralInlineNode>(),
+        new MarkdownNodeFactory<TaskListNode>(),
+
+        new MarkdownNodeFactory<AlertBlockNode>(),
+        new MarkdownNodeFactory<CodeBlockNode>(),
+        new MarkdownNodeFactory<HeadingBlockNode>(),
+        new MarkdownNodeFactory<ListBlockNode>(),
+        new MarkdownNodeFactory<ListItemBlockNode>(),
+        new MarkdownNodeFactory<ParagraphBlockNode>(),
+        new MarkdownNodeFactory<QuoteBlockNode>(),
+        new MarkdownNodeFactory<TableCellNode>(),
+        new MarkdownNodeFactory<TableNode>(),
+        new MarkdownNodeFactory<ThematicBreakBlockNode>(),
+    ];
+
+    public static void Register<TNode>() where TNode : MarkdownNode, new()
+    {
+        NodeFactoriesSet.Add(new MarkdownNodeFactory<TNode>());
+    }
+
     /// <summary>
     /// Gets the text block associated with this node, if any.
     /// </summary>
@@ -27,12 +60,6 @@ public abstract class MarkdownNode
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        // type check
-        if (!IsCompatible(markdownObject))
-        {
-            return false;
-        }
-
         if (!IsDirty(markdownObject, change))
         {
             // No need to update, the change does not affect this node
@@ -63,8 +90,6 @@ public abstract class MarkdownNode
             markdownObject.Span);
         return result;
     }
-
-    protected abstract bool IsCompatible(MarkdownObject markdownObject);
 
     /// <summary>
     /// Updates the block with the given inlines and change information.

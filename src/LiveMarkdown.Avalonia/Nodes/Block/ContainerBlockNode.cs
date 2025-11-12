@@ -1,46 +1,38 @@
-﻿using System.Runtime.CompilerServices;
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Avalonia.Layout;
-using Markdig.Extensions.Tables;
 using Markdig.Syntax;
 
 namespace LiveMarkdown.Avalonia;
 
-public class ContainerBlockNode : BlockNode
+public abstract class ContainerBlockNode<TContainerBlock> : BlockNode<TContainerBlock> where TContainerBlock : ContainerBlock
 {
-    public override Control Control => control;
+    public override Control Control => container;
 
-    protected Control control;
+    /// <summary>
+    /// The container that holds the child block nodes.
+    /// </summary>
+    protected readonly StackPanel container;
 
+    /// <summary>
+    /// The proxy that manages the child block nodes.
+    /// </summary>
     protected readonly MarkdownRenderer.BlocksProxy proxy;
 
-    public ContainerBlockNode()
+    protected ContainerBlockNode()
     {
-        var container = new StackPanel
+        container = new StackPanel
         {
             Orientation = Orientation.Vertical
         };
-        control = container;
         proxy = new MarkdownRenderer.BlocksProxy(container.Children);
-    }
-
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject is ContainerBlock and
-            not MarkdownDocument and
-            not QuoteBlock and
-            not Table and
-            not TableCell and
-            not ListBlock;
     }
 
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        MarkdownObject markdownObject,
+        TContainerBlock containerBlock,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        var containerBlock = Unsafe.As<ContainerBlock>(markdownObject);
         if (containerBlock.Count == 0) return false;
 
         var i = 0;

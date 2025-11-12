@@ -11,7 +11,7 @@ namespace LiveMarkdown.Avalonia;
 public partial class MarkdownRenderer
 {
     /// <summary>
-    /// Utility class to map <see cref="Control"/> to <see cref="BlockNode"/> itself
+    /// Utility class to map <see cref="Control"/> to <see cref="BlockNode{TInline}"/> itself
     /// </summary>
     /// <param name="target"></param>
     public class InlinesProxy(InlineCollection target)
@@ -47,7 +47,7 @@ public partial class MarkdownRenderer
     }
 
     /// <summary>
-    /// Utility class to map <see cref="Control"/> to <see cref="BlockNode"/> itself
+    /// Utility class to map <see cref="Control"/> to <see cref="BlockNode{TBlock}"/> itself
     /// </summary>
     /// <param name="target"></param>
     public class BlocksProxy(Controls target)
@@ -62,13 +62,8 @@ public partial class MarkdownRenderer
 
             public void SetControl(Control control) => this.control = control;
 
-            protected override bool IsCompatible(MarkdownObject markdownObject)
-            {
-                throw new NotSupportedException(NotSupportedMessage);
-            }
-
             protected override bool UpdateCore(
-                DocumentNode documentNode1,
+                DocumentNode documentNode,
                 MarkdownObject markdownObject,
                 in ObservableStringBuilderChangedEventArgs change,
                 CancellationToken cancellationToken)

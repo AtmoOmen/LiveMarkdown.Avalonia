@@ -4,27 +4,21 @@ using Markdig.Syntax;
 namespace LiveMarkdown.Avalonia;
 
 /// <summary>
-/// A block node for markdown blocks that are not yet implemented.
+/// A block node for Markdown blocks that are not yet implemented.
 /// </summary>
-/// <param name="markdownBlock"></param>
-public class NotImplementedBlockNode(Block markdownBlock) : BlockNode
+public class NotImplementedBlockNode(Type markdownType) : BlockNode<Block>
 {
     public override Control Control { get; } = new()
     {
         Classes = { "NotImplementedBlock" }
     };
 
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject.GetType() == markdownBlock.GetType();
-    }
-
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        MarkdownObject markdownObject,
+        Block block,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        return true;
+        return block.GetType() == markdownType;
     }
 }

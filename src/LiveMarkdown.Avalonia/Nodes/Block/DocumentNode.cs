@@ -5,7 +5,7 @@ namespace LiveMarkdown.Avalonia;
 /// <summary>
 /// A node that represents the entire Markdown document (Root).
 /// </summary>
-public class DocumentNode : ContainerBlockNode
+public sealed class DocumentNode : ContainerBlockNode<MarkdownDocument>
 {
     public MarkdownRenderer Owner { get; }
 
@@ -16,17 +16,12 @@ public class DocumentNode : ContainerBlockNode
     public DocumentNode(MarkdownRenderer owner)
     {
         Owner = owner;
-        Classes.Add("MarkdownDocument");
-    }
-
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject.GetType() == typeof(MarkdownDocument);
+        Control.Classes.Add("MarkdownDocument");
     }
 
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        MarkdownObject markdownObject,
+        MarkdownDocument markdownObject,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {

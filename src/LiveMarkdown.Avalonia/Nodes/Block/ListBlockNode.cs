@@ -1,10 +1,9 @@
-﻿using System.Runtime.CompilerServices;
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Markdig.Syntax;
 
 namespace LiveMarkdown.Avalonia;
 
-public class ListBlockNode : BlockNode
+public class ListBlockNode : BlockNode<ListBlock>
 {
     public override Control Control => grid;
 
@@ -25,18 +24,12 @@ public class ListBlockNode : BlockNode
         proxy = new MarkdownRenderer.BlocksProxy(grid.Children);
     }
 
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject.GetType() == typeof(ListBlock);
-    }
-
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        MarkdownObject markdownObject,
+        ListBlock listBlock,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        var listBlock = Unsafe.As<ListBlock>(markdownObject);
         if (listBlock.Count == 0) return false;
 
         var number = 1;

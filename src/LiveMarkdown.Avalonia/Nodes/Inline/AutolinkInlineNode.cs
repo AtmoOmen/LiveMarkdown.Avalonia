@@ -1,11 +1,12 @@
-﻿using Markdig.Syntax;
+﻿using Avalonia.Controls.Documents;
 using Markdig.Syntax.Inlines;
+using Inline = Avalonia.Controls.Documents.Inline;
 
 namespace LiveMarkdown.Avalonia;
 
-public sealed class AutolinkInlineNode : InlineNode
+public sealed class AutolinkInlineNode : InlineNode<AutolinkInline>
 {
-    public override global::Avalonia.Controls.Documents.Inline Inline { get; }
+    public override Inline Inline { get; }
 
     private readonly InlineHyperlink inlineHyperlink;
 
@@ -17,27 +18,21 @@ public sealed class AutolinkInlineNode : InlineNode
         };
     }
 
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject is AutolinkInline;
-    }
-
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        MarkdownObject markdownObject,
+        AutolinkInline autolink,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        var autolink = (AutolinkInline)markdownObject;
         Uri.TryCreate(autolink.Url, UriKind.RelativeOrAbsolute, out var uri);
         inlineHyperlink.HRef = uri;
 
-        if (inlineHyperlink.Inlines is [global::Avalonia.Controls.Documents.Run run]) run.Text = autolink.Url;
+        if (inlineHyperlink.Inlines is [Run run]) run.Text = autolink.Url;
         else
         {
             inlineHyperlink.Inlines.Clear();
             inlineHyperlink.Inlines.Add(
-                new global::Avalonia.Controls.Documents.Run
+                new Run
                 {
                     Classes = { "Autolink" },
                     Text = autolink.Url

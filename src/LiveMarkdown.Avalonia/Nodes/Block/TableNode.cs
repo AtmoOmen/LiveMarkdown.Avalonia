@@ -1,13 +1,11 @@
-﻿using System.Runtime.CompilerServices;
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Markdig.Extensions.Tables;
-using Markdig.Syntax;
 
 namespace LiveMarkdown.Avalonia;
 
-public class TableNode : BlockNode
+public class TableNode : BlockNode<Table>
 {
     public override Control Control { get; }
 
@@ -31,18 +29,12 @@ public class TableNode : BlockNode
         };
     }
 
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject.GetType() == typeof(Table);
-    }
-
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        MarkdownObject markdownObject,
+        Table table,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        var table = Unsafe.As<Table>(markdownObject);
         if (table.ColumnDefinitions.Count == 0) return false;
 
         while (table.ColumnDefinitions.Count < container.ColumnDefinitions.Count)

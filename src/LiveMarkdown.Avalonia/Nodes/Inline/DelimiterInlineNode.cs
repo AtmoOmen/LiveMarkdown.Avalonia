@@ -1,34 +1,29 @@
-﻿using Markdig.Syntax;
+﻿using Avalonia.Controls.Documents;
 using Markdig.Syntax.Inlines;
+using Inline = Avalonia.Controls.Documents.Inline;
 
 namespace LiveMarkdown.Avalonia;
 
-public class DelimiterInlineNode : InlineNode
+public class DelimiterInlineNode : InlineNode<DelimiterInline>
 {
-    public override global::Avalonia.Controls.Documents.Inline Inline { get; }
+    public override Inline Inline { get; }
 
-    private readonly global::Avalonia.Controls.Documents.Run run;
+    private readonly Run run;
 
     public DelimiterInlineNode()
     {
-        Inline = run = new global::Avalonia.Controls.Documents.Run
+        Inline = run = new Run
         {
             Classes = { "Delimiter" }
         };
     }
 
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject.GetType() == typeof(DelimiterInline);
-    }
-
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        MarkdownObject markdownObject,
+        DelimiterInline delimiter,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        var delimiter = (DelimiterInline)markdownObject;
         run.Text = delimiter.ToLiteral();
         return true;
     }

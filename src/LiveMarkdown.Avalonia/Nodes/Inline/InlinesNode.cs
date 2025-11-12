@@ -1,48 +1,43 @@
-﻿using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+﻿using Avalonia.Controls.Documents;
+using Inline = Markdig.Syntax.Inlines.Inline;
 
 namespace LiveMarkdown.Avalonia;
 
 /// <summary>
 /// A node that contains multiple inline nodes (Like a Span or InlineHyperlink).
 /// </summary>
-public class InlinesNode : InlineNode
+public class InlinesNode<TInline> : InlineNode<TInline> where TInline : Inline
 {
     protected override MarkdownTextBlock? TextBlock { get; }
 
     public override global::Avalonia.Controls.Documents.Inline Inline { get; }
 
-    public global::Avalonia.Controls.Documents.InlineCollection Inlines { get; }
+    public InlineCollection Inlines { get; }
 
     private readonly MarkdownRenderer.InlinesProxy proxy;
 
-    public InlinesNode(global::Avalonia.Controls.Documents.Span span) : this(span, span.Inlines) { }
+    public InlinesNode(Span span) : this(span, span.Inlines) { }
 
     protected InlinesNode(InlineHyperlink inlineHyperlink) : this(inlineHyperlink, inlineHyperlink.Inlines)
     {
         TextBlock = inlineHyperlink.TextBlock;
     }
 
-    private InlinesNode(global::Avalonia.Controls.Documents.Inline inline, global::Avalonia.Controls.Documents.InlineCollection inlines)
+    private InlinesNode(global::Avalonia.Controls.Documents.Inline inline, InlineCollection inlines)
     {
         Inline = inline;
         Inlines = inlines;
         proxy = new MarkdownRenderer.InlinesProxy(inlines);
     }
 
-    protected override bool IsCompatible(MarkdownObject markdownObject)
-    {
-        return markdownObject is IEnumerable<Inline>;
-    }
-
     protected override bool UpdateCore(
         DocumentNode documentNode,
-        MarkdownObject markdownObject,
+        TInline inlines,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
         var i = -1;
-        foreach (var inline in (IEnumerable<Inline>)markdownObject)
+        foreach (var inline in (IEnumerable<Inline>)inlines)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
