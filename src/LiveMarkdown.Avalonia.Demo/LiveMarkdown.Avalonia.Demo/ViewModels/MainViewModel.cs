@@ -1,10 +1,9 @@
-﻿using Avalonia;
+﻿using System.Collections.ObjectModel;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.Collections.ObjectModel;
-using System.Reflection;
 
 namespace LiveMarkdown.Avalonia.Demo.ViewModels;
 
@@ -76,16 +75,6 @@ public partial class MainViewModel : ViewModelBase
 
             cancellationTokenSource = new CancellationTokenSource();
             var cancellationToken = cancellationTokenSource.Token;
-
-            var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = assembly.GetManifestResourceNames()
-                .FirstOrDefault(n => n.EndsWith($"{markdownFileName}.md", StringComparison.OrdinalIgnoreCase));
-
-            if (resourceName is null)
-            {
-                await Console.Error.WriteLineAsync($"Resource not found: {markdownFileName}.md");
-                return;
-            }
 
             async IAsyncEnumerable<string> ReadBlocksAsync()
             {

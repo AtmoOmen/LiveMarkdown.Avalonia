@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <LangVersion>preview</LangVersion>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
@@ -23,10 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-  <EmbeddedResource Include="samples\*.md" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <ProjectReference Include="..\..\LiveMarkdown.Avalonia.Math\LiveMarkdown.Avalonia.Math.csproj" />
     <ProjectReference Include="..\..\LiveMarkdown.Avalonia\LiveMarkdown.Avalonia.csproj" />
   </ItemGroup>
 
@@ -41,6 +38,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="samples\Test.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="samples\LaTeX.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

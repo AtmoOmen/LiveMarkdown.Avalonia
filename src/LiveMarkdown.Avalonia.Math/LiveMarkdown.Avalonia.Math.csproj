@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>LiveMarkdown.Avalonia</RootNamespace>
+    <TargetFrameworks>netstandard2.0;net8.0;net9.0</TargetFrameworks>
+    <Title>LiveMarkdown.Avalonia.Math</Title>
+    <Authors>DearVa</Authors>
+    <Description>This is a extension package for `LiveMarkdown.Avalonia` that adds support for rendering LaTeX math expressions using CSharpMath.
+      It leverages the `Sylinko.CSharpMath.Avalonia` library to provide high-quality rendering of mathematical notation within Markdown content.
+    </Description>
+    <PackageProjectUrl>https://github.com/DearVa/LiveMarkdown.Avalonia</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/DearVa/LiveMarkdown.Avalonia</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Sylinko.CSharpMath.Avalonia"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LiveMarkdown.Avalonia\LiveMarkdown.Avalonia.csproj"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+</Project>

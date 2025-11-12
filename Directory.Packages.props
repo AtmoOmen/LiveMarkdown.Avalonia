@@ -21,6 +21,7 @@
     <PackageVersion Include="Markdig" Version="0.43.0"/>
     <PackageVersion Include="TextMateSharp" Version="1.0.70"/>
     <PackageVersion Include="TextMateSharp.Grammars" Version="1.0.70"/>
+    <PackageVersion Include="Sylinko.CSharpMath.Avalonia" Version="11.3.0"/>
     <!-- NUnit packages -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.1"/>
     <PackageVersion Include="coverlet.collector" Version="6.0.3"/>

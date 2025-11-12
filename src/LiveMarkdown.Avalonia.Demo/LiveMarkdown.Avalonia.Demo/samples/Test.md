@@ -37,6 +37,15 @@ Playwright 框架的主要特点有：
 3. Item Three
 4. Test long long long long long long long long long long long long long long long long long long text wrapping
 
+Bullet list with different markers:
+* Asterisk item
++ Plus item
+- Hyphen item
+
+Task list:
+- [x] Completed task
+- [ ] Incomplete task
+
 Test **bold** and *italic* text, then `inline code` example and [`inline code with backticks`](https://example.com) are here.
 
 ---
@@ -167,3 +176,12 @@ Local image example:
 Avalonia image example:
 
 ![Avalonia Image](avares://LiveMarkdown.Avalonia.Demo/Assets/Antelcat.png)
+
+## 5. LaTeX
+
+Inline LaTeX example: $E=mc^2$.
+
+Block LaTeX example:
+$$
+\int_{a}^{b} x^2 \,dx = \left[ \frac{x^3}{3} \right]_{a}^{b} = \frac{b^3}{3} - \frac{a^3}{3}
+$$

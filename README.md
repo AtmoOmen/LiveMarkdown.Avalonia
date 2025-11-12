@@ -44,7 +44,7 @@ It supports **real-time rendering** of Markdown content, so it's ideal for appli
   - [x] Local images
   - [x] `avares` images
 - [x] Selectable text across elements
-- [ ] LaTeX support
+- [x] LaTeX support
 - [ ] HTML rendering
 
 ## 🚀 Getting Started
@@ -116,6 +116,23 @@ Avalonia Styling Docs:
 - [Avalonia Styles](https://docs.avaloniaui.net/docs/styling)
 - [Style selector syntax](https://docs.avaloniaui.net/docs/reference/styles/style-selector-syntax)
 
+### 4. Enable LaTeX rendering
+
+LaTeX is supported via the `LiveMarkdown.Avalonia.Math` package. You can install it via NuGet:
+
+```bash
+dotnet add package LiveMarkdown.Avalonia.Math
+```
+
+Then register both the `MathInlineNode` and `MathBlockNode` before using LaTeX in your Markdown content:
+
+```csharp
+using LiveMarkdown.Avalonia;
+
+MarkdownNode.Register<MathInlineNode>();
+MarkdownNode.Register<MathBlockNode>();
+```
+
 ## 🤔 FAQ
 
 - Q: Why some emojis not rendered correctly (rendered in single color)?
@@ -140,4 +157,6 @@ Distributed under the Apache 2.0 License. See [LICENSE](LICENSE) for more inform
 - **TextMateSharp** - [MIT License](https://github.com/danipen/TextMateSharp/blob/master/LICENSE.md)
     - Syntax highlighting for code blocks
     - Source repo: https://github.com/danipen/TextMateSharp
-
+- **CSharpMath** - [MIT License](https://github.com/verybadcat/CSharpMath/blob/master/License)
+    - LaTeX rendering support
+    - Source repo: https://github.com/verybadcat/CSharpMath
