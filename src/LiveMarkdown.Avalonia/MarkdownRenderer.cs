@@ -15,6 +15,28 @@ namespace LiveMarkdown.Avalonia;
 public partial class MarkdownRenderer : Control
 {
     /// <summary>
+    /// Defines the attached SelectionScopeName property.
+    /// </summary>
+    public static readonly AttachedProperty<string?> SelectionScopeNameProperty =
+        AvaloniaProperty.RegisterAttached<MarkdownRenderer, Visual, string?>("SelectionScopeName");
+
+    /// <summary>
+    /// Sets the SelectionScopeName attached property on the given Visual.
+    /// Visuals with the same SelectionScopeName belong to the same selection scope.
+    /// <see cref="MarkdownRenderer"/>s in the same selection scope can be selected across each other.
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <param name="value"></param>
+    public static void SetSelectionScopeName(Visual obj, string? value) => obj.SetValue(SelectionScopeNameProperty, value);
+
+    /// <summary>
+    /// Gets the SelectionScopeName attached property from the given Visual.
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <returns></returns>
+    public static string? GetSelectionScopeName(Visual obj) => obj.GetValue(SelectionScopeNameProperty);
+
+    /// <summary>
     /// Defines the <see cref="MarkdownBuilder"/> property.
     /// </summary>
     public static readonly DirectProperty<MarkdownRenderer, ObservableStringBuilder?> MarkdownBuilderProperty =

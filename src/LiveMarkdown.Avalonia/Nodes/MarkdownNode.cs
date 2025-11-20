@@ -67,20 +67,7 @@ public abstract class MarkdownNode
         }
 
         var result = UpdateCore(documentNode, markdownObject, change, cancellationToken);
-        span = markdownObject.Span;
-
-        if (TextBlock is { } textBlock)
-        {
-            if (result)
-            {
-                textBlock.SourceSpan = span;
-                documentNode.textBlocks.Add(textBlock);
-            }
-            else
-            {
-                documentNode.textBlocks.Remove(textBlock);
-            }
-        }
+        TextBlock?.SourceSpan = span = markdownObject.Span;
 
         MarkdownRenderer.VerboseLogger?.Log(
             this,

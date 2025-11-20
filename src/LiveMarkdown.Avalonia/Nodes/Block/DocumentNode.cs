@@ -9,10 +9,6 @@ public sealed class DocumentNode : ContainerBlockNode<MarkdownDocument>
 {
     public MarkdownRenderer Owner { get; }
 
-    public IReadOnlyCollection<MarkdownTextBlock> TextBlocks => textBlocks;
-
-    internal readonly HashSet<MarkdownTextBlock> textBlocks = [];
-
     public DocumentNode(MarkdownRenderer owner)
     {
         Owner = owner;
