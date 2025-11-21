@@ -80,7 +80,7 @@ public partial class MainViewModel : ViewModelBase
             {
                 var buffer = Array.Empty<char>();
                 using var reader = new StreamReader(markdownFilePath);
-                while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
+                while (!cancellationToken.IsCancellationRequested)
                 {
                     var speed = Math.Max((int)RenderSpeed, 1);
                     if (buffer.Length != speed)
