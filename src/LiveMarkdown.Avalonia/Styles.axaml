@@ -273,7 +273,8 @@
       <Setter Property="IsHitTestVisible" Value="False"/>
       <Setter Property="Template">
         <ControlTemplate TargetType="CheckBox">
-          <Viewbox>
+          <Viewbox
+            Width="14" Height="14">
             <Border
               x:Name="Border" Width="14"
               Height="14"
