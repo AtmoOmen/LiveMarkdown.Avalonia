@@ -10,6 +10,40 @@ namespace LiveMarkdown.Avalonia;
 
 public partial class MarkdownRenderer
 {
+    /// <summary>
+    /// Defines the <see cref="CanCopy"/> property.
+    /// </summary>
+    public static readonly DirectProperty<MarkdownRenderer, bool> CanCopyProperty =
+        AvaloniaProperty.RegisterDirect<MarkdownRenderer, bool>(
+            nameof(CanCopy),
+            o => o.CanCopy);
+
+    /// <summary>
+    /// Defines the <see cref="CopyGesture"/> property.
+    /// </summary>
+    public static readonly StyledProperty<KeyGesture> CopyGestureProperty =
+        AvaloniaProperty.Register<MarkdownRenderer, KeyGesture>(
+            nameof(CopyGesture),
+            new KeyGesture(Key.C, KeyModifiers.Control));
+
+    /// <summary>
+    /// Gets whether there is any text selected that can be copied.
+    /// </summary>
+    public bool CanCopy
+    {
+        get;
+        private set => SetAndRaise(CanCopyProperty, ref field, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the keyboard gesture for the Copy command.
+    /// </summary>
+    public KeyGesture CopyGesture
+    {
+        get => GetValue(CopyGestureProperty);
+        set => SetValue(CopyGestureProperty, value);
+    }
+
     public string SelectedText
     {
         get
@@ -35,7 +69,7 @@ public partial class MarkdownRenderer
             return sb.ToString();
         }
     }
-
+    
     /// <summary>
     /// All renderers that attached to the visual tree.
     /// </summary>
@@ -62,10 +96,20 @@ public partial class MarkdownRenderer
         AllRenderer.Remove(this);
     }
 
-    private void HandlePointerPressed(object? sender, PointerPressedEventArgs e)
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
+        if (e.Handled)
+        {
+            base.OnPointerPressed(e);
+            return;
+        }
+
         var point = e.GetCurrentPoint(this);
-        if (!point.Properties.IsLeftButtonPressed) return;
+        if (!point.Properties.IsLeftButtonPressed)
+        {
+            base.OnPointerPressed(e);
+            return;
+        }
 
         // 1. Initialize Scope Context
         var scopeName = GetSelectionScopeName(this);
@@ -76,8 +120,12 @@ public partial class MarkdownRenderer
         // However, for precise selection, we usually want the specific leaf block initially,
         // and then handle hierarchy during the selection update.
         // But here, we just find the visual hit.
-        var targetBlock = FindNearestBlockInList(activeScopeBlocks, this, e.GetPosition(this));
-        if (targetBlock == null) return; // Truly nothing to select
+        var targetBlock = FindNearestBlockInList(activeScopeBlocks, this, point.Position);
+        if (targetBlock == null) // Truly nothing to select
+        {
+            base.OnPointerPressed(e);
+            return;
+        }
 
         e.Handled = true;
         e.Pointer.Capture(this);
@@ -85,6 +133,7 @@ public partial class MarkdownRenderer
 
         // 3. Clear old selection
         ClearSelection(activeScopeBlocks);
+        UpdateCanCopy();
 
         // 4. Calculate Anchor
         var position = GetCaretPosition(targetBlock, e);
@@ -92,18 +141,28 @@ public partial class MarkdownRenderer
 
         // 5. Handle Click Selection (Single/Double/Triple)
         HandleClickSelection(targetBlock, position, e.ClickCount);
+
+        base.OnPointerPressed(e);
     }
 
-    private void HandlePointerMoved(object? sender, PointerEventArgs e)
+    protected override void OnPointerMoved(PointerEventArgs e)
     {
-        if (selectionAnchor == null || activeScopeBlocks == null || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+        if (selectionAnchor == null || activeScopeBlocks == null || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            base.OnPointerMoved(e);
+            return;
+        }
 
         // 1. Find the target block under the cursor
         var currentPoint = e.GetPosition(this);
         // Use FindNearestBlock to ensure we track selection even if mouse leaves the exact bounds
         var targetBlock = FindNearestBlockInList(activeScopeBlocks, this, currentPoint);
 
-        if (targetBlock == null) return;
+        if (targetBlock == null)
+        {
+            base.OnPointerMoved(e);
+            return;
+        }
 
         // 2. Calculate Focus position
         var pointInBlock = this.TranslatePoint(currentPoint, targetBlock) ?? new Point();
@@ -113,54 +172,53 @@ public partial class MarkdownRenderer
         UpdateSelectionRange(selectionAnchor.Value, (targetBlock, focusOffset));
 
         e.Handled = true;
+
+        base.OnPointerMoved(e);
     }
 
-    private void HandlePointerReleased(object? sender, PointerReleasedEventArgs e)
+    protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
-        if (selectionAnchor == null) return;
+        if (selectionAnchor == null || e.InitialPressMouseButton != MouseButton.Left)
+        {
+            e.Source = this;
+            base.OnPointerReleased(e);
+            return;
+        }
 
         selectionAnchor = null;
         activeScopeBlocks = null; // Release cache
         e.Pointer.Capture(null);
         e.Handled = true;
+
+        base.OnPointerReleased(e);
     }
 
-    // ReSharper disable once AsyncVoidEventHandlerMethod
-    private async void HandleKeyDown(object? sender, KeyEventArgs e)
+    private void HandleKeyDown(object? sender, KeyEventArgs e)
     {
         var keymap = Application.Current?.PlatformSettings?.HotkeyConfiguration;
         if (keymap == null) return;
 
         if (Match(keymap.Copy))
         {
-            try
-            {
-                await CopyAsync();
-            }
-            catch
-            {
-                // Ignore clipboard errors
-            }
-
+            Copy();
             e.Handled = true;
         }
         else if (Match(keymap.SelectAll))
         {
-
             e.Handled = true;
         }
 
         bool Match(List<KeyGesture> gestures) => gestures.Any(g => g.Matches(e));
     }
 
-    public Task CopyAsync()
+    public async void Copy()
     {
-        if (TopLevel.GetTopLevel(this) is not { Clipboard: { } clipboard }) return Task.CompletedTask;
+        if (TopLevel.GetTopLevel(this) is not { Clipboard: { } clipboard }) return;
 
         var text = SelectedText;
-        if (string.IsNullOrEmpty(text)) return Task.CompletedTask;
+        if (string.IsNullOrEmpty(text)) return;
 
-        return clipboard.SetTextAsync(text);
+        await clipboard.SetTextAsync(text);
     }
 
     // -----------------------------------------------------------------------
@@ -188,6 +246,8 @@ public partial class MarkdownRenderer
                 block.ClearSelection();
             }
         }
+
+        UpdateCanCopy();
     }
 
     private int GetEffectiveStart(MarkdownTextBlock block, (MarkdownTextBlock Block, int Offset) startNode)
@@ -415,18 +475,21 @@ public partial class MarkdownRenderer
             case 3:
             {
                 SelectAll(block.GetSelfAndVisualDescendants().OfType<MarkdownTextBlock>());
+                UpdateCanCopy();
                 return;
             }
             // select all
             case 4 when activeScopeBlocks is not null:
             {
                 SelectAll(activeScopeBlocks);
+                UpdateCanCopy();
                 return;
             }
             // clear selection
             case 5 when activeScopeBlocks is not null:
             {
                 ClearSelection(activeScopeBlocks);
+                UpdateCanCopy();
                 return;
             }
         }
@@ -438,6 +501,8 @@ public partial class MarkdownRenderer
         {
             selectionAnchor = (block, start);
         }
+
+        UpdateCanCopy();
     }
 
     /// <summary>
@@ -446,6 +511,7 @@ public partial class MarkdownRenderer
     public void SelectAll()
     {
         SelectAll(GetAllSelectableBlocksInScope(this, GetSelectionScopeName(this)));
+        UpdateCanCopy();
     }
 
     /// <summary>
@@ -454,6 +520,7 @@ public partial class MarkdownRenderer
     public void ClearSelection()
     {
         ClearSelection(GetAllSelectableBlocksInScope(this, GetSelectionScopeName(this)));
+        UpdateCanCopy();
     }
 
     private static void SelectAll(IEnumerable<MarkdownTextBlock> blocks)
@@ -464,5 +531,10 @@ public partial class MarkdownRenderer
     private static void ClearSelection(IEnumerable<MarkdownTextBlock> blocks)
     {
         foreach (var block in blocks) block.ClearSelection();
+    }
+
+    private void UpdateCanCopy()
+    {
+        CanCopy = !string.IsNullOrEmpty(SelectedText);
     }
 }

@@ -1,7 +1,8 @@
 ﻿<UserControl
   x:Class="LiveMarkdown.Avalonia.Demo.Views.MainView" xmlns="https://github.com/avaloniaui"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:md="clr-namespace:LiveMarkdown.Avalonia;assembly=LiveMarkdown.Avalonia"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:md="clr-namespace:LiveMarkdown.Avalonia;assembly=LiveMarkdown.Avalonia"
   xmlns:vm="clr-namespace:LiveMarkdown.Avalonia.Demo.ViewModels" d:DesignHeight="450"
   d:DesignWidth="800" x:DataType="vm:MainViewModel"
   mc:Ignorable="d">
@@ -26,10 +27,44 @@
       x:Name="MarkdownRendererScrollViewer" Grid.Row="0"
       Grid.Column="2" Background="#11FFFFFF"
       CornerRadius="4">
+      <ScrollViewer.Styles>
+        <Style Selector="md|InlineHyperlink Button">
+          <Setter Property="ContextFlyout">
+            <MenuFlyout Placement="Bottom">
+              <MenuItem
+                x:Name="InlineHyperlinkContextFlyoutOpenLinkItem"
+                Command="{Binding $parent[md:InlineHyperlink].Open}"
+                Cursor="Hand" Header="Open Link"/>
+              <MenuItem
+                x:Name="InlineHyperlinkContextFlyoutCopyLinkItem"
+                Command="{Binding $parent[md:InlineHyperlink].Copy}"
+                Cursor="Hand" Header="Copy Link"/>
+              <Separator IsVisible="{Binding $parent[md:MarkdownRenderer].CanCopy}"/>
+              <MenuItem
+                x:Name="InlineHyperlinkContextFlyoutCopyItem"
+                Command="{Binding $parent[md:MarkdownRenderer].Copy}"
+                Cursor="Hand" Header="Copy"
+                InputGesture="{Binding $parent[md:MarkdownRenderer].CopyGesture}"
+                IsVisible="{Binding $parent[md:MarkdownRenderer].CanCopy}"/>
+            </MenuFlyout>
+          </Setter>
+        </Style>
+      </ScrollViewer.Styles>
       <md:MarkdownRenderer
         x:Name="MarkdownRenderer" Margin="8,4"
         InlineHyperlinkCommand="{Binding OpenUriCommand}"
-        MarkdownBuilder="{Binding MarkdownBuilder}"/>
+        MarkdownBuilder="{Binding MarkdownBuilder}">
+        <md:MarkdownRenderer.ContextFlyout>
+          <MenuFlyout Placement="Bottom">
+            <MenuItem
+              x:Name="MarkdownRendererContextFlyoutCopyItem"
+              Command="{Binding $parent[md:MarkdownRenderer].Copy}"
+              Cursor="Hand" Header="Copy"
+              InputGesture="{Binding $parent[md:MarkdownRenderer].CopyGesture}"
+              IsEnabled="{Binding $parent[md:MarkdownRenderer].CanCopy}"/>
+          </MenuFlyout>
+        </md:MarkdownRenderer.ContextFlyout>
+      </md:MarkdownRenderer>
     </ScrollViewer>
 
     <StackPanel

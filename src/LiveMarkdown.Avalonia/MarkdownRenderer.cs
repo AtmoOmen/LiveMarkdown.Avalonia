@@ -143,10 +143,7 @@ public partial class MarkdownRenderer : Control
         LogicalChildren.Add(documentNode.Control);
         VisualChildren.Add(documentNode.Control);
 
-        AddHandler(PointerPressedEvent, HandlePointerPressed, RoutingStrategies.Tunnel);
-        AddHandler(PointerMovedEvent, HandlePointerMoved, RoutingStrategies.Tunnel);
-        AddHandler(PointerReleasedEvent, HandlePointerReleased, RoutingStrategies.Tunnel);
-        AddHandler(KeyDownEvent, HandleKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, HandleKeyDown);
     }
 
     protected override async void ArrangeCore(Rect finalRect)
@@ -192,7 +189,6 @@ public partial class MarkdownRenderer : Control
         InvalidateArrange();
     }
 }
-
 
 /// <summary>
 /// Event arguments for the InlineHyperlinkClicked event.

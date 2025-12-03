@@ -3,11 +3,13 @@ using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
 using Avalonia.Utilities;
+using Avalonia.VisualTree;
 using Markdig.Syntax;
 
 namespace LiveMarkdown.Avalonia;
@@ -416,6 +418,36 @@ public class MarkdownTextBlock : SelectableTextBlock
         var textRuns = _textRuns;
         base.OnMeasureInvalidated();
         _textRuns = textRuns;
+    }
+
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        if (this.GetVisualAncestors().OfType<MarkdownRenderer>().FirstOrDefault() is not null)
+        {
+            return;
+        }
+        
+        base.OnPointerPressed(e);
+    }
+
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        if (this.GetVisualAncestors().OfType<MarkdownRenderer>().FirstOrDefault() is not null)
+        {
+            return;
+        }
+        
+        base.OnPointerMoved(e);
+    }
+
+    protected override void OnPointerReleased(PointerReleasedEventArgs e)
+    {
+        if (this.GetVisualAncestors().OfType<MarkdownRenderer>().FirstOrDefault() is not null)
+        {
+            return;
+        }
+        
+        base.OnPointerReleased(e);
     }
 
     public new void SelectAll()

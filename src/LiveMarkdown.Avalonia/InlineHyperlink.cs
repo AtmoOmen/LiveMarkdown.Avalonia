@@ -89,6 +89,22 @@ public class InlineHyperlink : InlineUIContainer
         UpdatePseudoClasses();
     }
 
+    public async void Open()
+    {
+        if (HRef is null) return;
+        if (TopLevel.GetTopLevel(button) is not { } topLevel) return;
+
+        await topLevel.Launcher.LaunchUriAsync(HRef);
+    }
+
+    public async void Copy()
+    {
+        if (HRef is null) return;
+        if (TopLevel.GetTopLevel(button) is not { Clipboard: { } clipboard }) return;
+
+        await clipboard.SetTextAsync(HRef.ToString());
+    }
+
     private void HandleButtonClick(object? sender, RoutedEventArgs e)
     {
         var args = new InlineHyperlinkClickedEventArgs(ClickEvent, this, HRef);
@@ -99,5 +115,4 @@ public class InlineHyperlink : InlineUIContainer
     {
         PseudoClasses.Set(":disabled", HRef is null);
     }
-
 }
