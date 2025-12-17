@@ -8,9 +8,10 @@
   </Application.Styles>
 
   <Application.Resources>
-    <Color x:Key="BorderColor">#3DFFFFFF</Color>
-    <Color x:Key="ForegroundColor">#FFFFFF</Color>
-    <Color x:Key="CardBackgroundColor">#15000000</Color>
-    <Color x:Key="SecondaryCardBackgroundColor">#99000000</Color>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://LiveMarkdown.Avalonia/Defaults.axaml"/>
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
   </Application.Resources>
 </Application>

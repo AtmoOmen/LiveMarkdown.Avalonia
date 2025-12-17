@@ -7,6 +7,7 @@
   <Style Selector="md|MarkdownTextBlock">
     <Setter Property="Cursor" Value="IBeam"/>
     <Setter Property="FontFamily" Value="Arial, 'Segoe UI', sans-serif"/>
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeM}"/>
     <Setter Property="TextWrapping" Value="Wrap"/>
     <Setter Property="SelectionBrush" Value="CornflowerBlue"/>
     <Setter Property="SelectionForegroundBrush" Value="{DynamicResource ForegroundColor}"/>
@@ -17,7 +18,8 @@
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="md:CodeBlock">
-          <StackPanel Orientation="Vertical">
+          <StackPanel
+            Orientation="Vertical" Spacing="0">
             <Border
               Background="{DynamicResource BorderColor}"
               BorderBrush="{DynamicResource BorderBrush}"
@@ -33,13 +35,15 @@
                   DockPanel.Dock="Right" HorizontalAlignment="Right"
                   Orientation="Horizontal">
                   <ToggleButton
-                    x:Name="PART_ToggleTextWrapButton" Width="20"
-                    Height="20" MinWidth="20"
-                    MinHeight="20" Padding="0"
-                    CornerRadius="3" Focusable="False"
+                    x:Name="PART_ToggleTextWrapButton"
+                    Width="{DynamicResource FontSize2Xl}"
+                    Height="{DynamicResource FontSize2Xl}"
+                    Padding="0" CornerRadius="3"
+                    Focusable="False"
                     IsChecked="{TemplateBinding IsCodeWrapped, Mode=TwoWay}">
                     <Viewbox
-                      Width="16" Height="16">
+                      Width="{DynamicResource FontSizeL}"
+                      Height="{DynamicResource FontSizeL}">
                       <Path
                         Width="24" Height="24"
                         Stroke="{TemplateBinding Foreground}"
@@ -56,12 +60,14 @@
                     </Viewbox>
                   </ToggleButton>
                   <Button
-                    x:Name="PART_CopyButton" Width="20"
-                    Height="20" MinWidth="20"
-                    MinHeight="20" Padding="0"
-                    CornerRadius="3" Focusable="False">
+                    x:Name="PART_CopyButton"
+                    Width="{DynamicResource FontSize2Xl}"
+                    Height="{DynamicResource FontSize2Xl}"
+                    Padding="0" CornerRadius="3"
+                    Focusable="False">
                     <Viewbox
-                      Width="16" Height="16">
+                      Width="{DynamicResource FontSizeL}"
+                      Height="{DynamicResource FontSizeL}">
                       <Path
                         Width="24" Height="24"
                         Stroke="{TemplateBinding Foreground}"
@@ -182,15 +188,15 @@
     <Style Selector="^ InlineUIContainer.Code">
       <Style Selector="^ Border">
         <Setter Property="ClipToBounds" Value="False"/>
-        <Setter Property="Margin" Value="2, 0, 2, -4"/>
-        <Setter Property="Padding" Value="2, -1"/>
+        <Setter Property="Margin" Value="2,0,2,-4"/>
+        <Setter Property="Padding" Value="2,-1"/>
         <Setter Property="CornerRadius" Value="4"/>
         <Setter Property="Background" Value="{DynamicResource SecondaryCardBackgroundColor}"/>
       </Style>
 
       <Style Selector="^ md|MarkdownTextBlock">
-        <Setter Property="Foreground" Value="#D7BA7D"/>
-        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Foreground" Value="{DynamicResource CodeInlineColor}"/>
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeM}"/>
         <Setter Property="FontFamily" Value="Consolas, 'Courier New', monospace"/>
       </Style>
     </Style>
@@ -225,7 +231,7 @@
 
     <Style Selector="^ Border.QuoteBlock">
       <Setter Property="Background" Value="{DynamicResource SecondaryCardBackgroundColor}"/>
-      <Setter Property="BorderBrush" Value="#D7BA7D"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource QuoteBorderColor}"/>
       <Setter Property="BorderThickness" Value="4,0,0,0"/>
       <Setter Property="CornerRadius" Value="4"/>
       <Setter Property="Margin" Value="0,8"/>
@@ -236,34 +242,34 @@
       <Style Selector="^ md|MarkdownTextBlock">
         <Style Selector="^.Heading1">
           <Setter Property="Margin" Value="0,6"/>
-          <Setter Property="FontSize" Value="24"/>
+          <Setter Property="FontSize" Value="{DynamicResource FontSize3Xl}"/>
           <Setter Property="FontWeight" Value="Bold"/>
         </Style>
 
         <Style Selector="^.Heading2">
           <Setter Property="Margin" Value="0,4"/>
-          <Setter Property="FontSize" Value="20"/>
+          <Setter Property="FontSize" Value="{DynamicResource FontSize2Xl}"/>
           <Setter Property="FontWeight" Value="Bold"/>
         </Style>
 
         <Style Selector="^.Heading3">
           <Setter Property="Margin" Value="0,2"/>
-          <Setter Property="FontSize" Value="18"/>
+          <Setter Property="FontSize" Value="{DynamicResource FontSizeXl}"/>
           <Setter Property="FontWeight" Value="Bold"/>
         </Style>
 
         <Style Selector="^.Heading4">
           <Setter Property="Margin" Value="0,2"/>
-          <Setter Property="FontSize" Value="16"/>
+          <Setter Property="FontSize" Value="{DynamicResource FontSizeL}"/>
           <Setter Property="FontWeight" Value="Bold"/>
         </Style>
 
         <Style Selector="^.Heading5">
-          <Setter Property="FontSize" Value="16"/>
+          <Setter Property="FontSize" Value="{DynamicResource FontSizeL}"/>
         </Style>
 
         <Style Selector="^.Heading6">
-          <Setter Property="FontSize" Value="16"/>
+          <Setter Property="FontSize" Value="{DynamicResource FontSizeL}"/>
         </Style>
       </Style>
     </Style>
@@ -274,10 +280,12 @@
       <Setter Property="Template">
         <ControlTemplate TargetType="CheckBox">
           <Viewbox
-            Width="14" Height="14">
+            Width="{DynamicResource FontSizeM}"
+            Height="{DynamicResource FontSizeM}">
             <Border
-              x:Name="Border" Width="14"
-              Height="14"
+              x:Name="Border"
+              Width="{DynamicResource FontSizeM}"
+              Height="{DynamicResource FontSizeM}"
               BorderBrush="{DynamicResource BorderColor}"
               BorderThickness="1"
               CornerRadius="{TemplateBinding CornerRadius}">

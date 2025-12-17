@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls.Documents;
+﻿using System.Collections.Concurrent;
+using Avalonia.Controls.Documents;
 using Avalonia.Media;
 using TextMateSharp.Grammars;
 using TextMateSharp.Registry;
@@ -7,61 +8,69 @@ using FontStyle = Avalonia.Media.FontStyle;
 
 namespace LiveMarkdown.Avalonia;
 
-internal record RegistryContext
-{
-    public static RegistryContext DarkPlus { get; } = new(ThemeName.DarkPlus);
-
-    public RegistryOptions Options { get; }
-
-    public Registry Registry { get; }
-
-    public Theme Theme { get; }
-
-    private readonly Dictionary<Color, SolidColorBrush> _colorBrushCache = new();
-
-    private RegistryContext(ThemeName themeName)
-    {
-        Options = new RegistryOptions(themeName);
-        Registry = new Registry(Options);
-        Theme = Registry.GetTheme();
-    }
-
-    public SolidColorBrush GetBrush(Color color)
-    {
-        if (_colorBrushCache.TryGetValue(color, out var brush)) return brush;
-        brush = new SolidColorBrush(color);
-        _colorBrushCache[color] = brush;
-        return brush;
-    }
-}
-
 /// <summary>
 /// Handles syntax highlighting for source code using TextMateSharp
 /// and renders it into an Avalonia InlineCollection.
 /// </summary>
-public class SyntaxHighlighting
+public sealed class SyntaxHighlighting
 {
+    /// <summary>
+    /// The axaml class name used to mark formatted runs.
+    /// </summary>
     public const string FormattedClassName = "formatted";
 
+    /// <summary>
+    /// Checks if a Run has already been formatted.
+    /// </summary>
+    /// <param name="run"></param>
+    /// <returns></returns>
     public static bool IsRunFormatted(Run run) => run.Classes.Contains(FormattedClassName);
 
-    private readonly static Dictionary<string, WeakReference<SyntaxHighlighting>> Cache = [];
+    private readonly static RegistryOptions RegistryOptions;
+    private readonly static Registry Registry;
+
+    private readonly static Dictionary<string, WeakReference<SyntaxHighlighting>> LanguageCache = [];
+    private readonly static Dictionary<ThemeName, ThemeCacheEntry> ThemeCache = [];
 
     private readonly IGrammar? _grammar;
 
+    static SyntaxHighlighting()
+    {
+        // Initialize default registry options.
+        // We only need to get a Registry from it, so ThemeName here is not used
+        // This ensures that grammars are loaded only once and shared across instances.
+        RegistryOptions = new RegistryOptions(default);
+        Registry = new Registry(RegistryOptions);
+    }
+
+    /// <summary>
+    /// Creates or retrieves a cached SyntaxHighlighting instance for the specified language.
+    /// </summary>
+    /// <param name="languageName"></param>
+    /// <returns></returns>
     public static SyntaxHighlighting Create(string languageName)
     {
-        lock (Cache)
+        lock (LanguageCache)
         {
-            if (Cache.TryGetValue(languageName, out var weakRef) && weakRef.TryGetTarget(out var cached))
-            {
-                return cached;
-            }
-        }
+            if (LanguageCache.TryGetValue(languageName, out var weakRef) && weakRef.TryGetTarget(out var cached)) return cached;
 
-        var instance = new SyntaxHighlighting(languageName);
-        lock (Cache) Cache[languageName] = new WeakReference<SyntaxHighlighting>(instance);
-        return instance;
+            var instance = new SyntaxHighlighting(languageName);
+            LanguageCache[languageName] = new WeakReference<SyntaxHighlighting>(instance);
+            return instance;
+        }
+    }
+
+    private static ThemeCacheEntry GetThemeCacheEntry(ThemeName themeName)
+    {
+        lock (ThemeCache)
+        {
+            if (ThemeCache.TryGetValue(themeName, out var cacheEntry)) return cacheEntry;
+
+            cacheEntry = new ThemeCacheEntry(themeName);
+            ThemeCache[themeName] = cacheEntry;
+
+            return cacheEntry;
+        }
     }
 
     /// <summary>
@@ -71,19 +80,17 @@ public class SyntaxHighlighting
     private SyntaxHighlighting(string languageName)
     {
         // Initialize the registry with the DarkPlus theme.
-        var context = RegistryContext.DarkPlus;
-
         // Get the scope name from the language name (e.g., "csharp" -> "source.cs") and load the grammar.
-        var scopeName = context.Options.GetScopeByLanguageId(languageName) ?? context.Options.GetScopeByExtension('.' + languageName);
+        var scopeName = RegistryOptions.GetScopeByLanguageId(languageName) ?? RegistryOptions.GetScopeByExtension('.' + languageName);
         if (scopeName == null) return;
 
-        _grammar = context.Registry.LoadGrammar(scopeName);
+        _grammar = Registry.LoadGrammar(scopeName);
     }
 
     /// <summary>
     /// Formats the source code and populates the InlineCollection with styled runs.
     /// </summary>
-    public void FormatInlines(InlineCollection inlines)
+    public void FormatInlines(InlineCollection inlines, ThemeName themeName = ThemeName.DarkPlus)
     {
         if (_grammar is null) return;
 
@@ -100,7 +107,7 @@ public class SyntaxHighlighting
 
             if (result.Tokens.Length == 1)
             {
-                StyleRun(run, result.Tokens[0].Scopes);
+                StyleRun(run, result.Tokens[0].Scopes, themeName);
             }
             else
             {
@@ -111,7 +118,7 @@ public class SyntaxHighlighting
                 {
                     var text = line.Substring(token.StartIndex, Math.Min(token.EndIndex - token.StartIndex, line.Length - token.StartIndex));
                     run = new Run(text);
-                    StyleRun(run, token.Scopes);
+                    StyleRun(run, token.Scopes, themeName);
                     span.Inlines.Add(run);
                 }
             }
@@ -123,12 +130,13 @@ public class SyntaxHighlighting
     /// </summary>
     /// <param name="run">The Run to style.</param>
     /// <param name="scopes">The scopes associated with the token.</param>
-    private static void StyleRun(Run run, IList<string> scopes)
+    /// <param name="themeName">The theme to use for styling.</param>
+    private static void StyleRun(Run run, IList<string> scopes, ThemeName themeName)
     {
         if (!IsRunFormatted(run)) run.Classes.Add(FormattedClassName);
 
-        var context = RegistryContext.DarkPlus;
-        var themeRules = context.Theme.Match(scopes);
+        var entry = GetThemeCacheEntry(themeName);
+        var themeRules = entry.Theme.Match(scopes);
 
         var foregroundId = -1;
         var backgroundId = -1;
@@ -150,20 +158,20 @@ public class SyntaxHighlighting
         // Apply foreground color.
         if (foregroundId != -1)
         {
-            var colorStr = context.Theme.GetColor(foregroundId);
+            var colorStr = entry.Theme.GetColor(foregroundId);
             if (Color.TryParse(colorStr, out var color))
             {
-                run.Foreground = context.GetBrush(color);
+                run.Foreground = entry.GetBrush(color);
             }
         }
 
         // Apply background color.
         if (backgroundId != -1)
         {
-            var colorStr = context.Theme.GetColor(backgroundId);
+            var colorStr = entry.Theme.GetColor(backgroundId);
             if (Color.TryParse(colorStr, out var color))
             {
-                run.Background = context.GetBrush(color);
+                run.Background = entry.GetBrush(color);
             }
         }
 
@@ -185,6 +193,27 @@ public class SyntaxHighlighting
             {
                 run.TextDecorations.AddRange(decorations);
             }
+        }
+    }
+
+    /// <summary>
+    /// A context for the TextMateSharp registry, theme, and options.
+    /// Properties are cached for performance.
+    /// </summary>
+    private record ThemeCacheEntry
+    {
+        public Theme Theme { get; }
+
+        private readonly ConcurrentDictionary<Color, SolidColorBrush> _colorBrushCache = new();
+
+        public ThemeCacheEntry(ThemeName themeName)
+        {
+            Theme = Theme.CreateFromRawTheme(RegistryOptions.LoadTheme(themeName), RegistryOptions);
+        }
+
+        public SolidColorBrush GetBrush(Color color)
+        {
+            return _colorBrushCache.GetOrAdd(color, static c => new SolidColorBrush(c));
         }
     }
 }
