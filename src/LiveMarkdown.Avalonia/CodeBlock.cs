@@ -6,6 +6,7 @@ using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using TextMateSharp.Grammars;
 
 namespace LiveMarkdown.Avalonia;
 
@@ -54,6 +55,21 @@ public class CodeBlock : TemplatedControl
     {
         get => GetValue(LanguageProperty);
         set => SetValue(LanguageProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="ColorTheme"/> property.
+    /// </summary>
+    public static readonly StyledProperty<ThemeName> ColorThemeProperty =
+        AvaloniaProperty.Register<CodeBlock, ThemeName>(nameof(ColorTheme), ThemeName.DarkPlus);
+
+    /// <summary>
+    /// Gets or sets the theme used for syntax highlighting.
+    /// </summary>
+    public ThemeName ColorTheme
+    {
+        get => GetValue(ColorThemeProperty);
+        set => SetValue(ColorThemeProperty, value);
     }
 
     /// <summary>
@@ -192,6 +208,10 @@ public class CodeBlock : TemplatedControl
         {
             if (AutoSyntaxHighlight) HighlightSyntax();
         }
+        else if (change.Property == ColorThemeProperty)
+        {
+            if (AutoSyntaxHighlight) Code = Code; // re-apply syntax highlighting
+        }
         else if (change.Property == AutoSyntaxHighlightProperty)
         {
             if (change.NewValue is true)
@@ -237,7 +257,7 @@ public class CodeBlock : TemplatedControl
         isApplyingSyntaxHighlighting = true;
         try
         {
-            SyntaxHighlighting.Create(Language!.ToLower()).FormatInlines(Inlines);
+            SyntaxHighlighting.Create(Language!.ToLower()).FormatInlines(Inlines, ColorTheme);
         }
         finally
         {

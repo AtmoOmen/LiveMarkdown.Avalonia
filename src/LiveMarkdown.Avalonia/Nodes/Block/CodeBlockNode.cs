@@ -16,8 +16,7 @@ public class CodeBlockNode : BlockNode<Markdig.Syntax.CodeBlock>
     {
         Control = _codeBlock = new CodeBlock
         {
-            Classes = { "CodeBlock" },
-            AutoSyntaxHighlight = false
+            Classes = { "CodeBlock" }
         };
         _codeBlock.ApplyTemplate(); // Ensure the template is applied to initialize the CodeTextBlock
     }

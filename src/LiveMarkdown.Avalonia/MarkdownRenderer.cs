@@ -9,6 +9,7 @@ using Avalonia.Interactivity;
 using Avalonia.Logging;
 using Avalonia.Threading;
 using Markdig;
+using TextMateSharp.Grammars;
 
 namespace LiveMarkdown.Avalonia;
 
@@ -81,6 +82,21 @@ public partial class MarkdownRenderer : Control
     {
         get => GetValue(ImageBasePathProperty);
         set => SetValue(ImageBasePathProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="CodeBlockColorTheme"/> property.
+    /// </summary>
+    public static readonly StyledProperty<ThemeName> CodeBlockColorThemeProperty =
+        CodeBlock.ColorThemeProperty.AddOwner<MarkdownRenderer>();
+
+    /// <summary>
+    /// Gets or sets the color theme used for syntax highlighting in code blocks.
+    /// </summary>
+    public ThemeName CodeBlockColorTheme
+    {
+        get => GetValue(CodeBlockColorThemeProperty);
+        set => SetValue(CodeBlockColorThemeProperty, value);
     }
 
     /// <summary>

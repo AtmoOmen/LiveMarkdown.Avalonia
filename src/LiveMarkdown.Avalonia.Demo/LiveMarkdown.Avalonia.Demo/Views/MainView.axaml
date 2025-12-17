@@ -52,6 +52,7 @@
       </ScrollViewer.Styles>
       <md:MarkdownRenderer
         x:Name="MarkdownRenderer" Margin="8,4"
+        CodeBlockColorTheme="{Binding SelectedColorTheme}"
         InlineHyperlinkCommand="{Binding OpenUriCommand}"
         MarkdownBuilder="{Binding MarkdownBuilder}">
         <md:MarkdownRenderer.ContextFlyout>
@@ -73,7 +74,7 @@
       Orientation="Horizontal" Spacing="16">
       <TextBlock
         Margin="0,0,-4,0" VerticalAlignment="Center"
-        Text="Select sample: "/>
+        Text="Select sample:"/>
       <ComboBox
         VerticalAlignment="Center"
         ItemsSource="{Binding MarkdownList}"
@@ -81,7 +82,7 @@
 
       <TextBlock
         Margin="0,0,-4,0" VerticalAlignment="Center"
-        Text="Render speed: "/>
+        Text="Render speed:"/>
       <Slider
         Width="160" VerticalAlignment="Center"
         Maximum="100" Minimum="1"
@@ -91,6 +92,14 @@
         VerticalAlignment="Center"
         Command="{Binding ClearMarkdownCommand}"
         Content="Clear"/>
+
+      <TextBlock
+        Margin="0,0,-4,0" VerticalAlignment="Center"
+        Text="Code color theme:"/>
+      <ComboBox
+        VerticalAlignment="Center"
+        ItemsSource="{Binding AvailableColorThemes}"
+        SelectedItem="{Binding SelectedColorTheme, Mode=TwoWay}"/>
     </StackPanel>
   </Grid>
 </UserControl>

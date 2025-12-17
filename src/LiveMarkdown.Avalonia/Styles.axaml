@@ -201,11 +201,15 @@
       </Style>
     </Style>
 
+    <Style Selector="^ md|CodeBlock">
+      <Setter Property="ColorTheme" Value="{Binding $parent[md:MarkdownRenderer].CodeBlockColorTheme}"/>
+    </Style>
+
     <Style Selector="^ md|InlineHyperlink.Link">
       <Style Selector="^ Button">
         <Setter Property="ClipToBounds" Value="False"/>
-        <Setter Property="Padding" Value="2, 0"/>
-        <Setter Property="Margin" Value="0, -5, 0, -5"/>
+        <Setter Property="Padding" Value="2,0"/>
+        <Setter Property="Margin" Value="0,-5,0,-5"/>
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate>

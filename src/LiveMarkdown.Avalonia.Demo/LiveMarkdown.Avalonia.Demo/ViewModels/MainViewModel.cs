@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using TextMateSharp.Grammars;
 
 namespace LiveMarkdown.Avalonia.Demo.ViewModels;
 
@@ -29,6 +30,11 @@ public partial class MainViewModel : ViewModelBase
             _ = RenderMarkdownAsync(value);
         }
     }
+
+    public ThemeName[] AvailableColorThemes { get; } = Enum.GetValues<ThemeName>();
+
+    [ObservableProperty]
+    public partial ThemeName SelectedColorTheme { get; set; }
 
     private CancellationTokenSource? cancellationTokenSource;
 

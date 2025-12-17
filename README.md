@@ -73,10 +73,11 @@ or use the NuGet Package Manager in your IDE.
 
   <Application.Resources>
     <!-- Your other resources here -->
-    <Color x:Key="BorderColor">#3DFFFFFF</Color>
-    <Color x:Key="ForegroundColor">#FFFFFF</Color>
-    <Color x:Key="CardBackgroundColor">#15000000</Color>
-    <Color x:Key="SecondaryCardBackgroundColor">#99000000</Color>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://LiveMarkdown.Avalonia/Defaults.axaml"/>
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
   </Application.Resources>
 </Application>
 ```
@@ -108,14 +109,6 @@ markdownBuilder.Clear();
 
 If you want to load local images with relative paths, you can set the `MarkdownRenderer.ImageBasePath` property.
 
-## 🪄 Style Customization
-
-Markdown elements can be styled using Avalonia's powerful styling system. You can override the [default styles](https://github.com/DearVa/LiveMarkdown.Avalonia/blob/main/src/LiveMarkdown.Avalonia/Styles.axaml) by defining your own styles in your application styles.
-
-Avalonia Styling Docs: 
-- [Avalonia Styles](https://docs.avaloniaui.net/docs/styling)
-- [Style selector syntax](https://docs.avaloniaui.net/docs/reference/styles/style-selector-syntax)
-
 ### 4. Enable LaTeX rendering
 
 LaTeX is supported via the `LiveMarkdown.Avalonia.Math` package. You can install it via NuGet:
@@ -132,6 +125,59 @@ using LiveMarkdown.Avalonia;
 MarkdownNode.Register<MathInlineNode>();
 MarkdownNode.Register<MathBlockNode>();
 ```
+
+## 🪄 Style Customization
+
+Markdown elements can be styled using Avalonia's powerful styling system. You can override the [default styles](https://github.com/DearVa/LiveMarkdown.Avalonia/blob/main/src/LiveMarkdown.Avalonia/Styles.axaml) by defining your own styles in your application styles.
+
+Avalonia Styling Docs: 
+- [Avalonia Styles](https://docs.avaloniaui.net/docs/styling)
+- [Style selector syntax](https://docs.avaloniaui.net/docs/reference/styles/style-selector-syntax)
+
+### Customizing Resources
+
+The `<ResourceInclude Source="avares://LiveMarkdown.Avalonia/Defaults.axaml"/>` line in your `App.axaml` imports the default resources used by the renderer. You can override these resources in your application to customize the look and feel.
+
+Here are the available resource keys:
+
+| Key | Type | Description |
+| --- | --- | --- |
+| `BorderColor` | `Color` | Color of borders (e.g., code blocks, tables) |
+| `ForegroundColor` | `Color` | Default text color |
+| `CardBackgroundColor` | `Color` | Background color for tables |
+| `SecondaryCardBackgroundColor` | `Color` | Background color for code blocks and quotes |
+| `CodeInlineColor` | `Color` | Text color for inline code |
+| `QuoteBorderColor` | `Color` | Border color for blockquotes |
+| `FontSizeS` | `Double` | Small font size (not used yet) |
+| `FontSizeM` | `Double` | Medium font size (default text size) |
+| `FontSizeL` | `Double` | Large font size for Heading4, Heading5 and Heading6 |
+| `FontSizeXl` | `Double` | Extra large font size for Heading3 |
+| `FontSize2Xl` | `Double` | 2XL font size for Heading2 |
+| `FontSize3Xl` | `Double` | 3XL font size for Heading1 |
+
+### Code Block Theme
+
+You can customize the syntax highlighting theme for code blocks. The default theme is `DarkPlus`.
+
+#### Global Setting
+
+To set the theme globally for a `MarkdownRenderer` instance, use the `CodeBlockColorTheme` property:
+
+```xml
+<md:MarkdownRenderer CodeBlockColorTheme="LightPlus" />
+```
+
+#### Per-CodeBlock Setting via Styles
+
+You can also use Avalonia styles to set the theme for specific code blocks or based on conditions:
+
+```xml
+<Style Selector="md|CodeBlock">
+    <Setter Property="ColorTheme" Value="SolarizedDark"/>
+</Style>
+```
+
+Supported themes are defined in `TextMateSharp.Grammars.ThemeName`.
 
 ## 🤔 FAQ
 
