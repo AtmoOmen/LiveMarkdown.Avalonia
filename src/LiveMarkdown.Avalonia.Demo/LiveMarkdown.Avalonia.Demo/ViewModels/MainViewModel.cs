@@ -96,12 +96,11 @@ public partial class MainViewModel : ViewModelBase
                     }
 
                     var readCount = await reader.ReadBlockAsync(buffer, 0, buffer.Length);
-                    if (readCount > 0)
-                    {
-                        var newText = new string(buffer, 0, readCount);
-                        RawMarkdownText += newText;
-                        yield return newText;
-                    }
+                    if (readCount <= 0) break;
+
+                    var newText = new string(buffer, 0, readCount);
+                    RawMarkdownText += newText;
+                    yield return newText;
                 }
             }
 
