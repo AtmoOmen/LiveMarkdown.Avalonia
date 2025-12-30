@@ -30,7 +30,7 @@ It supports **real-time rendering** of Markdown content, so it's ideal for appli
 > 
 > Please use 11.3.0 ~ 11.3.4 or >= 11.3.7 to avoid this problem.
 
-## Donate
+## ❤️ Sponsor
 
 This project is fully open-source and free. Your support will improve this project a lot. I sincerely thank all my sponsors!
 
