@@ -242,39 +242,50 @@
       <Setter Property="Padding" Value="8,6"/>
     </Style>
 
-    <Style Selector="^ Border.HeadingBlock">
+    <Style Selector="^ Border.Heading1Block">
       <Style Selector="^ md|MarkdownTextBlock">
-        <Style Selector="^.Heading1">
-          <Setter Property="Margin" Value="0,6"/>
-          <Setter Property="FontSize" Value="{DynamicResource FontSize3Xl}"/>
-          <Setter Property="FontWeight" Value="Bold"/>
-        </Style>
+        <Setter Property="Margin" Value="0,6"/>
+        <Setter Property="FontSize" Value="{DynamicResource FontSize3Xl}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+      </Style>
+    </Style>
 
-        <Style Selector="^.Heading2">
-          <Setter Property="Margin" Value="0,4"/>
-          <Setter Property="FontSize" Value="{DynamicResource FontSize2Xl}"/>
-          <Setter Property="FontWeight" Value="Bold"/>
-        </Style>
+    <Style Selector="^ Border.Heading2Block">
+      <Style Selector="^ md|MarkdownTextBlock">
+        <Setter Property="Margin" Value="0,4"/>
+        <Setter Property="FontSize" Value="{DynamicResource FontSize2Xl}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+      </Style>
+    </Style>
 
-        <Style Selector="^.Heading3">
-          <Setter Property="Margin" Value="0,2"/>
-          <Setter Property="FontSize" Value="{DynamicResource FontSizeXl}"/>
-          <Setter Property="FontWeight" Value="Bold"/>
-        </Style>
+    <Style Selector="^ Border.Heading3Block">
+      <Style Selector="^ md|MarkdownTextBlock">
+        <Setter Property="Margin" Value="0,2"/>
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeXl}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+      </Style>
+    </Style>
 
-        <Style Selector="^.Heading4">
-          <Setter Property="Margin" Value="0,2"/>
-          <Setter Property="FontSize" Value="{DynamicResource FontSizeL}"/>
-          <Setter Property="FontWeight" Value="Bold"/>
-        </Style>
+    <Style Selector="^ Border.Heading4Block">
+      <Style Selector="^ md|MarkdownTextBlock">
+        <Setter Property="Margin" Value="0,2"/>
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeL}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+      </Style>
+    </Style>
 
-        <Style Selector="^.Heading5">
-          <Setter Property="FontSize" Value="{DynamicResource FontSizeL}"/>
-        </Style>
+    <Style Selector="^ Border.Heading5Block">
+      <Style Selector="^ md|MarkdownTextBlock">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeL}"/>
+      </Style>
+    </Style>
 
-        <Style Selector="^.Heading6">
-          <Setter Property="FontSize" Value="{DynamicResource FontSizeL}"/>
-        </Style>
+    <Style Selector="^ Border.Heading6Block">
+      <Style Selector="^ md|MarkdownTextBlock">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeL}"/>
+      </Style>
+    </Style>
+
       </Style>
     </Style>
 

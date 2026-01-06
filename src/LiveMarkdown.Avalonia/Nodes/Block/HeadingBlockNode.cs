@@ -14,7 +14,6 @@ public class HeadingBlockNode : BlockNode<HeadingBlock>
         headingInlines = new InlineCollectionNode<HeadingBlock>();
         Control = new Border
         {
-            Classes = { "HeadingBlock" },
             Child = headingInlines.Control
         };
     }
@@ -30,6 +29,7 @@ public class HeadingBlockNode : BlockNode<HeadingBlock>
         if (!headingInlines.Update(documentNode, headingBlock, change, cancellationToken)) return false;
 
         cancellationToken.ThrowIfCancellationRequested();
+        Control.Classes.EnsureClassName("Heading", $"{headingBlock.Level}Block");
         headingInlines.Control.Classes.EnsureClassName("Heading", headingBlock.Level);
         return true;
     }
