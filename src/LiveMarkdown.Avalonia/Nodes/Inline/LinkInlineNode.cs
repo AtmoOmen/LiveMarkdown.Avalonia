@@ -7,7 +7,7 @@ namespace LiveMarkdown.Avalonia;
 /// <summary>
 /// A node that represents a link inline.
 /// </summary>
-public class LinkInlineNode() : InlinesNode<LinkInline>(new InlineHyperlink { Classes = { "Link" } })
+public class LinkInlineNode() : InlinesNode<LinkInline>(new Link())
 {
     protected override bool UpdateCore(
         DocumentNode documentNode,
@@ -17,7 +17,7 @@ public class LinkInlineNode() : InlinesNode<LinkInline>(new InlineHyperlink { Cl
     {
         if (linkInline.Url == null) return false;
 
-        var inlineHyperlink = Unsafe.As<InlineHyperlink>(Inline);
+        var inlineHyperlink = Unsafe.As<Link>(Inline);
         Uri.TryCreate(linkInline.Url, UriKind.RelativeOrAbsolute, out var uri);
 
         if (linkInline.IsImage)

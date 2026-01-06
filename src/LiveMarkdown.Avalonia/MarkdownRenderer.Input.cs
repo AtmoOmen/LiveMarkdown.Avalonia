@@ -128,7 +128,6 @@ public partial class MarkdownRenderer
         }
 
         e.Handled = true;
-        e.Pointer.Capture(this);
         Focus();
 
         // 3. Clear old selection
@@ -187,7 +186,6 @@ public partial class MarkdownRenderer
 
         selectionAnchor = null;
         activeScopeBlocks = null; // Release cache
-        e.Pointer.Capture(null);
         e.Handled = true;
 
         base.OnPointerReleased(e);

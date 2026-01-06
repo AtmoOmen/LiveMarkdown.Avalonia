@@ -8,8 +8,6 @@ namespace LiveMarkdown.Avalonia;
 /// </summary>
 public class InlinesNode<TInline> : InlineNode<TInline> where TInline : Inline
 {
-    protected override MarkdownTextBlock? TextBlock { get; }
-
     public override global::Avalonia.Controls.Documents.Inline Inline { get; }
 
     public InlineCollection Inlines { get; }
@@ -17,11 +15,6 @@ public class InlinesNode<TInline> : InlineNode<TInline> where TInline : Inline
     private readonly MarkdownRenderer.InlinesProxy proxy;
 
     public InlinesNode(Span span) : this(span, span.Inlines) { }
-
-    protected InlinesNode(InlineHyperlink inlineHyperlink) : this(inlineHyperlink, inlineHyperlink.Inlines)
-    {
-        TextBlock = inlineHyperlink.TextBlock;
-    }
 
     private InlinesNode(global::Avalonia.Controls.Documents.Inline inline, InlineCollection inlines)
     {

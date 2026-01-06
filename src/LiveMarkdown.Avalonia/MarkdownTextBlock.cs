@@ -3,6 +3,7 @@ using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
+using Avalonia.Controls.Metadata;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
@@ -18,8 +19,41 @@ namespace LiveMarkdown.Avalonia;
 /// Represents a Markdown text block that can be rendered and interacted with.
 /// This class extends <see cref="SelectableTextBlock"/> to fix its selection bugs.
 /// </summary>
+[PseudoClasses(":pointerover-link")]
 public class MarkdownTextBlock : SelectableTextBlock
 {
+    /// <summary>
+    /// Defines the <see cref="LinkContextMenu"/> property.
+    /// </summary>
+    public static readonly StyledProperty<ContextMenu?> LinkContextMenuProperty =
+        AvaloniaProperty.Register<MarkdownTextBlock, ContextMenu?>(nameof(LinkContextMenu));
+
+    /// <summary>
+    /// Context menu to show when right-clicking a Link.
+    /// </summary>
+    public ContextMenu? LinkContextMenu
+    {
+        get => GetValue(LinkContextMenuProperty);
+        set => SetValue(LinkContextMenuProperty, value);
+    }
+
+    /// <summary>
+    /// Routed event that is raised when a Link is clicked.
+    /// </summary>
+    public static readonly RoutedEvent<LinkClickedEventArgs> LinkClickEvent =
+        RoutedEvent.Register<Link, LinkClickedEventArgs>(
+            nameof(LinkClick),
+            RoutingStrategies.Bubble);
+
+    /// <summary>
+    /// Raised when a Link is clicked.
+    /// </summary>
+    public event EventHandler<LinkClickedEventArgs>? LinkClick
+    {
+        add => AddHandler(LinkClickEvent, value);
+        remove => RemoveHandler(LinkClickEvent, value);
+    }
+
     public SourceSpan SourceSpan { get; internal set; }
 
     public string ActualText
@@ -27,48 +61,7 @@ public class MarkdownTextBlock : SelectableTextBlock
         get
         {
             if (Inlines is not { Count: > 0 } inlines) return Text ?? string.Empty;
-
-            var stringBuilder = new StringBuilder();
-            foreach (var inline in inlines) AppendInline(inline);
-            return stringBuilder.ToString();
-
-            void AppendInline(Inline inline)
-            {
-                switch (inline)
-                {
-                    case Run run:
-                    {
-                        stringBuilder.Append(run.Text);
-                        break;
-                    }
-                    case Span span:
-                    {
-                        foreach (var childInline in span.Inlines) AppendInline(childInline);
-                        break;
-                    }
-                    case LineBreak:
-                    {
-                        stringBuilder.Append(Environment.NewLine);
-                        break;
-                    }
-                    case InlineUIContainer { Child: { } logicalChild }:
-                    {
-                        AppendLogicalText(logicalChild);
-                        break;
-                    }
-                }
-            }
-
-            void AppendLogicalText(ILogical logical)
-            {
-                if (logical is MarkdownTextBlock markdownTextBlock)
-                {
-                    stringBuilder.Append(markdownTextBlock.ActualText);
-                    return; // markdownTextBlock.ActualText will handle its own inlines
-                }
-
-                foreach (var child in logical.LogicalChildren) AppendLogicalText(child);
-            }
+            return inlines.ActualText;
         }
     }
 
@@ -420,39 +413,97 @@ public class MarkdownTextBlock : SelectableTextBlock
         _textRuns = textRuns;
     }
 
+    private Link? pointerLink;
+    private Link? pressingLink;
+
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
-        if (this.GetVisualAncestors().OfType<MarkdownRenderer>().FirstOrDefault() is not null)
-        {
-            return;
-        }
-        
-        base.OnPointerPressed(e);
-    }
+        HitTestLink(e.GetPosition(this));
+        pressingLink = pointerLink;
 
-    protected override void OnPointerMoved(PointerEventArgs e)
-    {
         if (this.GetVisualAncestors().OfType<MarkdownRenderer>().FirstOrDefault() is not null)
         {
             return;
         }
-        
-        base.OnPointerMoved(e);
+
+        base.OnPointerPressed(e);
     }
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
+        if (pressingLink is not null && pointerLink == pressingLink)
+        {
+            switch (e.InitialPressMouseButton)
+            {
+                case MouseButton.Left when pressingLink.HRef is not null:
+                {
+                    var args = new LinkClickedEventArgs(LinkClickEvent, this, pressingLink.HRef);
+                    RaiseEvent(args);
+                    e.Handled = args.Handled;
+                    pressingLink.IsClicked = true;
+                    break;
+                }
+                case MouseButton.Right when LinkContextMenu is { } contextMenu:
+                {
+                    contextMenu.DataContext = pointerLink;
+                    contextMenu.Open(this);
+                    e.Handled = true;
+                    break;
+                }
+            }
+        }
+
+        pressingLink = null;
+
         if (this.GetVisualAncestors().OfType<MarkdownRenderer>().FirstOrDefault() is not null)
         {
             return;
         }
-        
+
         base.OnPointerReleased(e);
+    }
+
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        HitTestLink(e.GetPosition(this));
+
+        if (this.GetVisualAncestors().OfType<MarkdownRenderer>().FirstOrDefault() is not null)
+        {
+            return;
+        }
+
+        base.OnPointerMoved(e);
+    }
+
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        pointerLink = null;
+
+        base.OnPointerExited(e);
     }
 
     public new void SelectAll()
     {
         SetCurrentValue(SelectionStartProperty, 0);
         SetCurrentValue(SelectionEndProperty, EscapedTextLength);
+    }
+
+    private void HitTestLink(Point point)
+    {
+        if (Link.HitTestPoint(TextLayout, point) is { } link)
+        {
+            pointerLink = link;
+        }
+        else
+        {
+            pointerLink = null;
+        }
+
+        UpdatePseudoClass();
+    }
+
+    private void UpdatePseudoClass()
+    {
+        PseudoClasses.Set(":pointerover-link", pointerLink is not null);
     }
 }

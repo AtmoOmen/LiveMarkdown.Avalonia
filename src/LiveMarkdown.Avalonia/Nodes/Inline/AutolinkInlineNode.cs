@@ -8,11 +8,11 @@ public sealed class AutolinkInlineNode : InlineNode<AutolinkInline>
 {
     public override Inline Inline { get; }
 
-    private readonly InlineHyperlink inlineHyperlink;
+    private readonly Link link;
 
     public AutolinkInlineNode()
     {
-        Inline = inlineHyperlink = new InlineHyperlink
+        Inline = link = new Link
         {
             Classes = { "AutoLink" }
         };
@@ -25,13 +25,13 @@ public sealed class AutolinkInlineNode : InlineNode<AutolinkInline>
         CancellationToken cancellationToken)
     {
         Uri.TryCreate(autolink.Url, UriKind.RelativeOrAbsolute, out var uri);
-        inlineHyperlink.HRef = uri;
+        link.HRef = uri;
 
-        if (inlineHyperlink.Inlines is [Run run]) run.Text = autolink.Url;
+        if (link.Inlines is [Run run]) run.Text = autolink.Url;
         else
         {
-            inlineHyperlink.Inlines.Clear();
-            inlineHyperlink.Inlines.Add(
+            link.Inlines.Clear();
+            link.Inlines.Add(
                 new Run
                 {
                     Classes = { "Autolink" },

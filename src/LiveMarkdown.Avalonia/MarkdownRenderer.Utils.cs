@@ -1,10 +1,13 @@
 ﻿// @author https://github.com/DearVa
 
 using System.Diagnostics;
+using System.Text;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
+using Avalonia.LogicalTree;
 using Avalonia.Media.TextFormatting.Unicode;
 using Markdig.Syntax;
+using LineBreak = Avalonia.Controls.Documents.LineBreak;
 
 namespace LiveMarkdown.Avalonia;
 
@@ -408,48 +411,107 @@ public partial class MarkdownRenderer
 
 internal static class ClassesExtension
 {
-    /// <summary>
-    /// Ensures that the specified class name is present in the given <see cref="Classes"/> collection.
-    /// </summary>
     /// <param name="classes"></param>
-    /// <param name="name"></param>
-    public static void EnsureClassName(this Classes classes, string name)
+    extension(Classes classes)
     {
-        if (!classes.Contains(name))
+        /// <summary>
+        /// Ensures that the specified class name is present in the given <see cref="Classes"/> collection.
+        /// </summary>
+        /// <param name="name"></param>
+        public void EnsureClassName(string name)
         {
-            classes.Add(name);
-        }
-    }
-
-    /// <summary>
-    /// Ensures that the specified class name with prefix and suffix is present in the given <see cref="Classes"/> collection.
-    /// </summary>
-    /// <param name="classes"></param>
-    /// <param name="prefix"></param>
-    /// <param name="suffix"></param>
-    public static void EnsureClassName<TSuffix>(this Classes classes, string prefix, TSuffix suffix)
-    {
-        var index = -1;
-        for (var i = 0; i < classes.Count; i++)
-        {
-            var cls = classes[i];
-            if (cls.StartsWith(prefix, StringComparison.Ordinal))
+            if (!classes.Contains(name))
             {
-                index = i;
-                break;
+                classes.Add(name);
             }
         }
 
-        var name = prefix + suffix;
-        if (index == -1)
+        /// <summary>
+        /// Ensures that the specified class name with prefix and suffix is present in the given <see cref="Classes"/> collection.
+        /// </summary>
+        /// <param name="prefix"></param>
+        /// <param name="suffix"></param>
+        public void EnsureClassName<TSuffix>(string prefix, TSuffix suffix)
         {
-            classes.Add(name);
+            var index = -1;
+            for (var i = 0; i < classes.Count; i++)
+            {
+                var cls = classes[i];
+                if (cls.StartsWith(prefix, StringComparison.Ordinal))
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            var name = prefix + suffix;
+            if (index == -1)
+            {
+                classes.Add(name);
+            }
+            else if (classes[index] != name)
+            {
+                // classes[index] = name; // This may not work in Avalonia
+                classes.RemoveAt(index);
+                classes.Add(name);
+            }
         }
-        else if (classes[index] != name)
+    }
+}
+
+internal static class InlineExtension
+{
+    extension(IEnumerable<Inline> inlines)
+    {
+        /// <summary>
+        /// Gets the actual text content of the inlines, concatenating text from Runs and handling LineBreaks.
+        /// </summary>
+        public string ActualText
         {
-            // classes[index] = name; // This may not work in Avalonia
-            classes.RemoveAt(index);
-            classes.Add(name);
+            get
+            {
+                var stringBuilder = new StringBuilder();
+                foreach (var inline in inlines) AppendInline(inline);
+                return stringBuilder.ToString();
+
+                void AppendInline(Inline inline)
+                {
+                    switch (inline)
+                    {
+                        case Run run:
+                        {
+                            stringBuilder.Append(run.Text);
+                            break;
+                        }
+                        case Span span:
+                        {
+                            foreach (var childInline in span.Inlines) AppendInline(childInline);
+                            break;
+                        }
+                        case LineBreak:
+                        {
+                            stringBuilder.Append(Environment.NewLine);
+                            break;
+                        }
+                        case InlineUIContainer { Child: { } logicalChild }:
+                        {
+                            AppendLogicalText(logicalChild);
+                            break;
+                        }
+                    }
+                }
+
+                void AppendLogicalText(ILogical logical)
+                {
+                    if (logical is MarkdownTextBlock markdownTextBlock)
+                    {
+                        stringBuilder.Append(markdownTextBlock.ActualText);
+                        return; // markdownTextBlock.ActualText will handle its own inlines
+                    }
+
+                    foreach (var child in logical.LogicalChildren) AppendLogicalText(child);
+                }
+            }
         }
     }
 }

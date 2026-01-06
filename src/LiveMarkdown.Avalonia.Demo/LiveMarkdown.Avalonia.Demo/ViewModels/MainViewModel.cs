@@ -49,7 +49,7 @@ public partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task OpenUriAsync(InlineHyperlinkClickedEventArgs args)
+    private async Task OpenUriAsync(LinkClickedEventArgs args)
     {
         if (args.HRef is { IsAbsoluteUri: true, Scheme: "http" or "https" } url)
         {

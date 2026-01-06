@@ -16,7 +16,7 @@ It supports **real-time rendering** of Markdown content, so it's ideal for appli
 - 🚀 **High-performance rendering powered by [Markdig](https://github.com/xoofx/markdig)**
 - 🔄 **Real-time updates**: Automatically re-renders changes in Markdown content
 - 🎨 **Customizable styles**: Easily style Markdown elements using Avalonia's powerful styling system
-- 🔗 **Hyperlink support**: Clickable links with customizable behavior
+- 🔗 **Link support**: Clickable links with customizable behavior
 - 📊 **Table support**: Render tables with proper formatting
 - 📜 **Code block syntax highlighting**: Supports multiple languages with [TextMateSharp](https://github.com/danipen/TextMateSharp)
 - 🖼️ **Image support**: Load online, local even `avares` images asynchronously
@@ -41,7 +41,7 @@ This project is fully open-source and free. Your support will improve this proje
 
 - [x] Basic Markdown rendering
 - [x] Real-time updates
-- [x] Hyperlink support
+- [x] Link support
 - [x] Table support
 - [x] Code block syntax highlighting
 - [x] Image support

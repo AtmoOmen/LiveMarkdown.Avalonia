@@ -5,7 +5,6 @@
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Interactivity;
 using Avalonia.Logging;
 using Avalonia.Threading;
 using Markdig;
@@ -100,24 +99,39 @@ public partial class MarkdownRenderer : Control
     }
 
     /// <summary>
-    /// Raised when an inline hyperlink is clicked.
+    /// Defines the <see cref="LinkContextMenu"/> property.
     /// </summary>
-    public event EventHandler<InlineHyperlinkClickedEventArgs>? InlineHyperlinkClick
-    {
-        add => AddHandler(InlineHyperlink.ClickEvent, value);
-        remove => RemoveHandler(InlineHyperlink.ClickEvent, value);
-    }
-
-    public static readonly StyledProperty<ICommand?> InlineHyperlinkCommandProperty = AvaloniaProperty.Register<MarkdownRenderer, ICommand?>(
-        nameof(InlineHyperlinkCommand));
+    public static readonly StyledProperty<ContextMenu?> LinkContextMenuProperty =
+        MarkdownTextBlock.LinkContextMenuProperty.AddOwner<MarkdownRenderer>();
 
     /// <summary>
-    /// Command that is executed when an inline hyperlink is clicked. Command parameter is <see cref="InlineHyperlinkClickedEventArgs"/>.
+    /// Context menu to show when right-clicking a link.
     /// </summary>
-    public ICommand? InlineHyperlinkCommand
+    public ContextMenu? LinkContextMenu
     {
-        get => GetValue(InlineHyperlinkCommandProperty);
-        set => SetValue(InlineHyperlinkCommandProperty, value);
+        get => GetValue(LinkContextMenuProperty);
+        set => SetValue(LinkContextMenuProperty, value);
+    }
+
+    /// <summary>
+    /// Raised when a Link is clicked.
+    /// </summary>
+    public event EventHandler<LinkClickedEventArgs>? LinkClick
+    {
+        add => AddHandler(MarkdownTextBlock.LinkClickEvent, value);
+        remove => RemoveHandler(MarkdownTextBlock.LinkClickEvent, value);
+    }
+
+    public static readonly StyledProperty<ICommand?> LinkCommandProperty =
+        AvaloniaProperty.Register<MarkdownRenderer, ICommand?>(nameof(LinkCommand));
+
+    /// <summary>
+    /// Command that is executed when a Link is clicked. Command parameter is <see cref="LinkClickedEventArgs"/>.
+    /// </summary>
+    public ICommand? LinkCommand
+    {
+        get => GetValue(LinkCommandProperty);
+        set => SetValue(LinkCommandProperty, value);
     }
 
     private ObservableStringBuilderChangedEventArgs? pendingChange;
@@ -146,17 +160,17 @@ public partial class MarkdownRenderer : Control
     {
         VerboseLogger = Logger.TryGet(LogEventLevel.Verbose, nameof(MarkdownRenderer));
 
-        InlineHyperlink.ClickEvent.AddClassHandler<MarkdownRenderer>(HandleInlineHyperlinkClick);
+        MarkdownTextBlock.LinkClickEvent.AddClassHandler<MarkdownRenderer>(HandleLinkClick);
         RequestBringIntoViewEvent.AddClassHandler<MarkdownRenderer>(BringIntoViewRequested);
     }
 
-    private static void HandleInlineHyperlinkClick(MarkdownRenderer sender, InlineHyperlinkClickedEventArgs args)
+    private static void HandleLinkClick(MarkdownRenderer sender, LinkClickedEventArgs args)
     {
         if (args.Handled ||
-            sender.InlineHyperlinkCommand is not { } inlineHyperlinkCommand ||
-            !inlineHyperlinkCommand.CanExecute(args)) return;
+            sender.LinkCommand is not { } linkCommand ||
+            !linkCommand.CanExecute(args)) return;
 
-        inlineHyperlinkCommand.Execute(args);
+        linkCommand.Execute(args);
     }
 
     private static void BringIntoViewRequested(MarkdownRenderer sender, RequestBringIntoViewEventArgs args)
@@ -216,15 +230,4 @@ public partial class MarkdownRenderer : Control
 
         InvalidateArrange();
     }
-}
-
-/// <summary>
-/// Event arguments for the InlineHyperlinkClicked event.
-/// </summary>
-/// <param name="routedEvent"></param>
-/// <param name="source">Must be <see cref="InlineHyperlink"/></param>
-/// <param name="href"></param>
-public class InlineHyperlinkClickedEventArgs(RoutedEvent routedEvent, object source, Uri? href) : RoutedEventArgs(routedEvent, source)
-{
-    public Uri? HRef => href;
 }
