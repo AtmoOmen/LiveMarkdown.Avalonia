@@ -8,9 +8,11 @@
       Note that this package uses Svg.Controls.Avalonia for rendering SVG. If you want to use Svg.Controls.Skia.Avalonia instead, please install LiveMarkdown.Avalonia.Svg.Skia package.
     </Description>
     <PackageProjectUrl>https://github.com/DearVa/LiveMarkdown.Avalonia</PackageProjectUrl>
+    <PackageIcon>icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/DearVa/LiveMarkdown.Avalonia</RepositoryUrl>
+    <PackageTags>markdown;avalonia;llm;svg</PackageTags>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
@@ -26,6 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+    <None Include="..\..\README.md" Pack="true" PackagePath="README.md"/>
+    <None Include="..\..\img\icon.png" Pack="true" PackagePath="icon.png"/>
   </ItemGroup>
 </Project>

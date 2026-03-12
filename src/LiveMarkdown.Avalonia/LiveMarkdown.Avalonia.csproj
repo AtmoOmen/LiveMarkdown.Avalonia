@@ -7,9 +7,11 @@
       It supports real-time rendering of Markdown content, so it's ideal for applications that require dynamic text updating, especially when streaming LLM outputs.
     </Description>
     <PackageProjectUrl>https://github.com/DearVa/LiveMarkdown.Avalonia</PackageProjectUrl>
+    <PackageIcon>icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/DearVa/LiveMarkdown.Avalonia</RepositoryUrl>
+    <PackageTags>markdown;avalonia;llm;html;latex;math;mermaid;svg;skia</PackageTags>
   </PropertyGroup>
   
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
@@ -28,6 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+    <None Include="..\..\README.md" Pack="true" PackagePath="README.md"/>
+    <None Include="..\..\img\icon.png" Pack="true" PackagePath="icon.png"/>
   </ItemGroup>
 </Project>

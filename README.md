@@ -155,7 +155,8 @@ or
 dotnet add package LiveMarkdown.Avalonia.Svg.Skia
 ```
 
-> [!NOTE] The `LiveMarkdown.Avalonia.Svg` and `LiveMarkdown.Avalonia.Svg.Skia` packages provide two different implementations for SVG rendering.
+> [!NOTE] 
+> The `LiveMarkdown.Avalonia.Svg` and `LiveMarkdown.Avalonia.Svg.Skia` packages provide two different implementations for SVG rendering.
 > The former uses `Svg.Controls.Avalonia` which is more Avalonia-native, while the latter uses `Svg.Skia` which is more powerful and has better compatibility.
 
 Then register the `SvgImageDecoder` into the `AsyncImageLoader` before using SVG images in your Markdown content (e.g. App.axaml.cs):
