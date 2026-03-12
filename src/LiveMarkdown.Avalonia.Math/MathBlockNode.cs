@@ -8,7 +8,7 @@ public class MathBlockNode : BlockNode<MathBlock>
 {
     public override Control Control { get; }
 
-    private readonly TextBlock _textBlock;
+    private readonly MarkdownTextBlock _textBlock;
     private readonly MathView _mathView;
 
     public MathBlockNode()
@@ -18,7 +18,7 @@ public class MathBlockNode : BlockNode<MathBlock>
             Classes = { "MathBlock" },
             Children =
             {
-                (_textBlock = new TextBlock
+                (_textBlock = new MarkdownTextBlock
                 {
                     Classes = { "MathBlock" }
                 }),
