@@ -4,7 +4,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using Avalonia.Platform;
 using Avalonia.Threading;
 
 namespace LiveMarkdown.Avalonia;
@@ -75,7 +74,8 @@ public class AsyncImageLoader
             [
                 HttpAsyncImageLoaderHandler.Shared,
                 LocalFileAsyncImageLoaderHandler.Shared,
-                AvaloniaResourceAsyncImageLoaderHandler.Shared
+                AvaloniaResourceAsyncImageLoaderHandler.Shared,
+                DataUrlAsyncImageLoaderHandler.Shared
             ]);
 
     /// <summary>
@@ -374,81 +374,6 @@ public class DefaultBitmapDecoder : IImageDecoder
             return Task.FromResult<IImage?>(null);
         }
     }
-}
-
-/// <summary>
-/// Handler for loading images from specific URI schemes.
-/// </summary>
-public abstract class AsyncImageLoaderHandler
-{
-    /// <summary>
-    /// Supported URI schemes (e.g., "http", "https", "file").
-    /// </summary>
-    public abstract IEnumerable<string> SupportedSchemes { get; }
-
-    public abstract Task<Stream> LoadAsync(Uri uri, CancellationToken cancellationToken);
-}
-
-/// <summary>
-/// Handler for loading images over HTTP and HTTPS.
-/// Supports redirects.
-/// </summary>
-/// <param name="httpClient"></param>
-public class HttpAsyncImageLoaderHandler(HttpClient httpClient) : AsyncImageLoaderHandler
-{
-    public static HttpAsyncImageLoaderHandler Shared { get; } = new();
-
-    public override IEnumerable<string> SupportedSchemes => ["http", "https"];
-
-    private HttpAsyncImageLoaderHandler() : this(new HttpClient(new HttpClientHandler { AllowAutoRedirect = true })) { }
-
-    public override async Task<Stream> LoadAsync(Uri uri, CancellationToken cancellationToken)
-    {
-        if (uri.Scheme != "http" && uri.Scheme != "https") throw new NotSupportedException("Only HTTP and HTTPS URIs are supported.");
-
-        var response = await httpClient.GetAsync(uri, cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-#if NETSTANDARD2_0
-        return await response.Content.ReadAsStreamAsync();
-#else
-        return await response.Content.ReadAsStreamAsync(cancellationToken);
-#endif
-    }
-}
-
-/// <summary>
-/// Handler for loading images from local file URIs.
-/// </summary>
-public class LocalFileAsyncImageLoaderHandler : AsyncImageLoaderHandler
-{
-    public static LocalFileAsyncImageLoaderHandler Shared { get; } = new();
-
-    public override IEnumerable<string> SupportedSchemes => ["file"];
-
-    private LocalFileAsyncImageLoaderHandler() { }
-
-    public override Task<Stream> LoadAsync(Uri uri, CancellationToken cancellationToken)
-    {
-        if (!uri.IsFile) throw new NotSupportedException("Only file URIs are supported.");
-
-        Stream stream = File.OpenRead(uri.LocalPath);
-        return Task.FromResult(stream);
-    }
-}
-
-public class AvaloniaResourceAsyncImageLoaderHandler : AsyncImageLoaderHandler
-{
-    public static AvaloniaResourceAsyncImageLoaderHandler Shared { get; } = new();
-
-    public override IEnumerable<string> SupportedSchemes => ["avares"];
-
-    private AvaloniaResourceAsyncImageLoaderHandler() { }
-
-    public override Task<Stream> LoadAsync(Uri uri, CancellationToken cancellationToken) =>
-        uri.Scheme != "avares" ?
-            throw new NotSupportedException("Only avares URIs are supported.") :
-            Task.FromResult(AssetLoader.Open(uri));
 }
 
 [TypeConverter(typeof(AsyncImageLoaderCacheTypeConverter))]

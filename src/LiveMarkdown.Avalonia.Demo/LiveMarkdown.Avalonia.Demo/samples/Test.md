@@ -177,6 +177,16 @@ Avalonia image example:
 
 ![Avalonia Image](avares://LiveMarkdown.Avalonia.Demo/Assets/Antelcat.png)
 
+SVG image examples:
+
+![SVG Image](https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg)
+
+![SVG Base64 Image](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDI1NiAyNTYiPjxyZWN0IHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2IiBmaWxsPSIjRkZGIi8+PHJlY3QgeD0iNDAiIHk9IjQwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iI0ZGRiIvPjxyZWN0IHg9IjgwIiB5PSI4MCIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMjAiIGZpbGw9IiMwMDAiLz48L3N2Zz4=)
+
+GIF image example:
+
+![GIF Image](https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif)
+
 ## 5. LaTeX
 
 Inline LaTeX example: $E=mc^2$.

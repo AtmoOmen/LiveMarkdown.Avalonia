@@ -1,6 +1,6 @@
 # Markdig [![ci](https://github.com/xoofx/markdig/actions/workflows/ci.yml/badge.svg)](https://github.com/xoofx/markdig/actions/workflows/ci.yml) [![Coverage Status](https://coveralls.io/repos/github/xoofx/markdig/badge.svg?branch=master)](https://coveralls.io/github/xoofx/markdig?branch=master) [![NuGet](https://img.shields.io/nuget/v/Markdig.svg)](https://www.nuget.org/packages/Markdig/) [![Donate](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=FRGHXBTP442JL)
 
-<img align="right" width="160px" height="160px" src="img/markdig.png">
+<img align="right" width="160px" height="160px" src="https://raw.githubusercontent.com/xoofx/markdig/refs/heads/main/img/markdig.png">
 
 Markdig is a fast, powerful, [CommonMark](https://commonmark.org/) compliant, extensible Markdown processor for .NET.
 
