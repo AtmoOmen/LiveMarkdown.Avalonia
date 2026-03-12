@@ -9,14 +9,14 @@ public static class MarkdownExtensions
 {
     public static MarkdownPipelineBuilder UseCodeBlockSpanFixer(this MarkdownPipelineBuilder pipeline)
     {
-        pipeline.Extensions.ReplaceOrAdd<CodeBlockSpanFixerExtensions>(new CodeBlockSpanFixerExtensions());
+        pipeline.Extensions.ReplaceOrAdd<CodeBlockSpanFixerExtension>(new CodeBlockSpanFixerExtension());
         return pipeline;
     }
 
     /// <summary>
     /// Markdown extension that fixes the spans of code blocks.
     /// </summary>
-    private class CodeBlockSpanFixerExtensions : IMarkdownExtension
+    private class CodeBlockSpanFixerExtension : IMarkdownExtension
     {
         public void Setup(MarkdownPipelineBuilder pipeline)
         {

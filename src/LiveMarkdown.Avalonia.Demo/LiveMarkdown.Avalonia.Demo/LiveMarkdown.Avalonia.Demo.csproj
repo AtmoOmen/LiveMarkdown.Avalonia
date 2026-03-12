@@ -50,5 +50,10 @@
     <None Update="samples\Link.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <AvaloniaResource Include="..\..\..\img\icon.png">
+      <Pack>true</Pack>
+      <PackagePath>icon.png</PackagePath>
+      <Link>Assets\icon.png</Link>
+    </AvaloniaResource>
   </ItemGroup>
 </Project>

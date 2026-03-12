@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-using System.Globalization;
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -75,7 +73,8 @@ public class AsyncImageLoader
                 HttpAsyncImageLoaderHandler.Shared,
                 LocalFileAsyncImageLoaderHandler.Shared,
                 AvaloniaResourceAsyncImageLoaderHandler.Shared,
-                DataUrlAsyncImageLoaderHandler.Shared
+                DataUrlAsyncImageLoaderHandler.Shared,
+                RawAsyncImageLoaderHandler.Shared
             ]);
 
     /// <summary>
@@ -144,7 +143,8 @@ public class AsyncImageLoader
             return;
         }
 
-        var handler = GetHandlers(sender).FirstOrDefault(h => h.SupportedSchemes.Contains(uri.Scheme, StringComparer.OrdinalIgnoreCase));
+        var scheme = uri.IsAbsoluteUri ? uri.Scheme : string.Empty;
+        var handler = GetHandlers(sender).FirstOrDefault(h => h.SupportedSchemes.Contains(scheme, StringComparer.OrdinalIgnoreCase));
         if (handler is null)
         {
             sender.Source = null; // No handler found for the URI scheme
@@ -288,140 +288,5 @@ public class AsyncImageLoader
                 cts.Token);
 
         return (task, cts);
-    }
-}
-
-#if NETSTANDARD2_0
-public class AsyncImageLoaderCacheTypeConverter : TypeConverter
-{
-    public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
-    {
-        return sourceType == typeof(string);
-    }
-
-    public override object? ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object? value)
-    {
-        if (value is string str)
-        {
-            return str switch
-            {
-                "None" => null,
-                "Ram" => RamBasedAsyncImageLoaderCache.Shared,
-                _ => throw new NotSupportedException($"Cache type '{str}' is not supported.")
-            };
-        }
-
-        return base.ConvertFrom(context, culture, value);
-    }
-}
-#else
-public class AsyncImageLoaderCacheTypeConverter : TypeConverter
-{
-    public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
-    {
-        return sourceType == typeof(string);
-    }
-
-    public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
-    {
-        if (value is string str)
-        {
-            return str switch
-            {
-                "None" => null,
-                "Ram" => RamBasedAsyncImageLoaderCache.Shared,
-                _ => throw new NotSupportedException($"Cache type '{str}' is not supported.")
-            };
-        }
-
-        return base.ConvertFrom(context, culture, value);
-    }
-}
-#endif
-
-/// <summary>
-/// Represents a decoder that can translate a Stream into an Avalonia IImage.
-/// </summary>
-public interface IImageDecoder
-{
-    /// <summary>
-    /// Attempts to decode the stream. Returns null if the format is unsupported or invalid.
-    /// </summary>
-    /// <param name="target">The target Image control, useful for reading attached properties.</param>
-    /// <param name="stream">The seekable image stream.</param>
-    /// <param name="uri">The source URI of the image.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>An IImage if decoding is successful, otherwise null.</returns>
-    Task<IImage?> TryDecodeAsync(Image target, Stream stream, Uri uri, CancellationToken cancellationToken);
-}
-
-/// <summary>
-/// The default decoder that attempts to load the stream as a standard Avalonia Bitmap.
-/// </summary>
-public class DefaultBitmapDecoder : IImageDecoder
-{
-    public static DefaultBitmapDecoder Shared { get; } = new();
-
-    public Task<IImage?> TryDecodeAsync(Image target, Stream stream, Uri uri, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var bitmap = new Bitmap(stream);
-            return Task.FromResult<IImage?>(bitmap);
-        }
-        catch
-        {
-            return Task.FromResult<IImage?>(null);
-        }
-    }
-}
-
-[TypeConverter(typeof(AsyncImageLoaderCacheTypeConverter))]
-public abstract class AsyncImageLoaderCache
-{
-    public abstract IImage? GetImage(Uri uri);
-
-    public abstract void SetImage(Uri uri, IImage image);
-}
-
-public class RamBasedAsyncImageLoaderCache : AsyncImageLoaderCache
-{
-    public static RamBasedAsyncImageLoaderCache Shared { get; } = new();
-
-    private readonly Dictionary<Uri, WeakReference<IImage>> _cache = new();
-
-    private int _checkThreshold = 16;
-
-    public override IImage? GetImage(Uri uri)
-    {
-        lock (_cache)
-        {
-            if (_cache.TryGetValue(uri, out var weakRef) && weakRef.TryGetTarget(out var image))
-            {
-                return image;
-            }
-
-            return null;
-        }
-    }
-
-    public override void SetImage(Uri uri, IImage image)
-    {
-        lock (_cache)
-        {
-            _cache[uri] = new WeakReference<IImage>(image);
-
-            if (_cache.Count <= _checkThreshold) return;
-
-            // Clean up weak references that are no longer alive
-            var keysToRemove = _cache.Where(kvp => !kvp.Value.TryGetTarget(out _)).Select(kvp => kvp.Key).ToList();
-            foreach (var key in keysToRemove)
-            {
-                _cache.Remove(key);
-            }
-
-            if (_cache.Count > _checkThreshold) _checkThreshold *= 2;
-            else if (_cache.Count < _checkThreshold / 4) _checkThreshold /= 2;
-        }
     }
 }

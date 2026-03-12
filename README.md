@@ -5,6 +5,11 @@
 [![GitHub issues](https://img.shields.io/github/issues/DearVa/LiveMarkdown.Avalonia.svg)](https://github.com/DearVa/LiveMarkdown.Avalonia/issues)
 [![NuGet](https://img.shields.io/nuget/v/LiveMarkdown.Avalonia.svg)](https://www.nuget.org/packages/LiveMarkdown.Avalonia/)
 
+<div align="center">
+  <h2>LiveMarkdown.Avalonia</h2>
+  <img src="https://raw.githubusercontent.com/DearVa/LiveMarkdown.Avalonia/main/img/icon-large.png" alt="icon"/>
+</div>
+
 ![demo.gif](https://raw.githubusercontent.com/DearVa/LiveMarkdown.Avalonia/main/img/demo.gif)
 
 ## 👋 Introduction

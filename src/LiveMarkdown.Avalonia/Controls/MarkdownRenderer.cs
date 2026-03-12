@@ -143,7 +143,7 @@ public partial class MarkdownRenderer : Control
     /// Optional callback to configure the Markdig pipeline before it is built.
     /// Set this before any MarkdownRenderer instances are created.
     /// </summary>
-    public static Action<MarkdownPipelineBuilder>? ConfigurePipeline { get; set; }
+    public static event Action<MarkdownPipelineBuilder>? ConfigurePipeline;
 
     private static MarkdownPipeline CreatePipeline()
     {

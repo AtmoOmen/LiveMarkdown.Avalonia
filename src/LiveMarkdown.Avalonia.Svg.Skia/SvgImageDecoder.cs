@@ -28,7 +28,7 @@ public class SvgImageDecoder : IImageDecoder
             stream.Position = 0;
             var parameters = new SvgParameters
             {
-                Css = await Dispatcher.UIThread.InvokeAsync(() => target.GetValue(SvgImageExtension.SvgCssProperty))
+                Css = await Dispatcher.UIThread.InvokeAsync(() => target.GetValue(SvgImageExtension.CssProperty))
             };
 
             var svgSource = SvgSource.LoadFromStream(stream, parameters);
