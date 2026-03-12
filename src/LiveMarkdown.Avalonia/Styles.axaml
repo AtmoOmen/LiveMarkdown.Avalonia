@@ -149,7 +149,7 @@
       <Setter Property="VerticalAlignment" Value="Bottom"/>
     </Style>
 
-    <Style Selector="^ Grid.ListBlock">
+    <Style Selector="^ md|MarkdownListGrid.ListBlock">
       <Style Selector="^ StackPanel.ListItemBlock">
         <Setter Property="Spacing" Value="0"/>
       </Style>

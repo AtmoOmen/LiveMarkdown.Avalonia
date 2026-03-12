@@ -7,20 +7,12 @@ public class ListBlockNode : BlockNode<ListBlock>
 {
     public override Control Control => grid;
 
-    private readonly Grid grid;
+    private readonly MarkdownListGrid grid;
     private readonly MarkdownRenderer.BlocksProxy proxy;
 
     public ListBlockNode()
     {
-        grid = new Grid
-        {
-            Classes = { "ListBlock" },
-            ColumnDefinitions =
-            {
-                new ColumnDefinition(GridLength.Auto),
-                new ColumnDefinition()
-            }
-        };
+        grid = new MarkdownListGrid { Classes = { "ListBlock" } };
         proxy = new MarkdownRenderer.BlocksProxy(grid.Children);
     }
 
@@ -36,11 +28,6 @@ public class ListBlockNode : BlockNode<ListBlock>
         for (var i = 0; i < listBlock.Count; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            if (grid.RowDefinitions.Count <= i)
-            {
-                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            }
 
             var itemBlock = listBlock[i];
             var numberIndex = i * 2;
@@ -111,12 +98,6 @@ public class ListBlockNode : BlockNode<ListBlock>
         {
             cancellationToken.ThrowIfCancellationRequested();
             proxy.RemoveAt(proxy.Count - 1);
-        }
-
-        while (grid.RowDefinitions.Count > listBlock.Count)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            grid.RowDefinitions.RemoveAt(grid.RowDefinitions.Count - 1);
         }
 
         return true;
