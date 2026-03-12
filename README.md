@@ -1,16 +1,27 @@
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/DearVa/LiveMarkdown.Avalonia)
-[![netstandard2.0](https://img.shields.io/badge/netstandard-2.0-blue.svg)](https://docs.microsoft.com/en-us/dotnet/standard/net-standard)
-[![Avalonia](https://img.shields.io/badge/Avalonia-11-blue.svg)](https://avaloniaui.net/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![GitHub issues](https://img.shields.io/github/issues/DearVa/LiveMarkdown.Avalonia.svg)](https://github.com/DearVa/LiveMarkdown.Avalonia/issues)
-[![NuGet](https://img.shields.io/nuget/v/LiveMarkdown.Avalonia.svg)](https://www.nuget.org/packages/LiveMarkdown.Avalonia/)
-
 <div align="center">
-  <h2>LiveMarkdown.Avalonia</h2>
-  <img src="https://raw.githubusercontent.com/DearVa/LiveMarkdown.Avalonia/main/img/icon-large.png" alt="icon"/>
+
+<img src="https://raw.githubusercontent.com/DearVa/LiveMarkdown.Avalonia/main/img/icon-large.png" alt="LiveMarkdown.Avalonia Logo" width="128" height="128" />
+
+<h1>LiveMarkdown.Avalonia</h1>
+
+**High performance, real-time markdown renderer for AI/LLM**
+
+<p align="center">
+  <a href="https://deepwiki.com/DearVa/LiveMarkdown.Avalonia"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+  <a href="https://www.nuget.org/packages/LiveMarkdown.Avalonia/"><img src="https://img.shields.io/nuget/v/LiveMarkdown.Avalonia.svg?style=flat-square" alt="NuGet"></a>
+  <a href="https://docs.microsoft.com/en-us/dotnet/standard/net-standard"><img src="https://img.shields.io/badge/netstandard-2.0-blue.svg?style=flat-square" alt="netstandard2.0"></a>
+  <a href="https://avaloniaui.net/"><img src="https://img.shields.io/badge/Avalonia-11-blue.svg?style=flat-square" alt="Avalonia"></a>
+  <a href="https://github.com/DearVa/LiveMarkdown.Avalonia/issues"><img src="https://img.shields.io/github/issues/DearVa/LiveMarkdown.Avalonia.svg?style=flat-square" alt="GitHub issues"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square" alt="License"></a>
+</p>
+
+<br/>
+
+<img src="https://raw.githubusercontent.com/DearVa/LiveMarkdown.Avalonia/main/img/demo.gif" alt="LiveMarkdown.Avalonia Demo" width="800" />
+
 </div>
 
-![demo.gif](https://raw.githubusercontent.com/DearVa/LiveMarkdown.Avalonia/main/img/demo.gif)
+<br/>
 
 ## 👋 Introduction
 
@@ -129,7 +140,7 @@ markdownBuilder.Clear();
 
 If you want to load local images with relative paths, you can set the `MarkdownRenderer.ImageBasePath` property.
 
-### 4. Enable LaTeX rendering
+### 4. (Optional) Enable LaTeX rendering
 
 LaTeX is supported via the `LiveMarkdown.Avalonia.Math` package. You can install it via NuGet:
 
@@ -146,7 +157,7 @@ MarkdownNode.Register<MathInlineNode>();
 MarkdownNode.Register<MathBlockNode>(); // This is also required for block-level LaTeX support, e.g. $$...$$
 ```
 
-### 5. Enable SVG image rendering
+### 5. (Optional) Enable SVG image rendering
 
 SVG rendering is supported via the `LiveMarkdown.Avalonia.Svg` or `LiveMarkdown.Avalonia.Svg.Skia` package. You can install one of them via NuGet:
 
