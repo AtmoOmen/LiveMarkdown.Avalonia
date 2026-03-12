@@ -14,6 +14,12 @@ public class App : Application
         MarkdownNode.Register<MathInlineNode>();
         MarkdownNode.Register<MathBlockNode>();
 
+        AsyncImageLoader.DefaultDecoders =
+        [
+            SvgImageDecoder.Shared,
+            DefaultBitmapDecoder.Shared
+        ];
+
         AvaloniaXamlLoader.Load(this);
     }
 

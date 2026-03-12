@@ -6,7 +6,8 @@
   <ItemGroup>
     <!-- Base packages -->
     <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.1.0"/>
-    <PackageVersion Include="Svg.Controls.Avalonia" Version="11.3.0.4"/>
+    <PackageVersion Include="Svg.Controls.Avalonia" Version="11.3.0.1"/>
+    <PackageVersion Include="Svg.Controls.Skia.Avalonia" Version="11.3.0.1"/>
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0"/>
     <PackageVersion Include="PolySharp" Version="1.15.0"/>
     <!-- Avalonia packages -->

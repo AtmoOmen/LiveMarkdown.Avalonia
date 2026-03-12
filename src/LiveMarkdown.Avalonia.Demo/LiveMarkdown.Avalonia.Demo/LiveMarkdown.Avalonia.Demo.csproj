@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\LiveMarkdown.Avalonia.Math\LiveMarkdown.Avalonia.Math.csproj" />
+    <ProjectReference Include="..\..\LiveMarkdown.Avalonia.Svg\LiveMarkdown.Avalonia.Svg.csproj" />
     <ProjectReference Include="..\..\LiveMarkdown.Avalonia\LiveMarkdown.Avalonia.csproj" />
   </ItemGroup>
 

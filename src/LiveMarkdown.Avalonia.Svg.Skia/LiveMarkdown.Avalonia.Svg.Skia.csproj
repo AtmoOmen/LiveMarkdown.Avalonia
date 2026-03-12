@@ -2,10 +2,10 @@
   <PropertyGroup>
     <RootNamespace>LiveMarkdown.Avalonia</RootNamespace>
     <TargetFrameworks>netstandard2.0;net8.0;net9.0;net10.0</TargetFrameworks>
-    <Title>LiveMarkdown.Avalonia.Math</Title>
+    <Title>LiveMarkdown.Avalonia.Svg.Skia</Title>
     <Authors>DearVa</Authors>
-    <Description>This is a extension package for LiveMarkdown.Avalonia that adds support for rendering LaTeX math expressions using CSharpMath.
-      It leverages the Sylinko.CSharpMath.Avalonia library to provide high-quality rendering of mathematical notation within Markdown content.
+    <Description>This is a extension package for LiveMarkdown.Avalonia that adds support for rendering SVG.
+      Note that this package uses Svg.Controls.Skia.Avalonia for rendering SVG. If you want to use Svg.Controls.Avalonia instead, please install LiveMarkdown.Avalonia.Svg package.
     </Description>
     <PackageProjectUrl>https://github.com/DearVa/LiveMarkdown.Avalonia</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -14,11 +14,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <DocumentationFile>bin\Release\LiveMarkdown.Avalonia.Math.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\LiveMarkdown.Avalonia.Svg.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Sylinko.CSharpMath.Avalonia"/>
+    <PackageReference Include="Svg.Controls.Skia.Avalonia"/>
   </ItemGroup>
 
   <ItemGroup>

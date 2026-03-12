@@ -2,19 +2,15 @@
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Documents;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
-using Avalonia.Svg;
 using Avalonia.Threading;
-using Svg.Model;
 
 namespace LiveMarkdown.Avalonia;
 
 /// <summary>
 /// Asynchronously loads images from a given source URL and caches them.
-/// Supports both SVG and bitmap images.
 /// </summary>
 public class AsyncImageLoader
 {
@@ -27,15 +23,11 @@ public class AsyncImageLoader
     /// <summary>
     /// Sets the source URL for the image.
     /// </summary>
-    /// <param name="obj"></param>
-    /// <param name="value"></param>
     public static void SetSource(Image obj, string? value) => obj.SetValue(SourceProperty, value);
 
     /// <summary>
     /// Gets the source URL for the image.
     /// </summary>
-    /// <param name="obj"></param>
-    /// <returns></returns>
     public static string? GetSource(Image obj) => obj.GetValue(SourceProperty);
 
     /// <summary>
@@ -48,37 +40,12 @@ public class AsyncImageLoader
     /// Sets the SizeToContent behavior for the image.
     /// Indicates whether the image should size itself to its content by setting Width and Height.
     /// </summary>
-    /// <param name="obj"></param>
-    /// <param name="value"></param>
     public static void SetSizeToContent(Image obj, SizeToContent value) => obj.SetValue(SizeToContentProperty, value);
 
     /// <summary>
     /// Gets the SizeToContent behavior for the image.
     /// </summary>
-    /// <param name="obj"></param>
-    /// <returns></returns>
     public static SizeToContent GetSizeToContent(Image obj) => obj.GetValue(SizeToContentProperty);
-
-    /// <summary>
-    /// Attached property for the SVG CSS styles.
-    /// This only works before the image is loaded.
-    /// </summary>
-    public static readonly AttachedProperty<string?> SvgCssProperty =
-        AvaloniaProperty.RegisterAttached<AsyncImageLoader, Image, string?>("SvgCss");
-
-    /// <summary>
-    /// Sets the CSS styles for the SVG image.
-    /// </summary>
-    /// <param name="obj"></param>
-    /// <param name="value"></param>
-    public static void SetSvgCss(Image obj, string? value) => obj.SetValue(SvgCssProperty, value);
-
-    /// <summary>
-    /// Gets the CSS styles for the SVG image.
-    /// </summary>
-    /// <param name="obj"></param>
-    /// <returns></returns>
-    public static string? GetSvgCss(Image obj) => obj.GetValue(SvgCssProperty);
 
     /// <summary>
     /// Attached property for the image cache.
@@ -91,15 +58,12 @@ public class AsyncImageLoader
     /// You can use one of the built-in caches (convert from string), or implement your own.
     /// built-in caches include: `None`, `Ram`. Default is `Ram`.
     /// </summary>
-    /// <param name="obj"></param>
-    /// <param name="value"></param>
-    public static void SetCache(Image obj, AsyncImageLoaderCache? value) => obj.SetValue(CacheProperty, value);
+    public static void SetCache(Image obj, AsyncImageLoaderCache? value) =>
+        obj.SetValue(CacheProperty, value);
 
     /// <summary>
     /// Gets the cache for the image loader.
     /// </summary>
-    /// <param name="obj"></param>
-    /// <returns></returns>
     public static AsyncImageLoaderCache? GetCache(Image obj) => obj.GetValue(CacheProperty);
 
     /// <summary>
@@ -119,16 +83,34 @@ public class AsyncImageLoader
     /// You can add your own handlers to support custom URI schemes.
     /// Default is `Http`, `LocalFile`, `AvaloniaResource`. (HTTP supports redirects and HTTPS)
     /// </summary>
-    /// <param name="obj"></param>
-    /// <param name="value"></param>
     public static void SetHandlers(Image obj, IReadOnlyCollection<AsyncImageLoaderHandler> value) => obj.SetValue(HandlersProperty, value);
 
     /// <summary>
     /// Gets the custom image loader handlers.
     /// </summary>
-    /// <param name="obj"></param>
-    /// <returns></returns>
     public static IReadOnlyCollection<AsyncImageLoaderHandler> GetHandlers(Image obj) => obj.GetValue(HandlersProperty);
+
+    /// <summary>
+    /// Attached property for image decoders. If null, the DefaultDecoders will be used.
+    /// </summary>
+    public static readonly AttachedProperty<IReadOnlyCollection<IImageDecoder>?> DecodersProperty =
+        AvaloniaProperty.RegisterAttached<AsyncImageLoader, Image, IReadOnlyCollection<IImageDecoder>?>("Decoders");
+
+    /// <summary>
+    /// Sets the image decoders used to parse the stream into an IImage.
+    /// Evaluated in order until one returns a non-null IImage.
+    /// </summary>
+    public static void SetDecoders(Image obj, IReadOnlyCollection<IImageDecoder>? value) => obj.SetValue(DecodersProperty, value);
+
+    /// <summary>
+    /// Gets the image decoders.
+    /// </summary>
+    public static IReadOnlyCollection<IImageDecoder>? GetDecoders(Image obj) => obj.GetValue(DecodersProperty);
+
+    /// <summary>
+    /// Gets or sets the default image decoders used if an Image does not have its own decoders set.
+    /// </summary>
+    public static IReadOnlyCollection<IImageDecoder> DefaultDecoders { get; set; } = [DefaultBitmapDecoder.Shared];
 
     private readonly static Dictionary<Image, (Task task, CancellationTokenSource cts)> ImageLoadTasks = new();
 
@@ -140,7 +122,6 @@ public class AsyncImageLoader
     private static void HandleSourceChanged(Image sender, AvaloniaPropertyChangedEventArgs args)
     {
         // This method is always called on the UI thread, so we can safely access the UI elements.
-
         if (ImageLoadTasks.TryGetValue(sender, out var pair))
         {
             pair.cts.Cancel(); // Cancel the previous loading task if it exists
@@ -155,7 +136,7 @@ public class AsyncImageLoader
             return;
         }
 
-        var cache = sender.GetValue(CacheProperty);
+        var cache = GetCache(sender);
         if (cache?.GetImage(uri) is { } cachedImage)
         {
             sender.Source = cachedImage; // Use the cached image if available
@@ -171,21 +152,8 @@ public class AsyncImageLoader
             return;
         }
 
-        var css = sender.GetValue(SvgCssProperty);
-        if (string.IsNullOrEmpty(css))
-        {
-            var fontSize = sender.GetValue(TextElement.FontSizeProperty);
-            var fontFamily = sender.GetValue(TextElement.FontFamilyProperty).ToString();
-            if (fontFamily == "$Default") fontFamily = "Arial"; // Fallback to Arial if the default is not set
-            var color = sender.GetValue(TextElement.ForegroundProperty) switch
-            {
-                SolidColorBrush solidColorBrush => solidColorBrush.Color,
-                _ => Colors.White // Default color if not set
-            };
-            css = $":nth-child(0) {{ font-size: {fontSize}px; font-family: {fontFamily}; color: #{color.R:X2}{color.G:X2}{color.B:X2}; }}";
-        }
-
-        var newPair = CreateLoadPair(sender, uri, css, handler, cache);
+        var decoders = GetDecoders(sender) ?? DefaultDecoders;
+        var newPair = CreateLoadPair(sender, uri, handler, decoders, cache);
         ImageLoadTasks.Add(sender, newPair);
     }
 
@@ -197,7 +165,9 @@ public class AsyncImageLoader
         var (imageWidth, imageHeight) = loadedImage switch
         {
             Bitmap bitmap => (bitmap.PixelSize.Width, bitmap.PixelSize.Height),
-            SvgImage svgImage => (svgImage.Size.Width, svgImage.Size.Height),
+            // The core does not know about SvgImage anymore, so SvgImages will return (Size.Width, Size.Height) via their IImage interface properties if possible, or we handle it via IImage properties.
+            // Since IImage only exposes Size, we use that universally.
+            not null => (loadedImage.Size.Width, loadedImage.Size.Height),
             _ => (double.NaN, double.NaN)
         };
 
@@ -230,8 +200,8 @@ public class AsyncImageLoader
     private static (Task task, CancellationTokenSource cts) CreateLoadPair(
         Image image,
         Uri uri,
-        string? css,
         AsyncImageLoaderHandler handler,
+        IReadOnlyCollection<IImageDecoder> decoders,
         AsyncImageLoaderCache? cache)
     {
         var cts = new CancellationTokenSource();
@@ -240,34 +210,53 @@ public class AsyncImageLoader
                 {
                     try
                     {
-                        // check if the stream is svg
-                        var buffer = new byte[16];
 #if NETSTANDARD2_0
                         using var stream = await handler.LoadAsync(uri, cts.Token);
-                        var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cts.Token);
 #else
                         await using var stream = await handler.LoadAsync(uri, cts.Token);
-                        var bytesRead = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), cts.Token);
 #endif
-                        if (bytesRead == 0)
+
+                        if (stream.Length == 0) return null;
+
+                        Stream seekableStream;
+                        if (stream.CanSeek)
                         {
-                            return null;
+                            seekableStream = stream;
+                        }
+                        else
+                        {
+                            seekableStream = new MemoryStream();
+#if NETSTANDARD2_0
+                            await stream.CopyToAsync(seekableStream, 81920, cts.Token);
+#else
+                            await stream.CopyToAsync(seekableStream, cts.Token);
+#endif
                         }
 
-                        stream.Seek(0, SeekOrigin.Begin); // Reset the stream position
-
-                        var isBinary = buffer.Take(bytesRead).Any(b => b == 0); // check for null bytes, which indicate binary data
-                        if (isBinary)
+#if NETSTANDARD2_0
+                        using (seekableStream)
+#else
+                        await using (seekableStream)
+#endif
                         {
-                            // If the stream is binary, treat it as a Bitmap
-                            return (object)WriteableBitmap.Decode(stream);
+                            foreach (var decoder in decoders)
+                            {
+                                cts.Token.ThrowIfCancellationRequested();
+                                seekableStream.Position = 0; // Reset stream position for each decoder
+
+                                var result = await decoder.TryDecodeAsync(image, seekableStream, uri, cts.Token);
+                                if (result is not null)
+                                {
+                                    return result;
+                                }
+                            }
                         }
 
-                        return SvgSource.Load(stream, new SvgParameters { Css = css });
+                        return null; // All decoders failed
                     }
                     catch (OperationCanceledException)
                     {
-                        // Task was cancelled, do nothing
+                        // Task was canceled, do nothing
                         throw;
                     }
                     catch
@@ -287,15 +276,9 @@ public class AsyncImageLoader
                             ImageLoadTasks.Remove(image); // Remove the task from the dictionary
                         }
 
-                        if (t.Exception is not null) return; // Operation was cancelled or failed, do nothing
+                        if (t.Exception is not null) return; // Operation was canceled or failed, do nothing
 
-                        IImage? result = t.Result switch
-                        {
-                            Bitmap bitmap => bitmap,
-                            SvgSource svgSource => new SvgImage { Source = svgSource },
-                            _ => null // Clear the image source if the result is not a valid image
-                        };
-
+                        var result = t.Result;
                         if (result is not null) cache?.SetImage(uri, result);
 
                         image.Source = result;
@@ -357,6 +340,43 @@ public class AsyncImageLoaderCacheTypeConverter : TypeConverter
 #endif
 
 /// <summary>
+/// Represents a decoder that can translate a Stream into an Avalonia IImage.
+/// </summary>
+public interface IImageDecoder
+{
+    /// <summary>
+    /// Attempts to decode the stream. Returns null if the format is unsupported or invalid.
+    /// </summary>
+    /// <param name="target">The target Image control, useful for reading attached properties.</param>
+    /// <param name="stream">The seekable image stream.</param>
+    /// <param name="uri">The source URI of the image.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>An IImage if decoding is successful, otherwise null.</returns>
+    Task<IImage?> TryDecodeAsync(Image target, Stream stream, Uri uri, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// The default decoder that attempts to load the stream as a standard Avalonia Bitmap.
+/// </summary>
+public class DefaultBitmapDecoder : IImageDecoder
+{
+    public static DefaultBitmapDecoder Shared { get; } = new();
+
+    public Task<IImage?> TryDecodeAsync(Image target, Stream stream, Uri uri, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var bitmap = new Bitmap(stream);
+            return Task.FromResult<IImage?>(bitmap);
+        }
+        catch
+        {
+            return Task.FromResult<IImage?>(null);
+        }
+    }
+}
+
+/// <summary>
 /// Handler for loading images from specific URI schemes.
 /// </summary>
 public abstract class AsyncImageLoaderHandler
@@ -380,7 +400,7 @@ public class HttpAsyncImageLoaderHandler(HttpClient httpClient) : AsyncImageLoad
 
     public override IEnumerable<string> SupportedSchemes => ["http", "https"];
 
-    public HttpAsyncImageLoaderHandler() : this(new HttpClient(new HttpClientHandler { AllowAutoRedirect = true })) { }
+    private HttpAsyncImageLoaderHandler() : this(new HttpClient(new HttpClientHandler { AllowAutoRedirect = true })) { }
 
     public override async Task<Stream> LoadAsync(Uri uri, CancellationToken cancellationToken)
     {
@@ -388,6 +408,7 @@ public class HttpAsyncImageLoaderHandler(HttpClient httpClient) : AsyncImageLoad
 
         var response = await httpClient.GetAsync(uri, cancellationToken);
         response.EnsureSuccessStatusCode();
+
 #if NETSTANDARD2_0
         return await response.Content.ReadAsStreamAsync();
 #else
@@ -405,6 +426,8 @@ public class LocalFileAsyncImageLoaderHandler : AsyncImageLoaderHandler
 
     public override IEnumerable<string> SupportedSchemes => ["file"];
 
+    private LocalFileAsyncImageLoaderHandler() { }
+
     public override Task<Stream> LoadAsync(Uri uri, CancellationToken cancellationToken)
     {
         if (!uri.IsFile) throw new NotSupportedException("Only file URIs are supported.");
@@ -420,12 +443,12 @@ public class AvaloniaResourceAsyncImageLoaderHandler : AsyncImageLoaderHandler
 
     public override IEnumerable<string> SupportedSchemes => ["avares"];
 
-    public override Task<Stream> LoadAsync(Uri uri, CancellationToken cancellationToken)
-    {
-        if (uri.Scheme != "avares") throw new NotSupportedException("Only avares URIs are supported.");
+    private AvaloniaResourceAsyncImageLoaderHandler() { }
 
-        return Task.FromResult(AssetLoader.Open(uri));
-    }
+    public override Task<Stream> LoadAsync(Uri uri, CancellationToken cancellationToken) =>
+        uri.Scheme != "avares" ?
+            throw new NotSupportedException("Only avares URIs are supported.") :
+            Task.FromResult(AssetLoader.Open(uri));
 }
 
 [TypeConverter(typeof(AsyncImageLoaderCacheTypeConverter))]
