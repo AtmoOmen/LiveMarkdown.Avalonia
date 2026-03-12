@@ -75,7 +75,8 @@ sponsors!
   - [x] `avares` images
 - [x] Selectable text across elements
 - [x] LaTeX support
-- [ ] HTML rendering
+- [ ] HTML support
+- [ ] 🚧 Mermaid diagram support
 
 ## 🚀 Getting Started
 
@@ -189,6 +190,27 @@ AsyncImageLoader.DefaultDecoders =
 
 You can also set the `AsyncImageLoader.Decoders` property on a per-renderer basis if you want different renderers to use different decoders.
 
+### 6. (Optional) Enable Mermaid diagram rendering
+
+> [!WARNING]
+> Mermaid diagram rendering is currently in early preview stage, and may have some issues.
+> Only flowchart and state diagram are supported for now, and the rendering performance may not be optimal.
+
+Mermaid diagram rendering is supported via the `LiveMarkdown.Avalonia.Mermaid` package. You can install it via NuGet:
+
+```bash
+dotnet add package LiveMarkdown.Avalonia.Mermaid
+```
+
+Then register the `MermaidDiagramNode` before using Mermaid diagrams in your Markdown content (e.g. App.axaml.cs):
+
+```csharp
+using LiveMarkdown.Avalonia;
+
+MarkdownRenderer.ConfigurePipeline += x => x.UseMermaid();
+MarkdownNode.Register<MermaidBlockNode>();
+```
+
 ## 🪄 Style Customization
 
 Markdown elements can be styled using Avalonia's powerful styling system. You can override
@@ -277,3 +299,6 @@ Distributed under the Apache 2.0 License. See [LICENSE](LICENSE) for more inform
 - **CSharpMath** - [MIT License](https://github.com/verybadcat/CSharpMath/blob/master/License)
   - LaTeX rendering support
   - Source repo: https://github.com/verybadcat/CSharpMath
+- **Mermaider** - [MIT License](https://github.com/nullean/mermaider/blob/main/LICENSE.txt)
+  - LA pure dotnet mermaid parser, layout engine AND renderer, no js runtime, AOT ready.
+  - Source repo: https://github.com/nullean/mermaider

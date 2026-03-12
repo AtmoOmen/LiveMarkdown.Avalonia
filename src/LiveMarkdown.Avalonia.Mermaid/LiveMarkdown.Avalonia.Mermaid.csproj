@@ -1,26 +1,32 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>LiveMarkdown.Avalonia</RootNamespace>
-    <TargetFrameworks>netstandard2.0;net8.0;net9.0;net10.0</TargetFrameworks>
-    <Title>LiveMarkdown.Avalonia.Math</Title>
+    <TargetFramework>net10.0</TargetFramework>
+    <Title>LiveMarkdown.Avalonia.Mermaid</Title>
     <Authors>DearVa</Authors>
-    <Description>This is a extension package for LiveMarkdown.Avalonia that adds support for rendering LaTeX math expressions using CSharpMath.
-      It leverages the Sylinko.CSharpMath.Avalonia library to provide high-quality rendering of mathematical notation within Markdown content.
-    </Description>
+    <Description>This is a extension package for LiveMarkdown.Avalonia that adds support for rendering Mermaid diagrams.</Description>
     <PackageProjectUrl>https://github.com/DearVa/LiveMarkdown.Avalonia</PackageProjectUrl>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/DearVa/LiveMarkdown.Avalonia</RepositoryUrl>
-    <PackageTags>markdown;avalonia;llm;latex;math</PackageTags>
+    <PackageTags>markdown;avalonia;llm;flowchart;mermaid</PackageTags>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <DocumentationFile>bin\Release\LiveMarkdown.Avalonia.Math.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\LiveMarkdown.Avalonia.Mermaid.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Sylinko.CSharpMath.Avalonia"/>
+    <PackageReference Include="IgnoresAccessChecksToGenerator">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Mermaider"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <IgnoresAccessChecksTo Include="Mermaider"/>
   </ItemGroup>
 
   <ItemGroup>
@@ -28,7 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="README.md"/>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
     <None Include="..\..\img\icon.png" Pack="true" PackagePath="icon.png"/>
   </ItemGroup>
 </Project>

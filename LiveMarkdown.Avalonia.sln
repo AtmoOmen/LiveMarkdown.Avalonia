@@ -38,6 +38,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveMarkdown.Avalonia.Svg",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveMarkdown.Avalonia.Svg.Skia", "src\LiveMarkdown.Avalonia.Svg.Skia\LiveMarkdown.Avalonia.Svg.Skia.csproj", "{E22A881A-0B83-4D3C-99C0-7181720CC14B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveMarkdown.Avalonia.Mermaid", "src\LiveMarkdown.Avalonia.Mermaid\LiveMarkdown.Avalonia.Mermaid.csproj", "{F3FD21AC-08A9-4FBA-A55C-528C90497E8B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -84,6 +86,10 @@ Global
 		{E22A881A-0B83-4D3C-99C0-7181720CC14B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E22A881A-0B83-4D3C-99C0-7181720CC14B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E22A881A-0B83-4D3C-99C0-7181720CC14B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3FD21AC-08A9-4FBA-A55C-528C90497E8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3FD21AC-08A9-4FBA-A55C-528C90497E8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3FD21AC-08A9-4FBA-A55C-528C90497E8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3FD21AC-08A9-4FBA-A55C-528C90497E8B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

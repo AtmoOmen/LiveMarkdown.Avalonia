@@ -14,6 +14,9 @@ public class App : Application
         MarkdownNode.Register<MathInlineNode>();
         MarkdownNode.Register<MathBlockNode>();
 
+        MarkdownRenderer.ConfigurePipeline += x => x.UseMermaid();
+        MarkdownNode.Register<MermaidBlockNode>();
+
         AsyncImageLoader.DefaultDecoders =
         [
             SvgImageDecoder.Shared,

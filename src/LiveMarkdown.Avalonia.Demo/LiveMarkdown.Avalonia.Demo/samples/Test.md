@@ -195,3 +195,16 @@ Block LaTeX example:
 $$
 \int_{a}^{b} x^2 \,dx = \left[ \frac{x^3}{3} \right]_{a}^{b} = \frac{b^3}{3} - \frac{a^3}{3}
 $$
+
+## 6. Mermaid
+
+```mermaid
+graph TD
+    A[Start] --> B{Is it working?}
+    B -- Yes --> C[Great!]
+    B -- No --> D[Check the code]
+    D --> E{Is it fixed?}
+    E -- Yes --> C
+    E -- No --> F[Ask for help]
+    F --> C
+```

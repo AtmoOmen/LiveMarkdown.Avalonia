@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Base packages -->
-    <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.1.0"/>
+    <PackageVersion Include="IgnoresAccessChecksToGenerator" Version="0.8.0"/>
     <PackageVersion Include="Svg.Controls.Avalonia" Version="11.3.0.1"/>
     <PackageVersion Include="Svg.Controls.Skia.Avalonia" Version="11.3.0.1"/>
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0"/>
@@ -18,11 +18,13 @@
     <PackageVersion Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)"/>
     <PackageVersion Include="Avalonia.Desktop" Version="$(AvaloniaVersion)"/>
     <PackageVersion Include="Avalonia.Browser" Version="$(AvaloniaVersion)"/>
+    <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.1.0"/>
     <!-- Markdown packages -->
     <PackageVersion Include="Markdig" Version="0.43.0"/>
     <PackageVersion Include="TextMateSharp" Version="1.0.70"/>
     <PackageVersion Include="TextMateSharp.Grammars" Version="1.0.70"/>
     <PackageVersion Include="Sylinko.CSharpMath.Avalonia" Version="11.3.0"/>
+    <PackageVersion Include="Mermaider" Version="0.6.0"/>
     <!-- NUnit packages -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.1"/>
     <PackageVersion Include="coverlet.collector" Version="6.0.3"/>
