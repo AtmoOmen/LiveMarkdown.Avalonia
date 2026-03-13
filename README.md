@@ -269,6 +269,44 @@ You can also use Avalonia styles to set the theme for specific code blocks or ba
 
 Supported themes are defined in `TextMateSharp.Grammars.ThemeName`.
 
+### Emphasis Styles
+
+By default, the renderer implements the standard Markdown emphasis styles (e.g., `*italic*`, `**bold**`, `~~strikethrough~~`) using simple font weight and style changes. If you want to customize these styles or extended styles like `==highlight==`, you can define your own styles for the corresponding elements.
+
+Here is a sample style definition that customizes the emphasis styles and adds support for subscript, superscript, underline and highlight. Note that the `BaselineAlignment` seems to be ignored in some cases due to Avalonia's text layout behavior.
+
+```xml
+<Style Selector="md|MarkdownRenderer">
+  <Style Selector="^ Span.Emphasis">
+    <!-- You can even set the bold style separately for **star** and __underscore__ -->
+    <!-- For a full list of available style classes, please refer to the source code of the renderer -->
+    <!-- https://github.com/DearVa/LiveMarkdown.Avalonia/blob/main/src/LiveMarkdown.Avalonia/Nodes/Inline/EmphasisInlineNode.cs -->
+    <Style Selector="^.Bold.Star">
+      <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+    <Style Selector="^.Bold.Underscore">
+      <Setter Property="FontWeight" Value="Normal"/>
+    </Style>
+
+    <!-- You can define custom styles for the extended emphasis elements like subscript, superscript, underline and highlight -->
+    <Style Selector="^.Subscript">
+      <Setter Property="BaselineAlignment" Value="Subscript"/>
+      <Setter Property="FontSize" Value="8"/>
+    </Style>
+    <Style Selector="^.Superscript">
+      <Setter Property="BaselineAlignment" Value="Superscript"/>
+      <Setter Property="FontSize" Value="8"/>
+    </Style>
+    <Style Selector="^.Underline">
+      <Setter Property="TextDecorations" Value="Underline"/>
+    </Style>
+    <Style Selector="^.Highlight">
+      <Setter Property="Background" Value="DarkOrange"/>
+    </Style>
+  </Style>
+</Style>
+```
+
 ## 🤔 FAQ
 
 - Q: Why some emojis not rendered correctly (rendered in single color)?
