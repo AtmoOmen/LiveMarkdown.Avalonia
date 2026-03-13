@@ -1,10 +1,30 @@
 <Application
   x:Class="LiveMarkdown.Avalonia.Demo.App" xmlns="https://github.com/avaloniaui"
-  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" RequestedThemeVariant="Default">
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:md="clr-namespace:LiveMarkdown.Avalonia;assembly=LiveMarkdown.Avalonia"
+  RequestedThemeVariant="Default">
 
   <Application.Styles>
     <FluentTheme/>
     <StyleInclude Source="avares://LiveMarkdown.Avalonia/Styles.axaml"/>
+
+    <Style Selector="md|MarkdownRenderer">
+      <Style Selector="^ Span.Emphasis">
+        <Style Selector="^.Subscript">
+          <Setter Property="BaselineAlignment" Value="Subscript"/>
+          <Setter Property="FontSize" Value="8"/>
+        </Style>
+        <Style Selector="^.Superscript">
+          <Setter Property="BaselineAlignment" Value="Superscript"/>
+          <Setter Property="FontSize" Value="8"/>
+        </Style>
+        <Style Selector="^.Underline">
+          <Setter Property="TextDecorations" Value="Underline"/>
+        </Style>
+        <Style Selector="^.Highlight">
+          <Setter Property="Background" Value="DarkOrange"/>
+        </Style>
+      </Style>
+    </Style>
   </Application.Styles>
 
   <Application.Resources>

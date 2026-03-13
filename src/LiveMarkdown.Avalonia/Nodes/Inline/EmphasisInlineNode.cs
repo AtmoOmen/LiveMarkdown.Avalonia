@@ -1,5 +1,4 @@
 ﻿using Avalonia.Controls.Documents;
-using Avalonia.Media;
 using Markdig.Syntax.Inlines;
 
 namespace LiveMarkdown.Avalonia;
@@ -7,8 +6,9 @@ namespace LiveMarkdown.Avalonia;
 /// <summary>
 /// A node that represents an emphasis inline (bold, italic, etc.).
 /// </summary>
-public class EmphasisInlineNode : ContainerInlineNode<EmphasisInline>
+public class EmphasisInlineNode() : ContainerInlineNode<EmphasisInline>("Emphasis")
 {
+#pragma warning disable CS8620 // see https://github.com/dotnet/roslyn/issues/80024
     protected override bool UpdateCore(
         DocumentNode documentNode,
         EmphasisInline emphasisInline,
@@ -19,30 +19,35 @@ public class EmphasisInlineNode : ContainerInlineNode<EmphasisInline>
         switch (emphasisInline.DelimiterChar)
         {
             case '*' when emphasisInline.DelimiterCount == 2: // bold
+                span.Classes.Reset("Emphasis", "Bold", "Star");
+                break;
             case '_' when emphasisInline.DelimiterCount == 2: // bold
-                span.FontWeight = FontWeight.Bold;
+                span.Classes.Reset("Emphasis", "Bold", "Underscore");
                 break;
-            case '*': // italic
-            case '_': // italic
-                span.FontStyle = FontStyle.Italic;
+            case '*' when emphasisInline.DelimiterCount == 1: // italic
+                span.Classes.Reset("Emphasis", "Italic", "Star");
                 break;
-            case '~': // 2x strike through, 1x subscript
-                if (emphasisInline.DelimiterCount == 2)
-                    span.TextDecorations = TextDecorations.Strikethrough;
-                else
-                    span.BaselineAlignment = BaselineAlignment.Subscript;
+            case '_' when emphasisInline.DelimiterCount == 1: // italic
+                span.Classes.Reset("Emphasis", "Italic", "Underscore");
                 break;
-            case '^': // 1x superscript
-                span.BaselineAlignment = BaselineAlignment.Superscript;
+            case '~' when emphasisInline.DelimiterCount == 2:
+                span.Classes.Reset("Emphasis", "Strikethrough", "Tilde");
                 break;
-            case '+': // 2x underline
-                span.TextDecorations = TextDecorations.Underline;
+            case '~' when emphasisInline.DelimiterCount == 1:
+                span.Classes.Reset("Emphasis", "Subscript", "Tilde");
                 break;
-            case '=': // 2x Marked
-                // documentNode: Implement Marked
+            case '^' when emphasisInline.DelimiterCount == 1: // 1x superscript
+                span.Classes.Reset("Emphasis", "Superscript", "Caret");
+                break;
+            case '+' when emphasisInline.DelimiterCount == 2: // 2x underline
+                span.Classes.Reset("Emphasis", "Underline", "Plus");
+                break;
+            case '=' when emphasisInline.DelimiterCount == 2:
+                span.Classes.Reset("Emphasis", "Highlight", "Equals");
                 break;
         }
 
         return base.UpdateCore(documentNode, emphasisInline, in change, cancellationToken);
     }
+#pragma warning restore CS8620
 }

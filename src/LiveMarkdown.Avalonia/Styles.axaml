@@ -118,6 +118,18 @@
       <Setter Property="Spacing" Value="4"/>
     </Style>
 
+    <Style Selector="^ Span.Emphasis">
+      <Style Selector="^.Bold">
+        <Setter Property="FontWeight" Value="Bold"/>
+      </Style>
+      <Style Selector="^.Italic">
+        <Setter Property="FontStyle" Value="Italic"/>
+      </Style>
+      <Style Selector="^.Strikethrough">
+        <Setter Property="TextDecorations" Value="Strikethrough"/>
+      </Style>
+    </Style>
+
     <Style Selector="^ Image.Link">
       <Setter Property="MaxWidth" Value="800"/>
       <Setter Property="MaxHeight" Value="600"/>

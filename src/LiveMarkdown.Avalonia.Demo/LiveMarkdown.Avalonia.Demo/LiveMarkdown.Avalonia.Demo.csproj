@@ -56,5 +56,8 @@
       <PackagePath>icon.png</PackagePath>
       <Link>Assets\icon.png</Link>
     </AvaloniaResource>
+    <None Update="samples\Emphasis.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>
