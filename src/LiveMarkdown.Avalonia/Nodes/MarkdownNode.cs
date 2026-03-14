@@ -40,11 +40,6 @@ public abstract class MarkdownNode
     }
 
     /// <summary>
-    /// Gets the text block associated with this node, if any.
-    /// </summary>
-    protected virtual MarkdownTextBlock? TextBlock => null;
-
-    /// <summary>
     /// records the source span of the block in the Markdown document.
     /// </summary>
     private SourceSpan span;
@@ -54,7 +49,7 @@ public abstract class MarkdownNode
         return !span.Equals(markdownObject.Span) || span.End >= change.StartIndex && change.StartIndex + change.Length > span.Start;
     }
 
-    public bool Update(
+    public bool? Update(
         DocumentNode documentNode,
         MarkdownObject markdownObject,
         in ObservableStringBuilderChangedEventArgs change,
@@ -63,11 +58,11 @@ public abstract class MarkdownNode
         if (!IsDirty(markdownObject, change))
         {
             // No need to update, the change does not affect this node
-            return true;
+            return null;
         }
 
         var result = UpdateCore(documentNode, markdownObject, change, cancellationToken);
-        TextBlock?.SourceSpan = span = markdownObject.Span;
+        span = markdownObject.Span;
 
         MarkdownRenderer.VerboseLogger?.Log(
             this,

@@ -9,12 +9,11 @@ public class TableNode : BlockNode<Table>
 {
     public override Control Control { get; }
 
-    private readonly Grid container;
     private readonly MarkdownRenderer.BlocksProxy proxy;
 
     public TableNode()
     {
-        container = new Grid();
+        var container = new MarkdownTableGrid();
         proxy = new MarkdownRenderer.BlocksProxy(container.Children);
         Control = new ScrollViewer
         {
@@ -37,61 +36,54 @@ public class TableNode : BlockNode<Table>
     {
         if (table.ColumnDefinitions.Count == 0) return false;
 
-        while (table.ColumnDefinitions.Count < container.ColumnDefinitions.Count)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            container.ColumnDefinitions.RemoveAt(container.ColumnDefinitions.Count - 1);
-        }
-        while (table.ColumnDefinitions.Count > container.ColumnDefinitions.Count)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            container.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        }
-
-        var rowIndex = 0;
         var cellIndex = 0;
-        foreach (var row in table.OfType<TableRow>())
+        foreach (var (row, rowIndex) in table.OfType<TableRow>().Select((r, i) => (r, i)))
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (rowIndex >= container.RowDefinitions.Count)
-            {
-                container.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            }
-
             foreach (var (cell, columnIndex) in row.OfType<TableCell>().Select((c, i) => (c, i)))
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 Control cellControl;
-                do
+                if (proxy.Count > cellIndex)
                 {
-                    if (proxy.Count > cellIndex)
-                    {
-                        // existing item block node, update it
-                        var oldCellBlockNode = proxy[cellIndex];
-                        cellControl = oldCellBlockNode.Control;
+                    // existing item block node, update it
+                    var oldCellBlockNode = proxy[cellIndex];
+                    var result = oldCellBlockNode.Update(documentNode, cell, change, cancellationToken);
 
-                        // if Update returned true; it means the block was updated successfully
-                        if (oldCellBlockNode.Update(documentNode, cell, change, cancellationToken)) break;
-
-                        // else, remove the old node and create a new one
-                        var newCellBlockNode = CreateBlockNode(documentNode, cell, change, cancellationToken);
-                        proxy[cellIndex] = newCellBlockNode;
-                        cellControl = newCellBlockNode.Control;
-                    }
-                    else
+                    switch (result)
                     {
-                        var newCellBlockNode = CreateBlockNode(documentNode, cell, change, cancellationToken);
-                        proxy.Add(newCellBlockNode);
-                        cellControl = newCellBlockNode.Control;
+                        case null: // Not dirty
+                        {
+                            cellIndex++;
+                            continue;
+                        }
+                        case false: // remove the old node and create a new one if false
+                        {
+                            var newCellBlockNode = CreateBlockNode(documentNode, cell, change, cancellationToken);
+                            proxy[cellIndex] = newCellBlockNode;
+                            cellControl = newCellBlockNode.Control;
+                            break;
+                        }
+                        default:
+                        {
+                            cellControl = oldCellBlockNode.Control;
+                            break;
+                        }
                     }
+
                 }
-                while (false);
+                else
+                {
+                    var newCellBlockNode = CreateBlockNode(documentNode, cell, change, cancellationToken);
+                    proxy.Add(newCellBlockNode);
+                    cellControl = newCellBlockNode.Control;
+                }
 
                 cellIndex++;
                 Grid.SetRow(cellControl, rowIndex);
+                Grid.SetColumnSpan(cellControl, cell.ColumnSpan);
                 Grid.SetColumn(cellControl, columnIndex);
+                Grid.SetColumnSpan(cellControl, cell.ColumnSpan);
 
                 if (row.IsHeader)
                 {
@@ -116,29 +108,14 @@ public class TableNode : BlockNode<Table>
                     _ => HorizontalAlignment.Stretch
                 };
             }
-
-            rowIndex++;
         }
 
-        var columnCount = table.ColumnDefinitions.Count;
-        var cellCount = rowIndex * columnCount;
-        while (proxy.Count > cellCount)
+        while (proxy.Count > cellIndex)
         {
             cancellationToken.ThrowIfCancellationRequested();
             proxy.RemoveAt(proxy.Count - 1);
         }
 
-        if (rowIndex == 0 || columnCount == 0)
-        {
-            return false;
-        }
-
-        while (rowIndex < container.RowDefinitions.Count)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            container.RowDefinitions.RemoveAt(container.RowDefinitions.Count - 1);
-        }
-
-        return true;
+        return cellIndex > 0;
     }
 }

@@ -10,8 +10,6 @@ namespace LiveMarkdown.Avalonia;
 /// </summary>
 public class CodeInlineNode : InlineNode<CodeInline>
 {
-    protected override MarkdownTextBlock TextBlock => textBlock;
-
     public override Inline Inline => inlineUIContainer;
 
     private readonly InlineUIContainer inlineUIContainer;

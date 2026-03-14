@@ -6,8 +6,6 @@ namespace LiveMarkdown.Avalonia;
 
 public class CodeBlockNode : BlockNode<Markdig.Syntax.CodeBlock>
 {
-    protected override MarkdownTextBlock? TextBlock => _codeBlock.CodeTextBlock;
-
     public override Control Control { get; }
 
     private readonly CodeBlock _codeBlock;

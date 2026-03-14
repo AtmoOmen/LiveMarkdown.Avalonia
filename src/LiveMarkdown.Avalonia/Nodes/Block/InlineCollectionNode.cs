@@ -9,8 +9,6 @@ namespace LiveMarkdown.Avalonia;
 /// </summary>
 public class InlineCollectionNode<TBlock> : BlockNode<TBlock> where TBlock : LeafBlock
 {
-    protected override MarkdownTextBlock TextBlock => textBlock;
-
     public override Control Control => textBlock;
 
     private readonly InlinesNode<ContainerInline> inlinesNode;
@@ -36,6 +34,6 @@ public class InlineCollectionNode<TBlock> : BlockNode<TBlock> where TBlock : Lea
                 documentNode,
                 inline,
                 change,
-                cancellationToken);
+                cancellationToken) is not false;
     }
 }

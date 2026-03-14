@@ -1,16 +1,18 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
+using Avalonia.Logging;
 using Avalonia.Markup.Xaml;
 using LiveMarkdown.Avalonia.Demo.ViewModels;
 using LiveMarkdown.Avalonia.Demo.Views;
 
 namespace LiveMarkdown.Avalonia.Demo;
 
-public class App : Application
+public partial class App : Application, ILogSink
 {
     public override void Initialize()
     {
+        Logger.Sink = this;
         MarkdownNode.Register<MathInlineNode>();
         MarkdownNode.Register<MathBlockNode>();
 
@@ -62,4 +64,23 @@ public class App : Application
             BindingPlugins.DataValidators.Remove(plugin);
         }
     }
+
+    public bool IsEnabled(LogEventLevel level, string area) => area == nameof(MarkdownRenderer);
+
+    public void Log(LogEventLevel level, string area, object? source, string messageTemplate)
+    {
+        Console.WriteLine($"[{source}] {messageTemplate}");
+    }
+
+    public void Log(LogEventLevel level, string area, object? source, string messageTemplate, params object?[] propertyValues)
+    {
+        var index = 0;
+        var formattedMessage = LogTemplateRegex().Replace(
+            messageTemplate,
+            match => propertyValues.Length > index ? propertyValues[index++]?.ToString() ?? string.Empty : match.Value);
+        Log(level, area, source, formattedMessage);
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\{[^\}]+\}")]
+    private static partial System.Text.RegularExpressions.Regex LogTemplateRegex();
 }

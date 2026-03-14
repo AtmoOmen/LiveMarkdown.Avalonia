@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -10,7 +11,18 @@ namespace LiveMarkdown.Avalonia;
 /// <param name="NewString">The new content of the string builder.</param>
 /// <param name="StartIndex">The starting index of the change.</param>
 /// <param name="Length">The length of the change.</param>
-public readonly record struct ObservableStringBuilderChangedEventArgs(string NewString, int StartIndex, int Length);
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
+public readonly record struct ObservableStringBuilderChangedEventArgs(string NewString, int StartIndex, int Length)
+{
+    private string DebuggerDisplay
+    {
+        get
+        {
+            var endIndex = StartIndex + Length;
+            return $"[{StartIndex}..{endIndex}]{NewString[StartIndex..endIndex]}";
+        }
+    }
+}
 
 /// <summary>
 /// A delegate for handling changes in the ObservableStringBuilder.

@@ -41,7 +41,7 @@ public class InlinesNode<TInline> : InlineNode<TInline> where TInline : Inline
                 var oldInlineNode = proxy[i];
 
                 // if Update returned true, it means the block was updated successfully
-                if (oldInlineNode.Update(documentNode, inline, change, cancellationToken)) continue;
+                if (oldInlineNode.Update(documentNode, inline, change, cancellationToken) is not false) continue;
 
                 // else, remove the old node and create a new one
                 var newInlineNode = CreateInlineNode(documentNode, inline, change, cancellationToken);

@@ -77,7 +77,7 @@ public class ListBlockNode : BlockNode<ListBlock>
                 var oldItemBlockNode = proxy[itemIndex];
 
                 // if Update returned true, it means the block was updated successfully
-                if (oldItemBlockNode.Update(documentNode, itemBlock, change, cancellationToken)) continue;
+                if (oldItemBlockNode.Update(documentNode, itemBlock, change, cancellationToken) is not false) continue;
 
                 // else, remove the old node and create a new one
                 var newItemBlockNode = CreateBlockNode(documentNode, itemBlock, change, cancellationToken);

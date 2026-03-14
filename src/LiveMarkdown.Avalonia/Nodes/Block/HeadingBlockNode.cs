@@ -26,11 +26,24 @@ public class HeadingBlockNode : BlockNode<HeadingBlock>
     {
         if (headingBlock.Inline is null) return false;
 
-        if (!headingInlines.Update(documentNode, headingBlock, change, cancellationToken)) return false;
-
-        cancellationToken.ThrowIfCancellationRequested();
-        Control.Classes.EnsureClassName("Heading", $"{headingBlock.Level}Block");
-        headingInlines.Control.Classes.EnsureClassName("Heading", headingBlock.Level);
-        return true;
+        var result = headingInlines.Update(documentNode, headingBlock, change, cancellationToken);
+        switch (result)
+        {
+            case true:
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Control.Classes.EnsureClassName("Heading", $"{headingBlock.Level}Block");
+                headingInlines.Control.Classes.EnsureClassName("Heading", headingBlock.Level);
+                return true;
+            }
+            case false:
+            {
+                return false;
+            }
+            case null: // Not dirty
+            {
+                return true;
+            }
+        }
     }
 }

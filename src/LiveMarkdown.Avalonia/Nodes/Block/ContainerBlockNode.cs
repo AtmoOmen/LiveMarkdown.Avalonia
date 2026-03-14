@@ -44,7 +44,7 @@ public abstract class ContainerBlockNode<TContainerBlock> : BlockNode<TContainer
             if (i < proxy.Count)
             {
                 var oldNode = proxy[i];
-                if (oldNode.Update(documentNode, block, change, cancellationToken)) continue;
+                if (oldNode.Update(documentNode, block, change, cancellationToken) is not false) continue;
 
                 // if Update returned false, it means the block needs to be removed
                 var newNode = CreateBlockNode(documentNode, block, change, cancellationToken);
