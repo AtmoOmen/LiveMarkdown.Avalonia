@@ -21,8 +21,8 @@
     <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.1.0"/>
     <!-- Markdown packages -->
     <PackageVersion Include="Markdig" Version="0.43.0"/>
-    <PackageVersion Include="TextMateSharp" Version="1.0.70"/>
-    <PackageVersion Include="TextMateSharp.Grammars" Version="1.0.70"/>
+    <PackageVersion Include="TextMateSharp" Version="[2.0.0,)"/>
+    <PackageVersion Include="TextMateSharp.Grammars" Version="[2.0.0,)"/>
     <PackageVersion Include="Sylinko.CSharpMath.Avalonia" Version="11.3.0"/>
     <PackageVersion Include="Mermaider" Version="0.6.0"/>
     <!-- NUnit packages -->
