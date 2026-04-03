@@ -154,11 +154,14 @@ public class CodeBlock : TemplatedControl
         remove => RemoveHandler(CopyingToClipboardEvent, value);
     }
 
-    internal MarkdownTextBlock? CodeTextBlock { get; private set; }
+    /// <summary>
+    /// Gets the <see cref="MarkdownTextBlock"/> control defined in the template, which is used to display the code content with syntax highlighting.
+    /// </summary>
+    public MarkdownTextBlock? CodeTextBlock { get; private set; }
 
     private ScrollViewer? _scrollViewer;
     private IDisposable? _copyButtonClickedSubscription;
-    private bool isApplyingSyntaxHighlighting; // prevent re-entrancy
+    private bool isApplyingSyntaxHighlighting; // prevent re-entrance
 
     public CodeBlock()
     {
