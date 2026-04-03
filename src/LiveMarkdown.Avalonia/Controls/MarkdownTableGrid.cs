@@ -14,6 +14,41 @@ public class MarkdownTableGrid : Panel
     private readonly Dictionary<int, double> _rowHeights = new();
     private readonly Dictionary<int, double> _colWidths = new();
 
+    /// <summary>
+    /// Defines the <see cref="ColumnSpacing"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> ColumnSpacingProperty =
+        AvaloniaProperty.Register<MarkdownTableGrid, double>(nameof(ColumnSpacing));
+
+    /// <summary>
+    /// Gets or sets the spacing between columns.
+    /// </summary>
+    public double ColumnSpacing
+    {
+        get => GetValue(ColumnSpacingProperty);
+        set => SetValue(ColumnSpacingProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="RowSpacing"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> RowSpacingProperty =
+        AvaloniaProperty.Register<MarkdownTableGrid, double>(nameof(RowSpacing));
+
+    /// <summary>
+    /// Gets or sets the spacing between rows.
+    /// </summary>
+    public double RowSpacing
+    {
+        get => GetValue(RowSpacingProperty);
+        set => SetValue(RowSpacingProperty, value);
+    }
+
+    static MarkdownTableGrid()
+    {
+        AffectsMeasure<MarkdownTableGrid>(ColumnSpacingProperty, RowSpacingProperty);
+    }
+
     protected override Size MeasureOverride(Size availableSize)
     {
         _rowHeights.Clear();
@@ -67,11 +102,15 @@ public class MarkdownTableGrid : Panel
             // Handle Column Spans
             if (colSpan > 1)
             {
-                double currentSpannedWidth = 0;
+                var currentSpannedWidth = (colSpan - 1) * ColumnSpacing;
                 for (var i = 0; i < colSpan; i++)
                 {
                     var targetCol = col + i;
+#if NETSTANDARD2_0
                     if (!_colWidths.ContainsKey(targetCol)) _colWidths[targetCol] = 0;
+#else
+                    _colWidths.TryAdd(targetCol, 0);
+#endif
                     currentSpannedWidth += _colWidths[targetCol];
                 }
 
@@ -90,11 +129,15 @@ public class MarkdownTableGrid : Panel
             // Handle Row Spans
             if (rowSpan > 1)
             {
-                double currentSpannedHeight = 0;
+                var currentSpannedHeight = (rowSpan - 1) * RowSpacing;
                 for (var i = 0; i < rowSpan; i++)
                 {
                     var targetRow = row + i;
+#if NETSTANDARD2_0
                     if (!_rowHeights.ContainsKey(targetRow)) _rowHeights[targetRow] = 0;
+#else
+                    _rowHeights.TryAdd(targetRow, 0);
+#endif
                     currentSpannedHeight += _rowHeights[targetRow];
                 }
 
@@ -111,9 +154,9 @@ public class MarkdownTableGrid : Panel
             }
         }
 
-        // The total size of the table is the sum of all columns and rows
-        var totalWidth = _colWidths.Values.Sum();
-        var totalHeight = _rowHeights.Values.Sum();
+        // The total size of the table is the sum of all columns and rows plus inter-cell spacing
+        var totalWidth = _colWidths.Values.Sum() + Math.Max(0, _colWidths.Count - 1) * ColumnSpacing;
+        var totalHeight = _rowHeights.Values.Sum() + Math.Max(0, _rowHeights.Count - 1) * RowSpacing;
 
         return new Size(totalWidth, totalHeight);
     }
@@ -135,7 +178,7 @@ public class MarkdownTableGrid : Panel
         foreach (var col in sortedCols)
         {
             colOffsets[col] = currentX;
-            currentX += _colWidths[col];
+            currentX += _colWidths[col] + ColumnSpacing;
         }
 
         // Pre-calculate Y offsets
@@ -144,7 +187,7 @@ public class MarkdownTableGrid : Panel
         foreach (var row in sortedRows)
         {
             rowOffsets[row] = currentY;
-            currentY += _rowHeights[row];
+            currentY += _rowHeights[row] + RowSpacing;
         }
 
         // Arrange each child based on its offset and total spanned size
@@ -158,18 +201,23 @@ public class MarkdownTableGrid : Panel
             var colSpan = Math.Max(1, Grid.GetColumnSpan(child));
 
             // Determine starting coordinates (default to 0 if something is completely missing)
+#if NETSTANDARD2_0
             var x = colOffsets.TryGetValue(col, out var startX) ? startX : 0;
             var y = rowOffsets.TryGetValue(row, out var startY) ? startY : 0;
+#else
+            var x = colOffsets.GetValueOrDefault(col, 0);
+            var y = rowOffsets.GetValueOrDefault(row, 0);
+#endif
 
             // Calculate total width across spanned columns
-            var w = 0d;
+            var w = (colSpan - 1) * ColumnSpacing;
             for (var i = 0; i < colSpan; i++)
             {
                 if (_colWidths.TryGetValue(col + i, out var cw)) w += cw;
             }
 
             // Calculate total height across spanned rows
-            var h = 0d;
+            var h = (rowSpan - 1) * RowSpacing;
             for (var i = 0; i < rowSpan; i++)
             {
                 if (_rowHeights.TryGetValue(row + i, out var rh)) h += rh;
