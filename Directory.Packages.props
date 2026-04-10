@@ -1,14 +1,14 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <AvaloniaVersion>[12.0.0-rc1,)</AvaloniaVersion>
+    <AvaloniaVersion>[12.0.0,)</AvaloniaVersion>
   </PropertyGroup>
   <ItemGroup>
     <!-- Base packages -->
     <PackageVersion Include="IgnoresAccessChecksToGenerator" Version="0.8.0" />
     <PackageVersion Include="Svg.Controls.Avalonia" Version="$(AvaloniaVersion)" />
     <PackageVersion Include="Svg.Controls.Skia.Avalonia" Version="$(AvaloniaVersion)" />
-    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="PolySharp" Version="1.15.0" />
     <!-- Avalonia packages -->
     <PackageVersion Include="Avalonia" Version="$(AvaloniaVersion)" />
@@ -22,7 +22,7 @@
     <PackageVersion Include="Markdig" Version="1.1.2" />
     <PackageVersion Include="TextMateSharp" Version="2.0.3" />
     <PackageVersion Include="TextMateSharp.Grammars" Version="2.0.3" />
-    <PackageVersion Include="Sylinko.CSharpMath.Avalonia" Version="11.3.0" />
+    <PackageVersion Include="Sylinko.CSharpMath.Avalonia" Version="12.0.0" />
     <PackageVersion Include="Mermaider" Version="0.6.0" />
     <!-- NUnit packages -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.1" />
