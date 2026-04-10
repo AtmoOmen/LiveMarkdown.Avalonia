@@ -5,24 +5,23 @@
     <LangVersion>preview</LangVersion>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
-  
+
   <ItemGroup>
-    <AvaloniaResource Include="Assets\**" />
+    <AvaloniaResource Include="Assets\**"/>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" />
-    <PackageReference Include="Avalonia.Themes.Fluent" />
-    <PackageReference Include="Avalonia.Fonts.Inter" />
-    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Avalonia"/>
+    <PackageReference Include="Avalonia.Fonts.Inter"/>
+    <PackageReference Include="CommunityToolkit.Mvvm"/>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\LiveMarkdown.Avalonia.Math\LiveMarkdown.Avalonia.Math.csproj" />
-    <ProjectReference Include="..\..\LiveMarkdown.Avalonia.Mermaid\LiveMarkdown.Avalonia.Mermaid.csproj" />
-    <ProjectReference Include="..\..\LiveMarkdown.Avalonia.Svg.Skia\LiveMarkdown.Avalonia.Svg.Skia.csproj" />
-    <ProjectReference Include="..\..\LiveMarkdown.Avalonia\LiveMarkdown.Avalonia.csproj" />
+    <ProjectReference Include="..\..\..\3rd\shad-ui\src\ShadUI\ShadUI.csproj"/>
+    <ProjectReference Include="..\..\LiveMarkdown.Avalonia.Math\LiveMarkdown.Avalonia.Math.csproj"/>
+    <ProjectReference Include="..\..\LiveMarkdown.Avalonia.Mermaid\LiveMarkdown.Avalonia.Mermaid.csproj"/>
+    <ProjectReference Include="..\..\LiveMarkdown.Avalonia.Svg.Skia\LiveMarkdown.Avalonia.Svg.Skia.csproj"/>
+    <ProjectReference Include="..\..\LiveMarkdown.Avalonia\LiveMarkdown.Avalonia.csproj"/>
   </ItemGroup>
 
   <ItemGroup>
@@ -56,6 +55,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="samples\Tables.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\README.md">
+      <Link>samples\README.md</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

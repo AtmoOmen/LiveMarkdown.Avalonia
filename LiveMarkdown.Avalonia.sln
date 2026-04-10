@@ -40,6 +40,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveMarkdown.Avalonia.Svg.S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveMarkdown.Avalonia.Mermaid", "src\LiveMarkdown.Avalonia.Mermaid\LiveMarkdown.Avalonia.Mermaid.csproj", "{F3FD21AC-08A9-4FBA-A55C-528C90497E8B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3rd", "3rd", "{7DA58198-8879-4C03-8607-C631E63DCF37}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShadUI", "3rd\shad-ui\src\ShadUI\ShadUI.csproj", "{5CD2BE29-503B-47F0-B2E3-EBD59D333D9D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -90,10 +94,15 @@ Global
 		{F3FD21AC-08A9-4FBA-A55C-528C90497E8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F3FD21AC-08A9-4FBA-A55C-528C90497E8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F3FD21AC-08A9-4FBA-A55C-528C90497E8B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CD2BE29-503B-47F0-B2E3-EBD59D333D9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CD2BE29-503B-47F0-B2E3-EBD59D333D9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CD2BE29-503B-47F0-B2E3-EBD59D333D9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CD2BE29-503B-47F0-B2E3-EBD59D333D9D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{5CD2BE29-503B-47F0-B2E3-EBD59D333D9D} = {7DA58198-8879-4C03-8607-C631E63DCF37}
 	EndGlobalSection
 EndGlobal

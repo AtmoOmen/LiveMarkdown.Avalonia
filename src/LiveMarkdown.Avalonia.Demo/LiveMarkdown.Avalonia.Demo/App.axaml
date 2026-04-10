@@ -1,10 +1,11 @@
 <Application
   x:Class="LiveMarkdown.Avalonia.Demo.App" xmlns="https://github.com/avaloniaui"
-  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:md="clr-namespace:LiveMarkdown.Avalonia;assembly=LiveMarkdown.Avalonia"
-  RequestedThemeVariant="Default">
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:grammars="clr-namespace:TextMateSharp.Grammars;assembly=TextMateSharp.Grammars"
+  xmlns:md="clr-namespace:LiveMarkdown.Avalonia;assembly=LiveMarkdown.Avalonia" xmlns:mermaid="clr-namespace:LiveMarkdown.Avalonia;assembly=LiveMarkdown.Avalonia.Mermaid"
+  xmlns:shadui="clr-namespace:ShadUI.Controls;assembly=ShadUI" RequestedThemeVariant="Default">
 
   <Application.Styles>
-    <FluentTheme/>
+    <shadui:ShadTheme/>
     <StyleInclude Source="avares://LiveMarkdown.Avalonia/Styles.axaml"/>
 
     <Style Selector="md|MarkdownRenderer">
@@ -24,14 +25,51 @@
           <Setter Property="Background" Value="DarkOrange"/>
         </Style>
       </Style>
+
+      <Setter Property="CodeBlockColorTheme" Value="{DynamicResource ColorTheme}"/>
+
+      <Style Selector="^ InlineUIContainer.Code">
+        <Style Selector="^ md|MarkdownTextBlock">
+          <Setter Property="Foreground" Value="{DynamicResource QuoteColor}"/>
+          <Setter Property="FontSize" Value="{DynamicResource FontSizeM}"/>
+        </Style>
+      </Style>
+
+      <Style Selector="^ Border.QuoteBlock">
+        <Setter Property="BorderBrush" Value="{DynamicResource QuoteColor}"/>
+      </Style>
+
+      <Style Selector="^ md|CodeBlock">
+        <Style Selector="^ /template/ StackPanel">
+          <Setter Property="Spacing" Value="0"/>
+          <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+      </Style>
+
+      <Style Selector="^ mermaid|MermaidPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}"/>
+        <Setter Property="SecondaryForeground" Value="{DynamicResource SecondaryForegroundColor}"/>
+        <Setter Property="LineStroke" Value="{DynamicResource BorderColor}"/>
+        <Setter Property="ArrowFill" Value="{DynamicResource PrimaryColor}"/>
+        <Setter Property="AccentFill" Value="{DynamicResource PrimaryColor}"/>
+        <Setter Property="AccentStroke" Value="{DynamicResource PrimaryColor}"/>
+        <Setter Property="AccentForeground" Value="{DynamicResource PrimaryForegroundColor}"/>
+        <Setter Property="NodeFill" Value="{DynamicResource DialogBackgroundColor}"/>
+        <Setter Property="NodeStroke" Value="{DynamicResource BorderColor}"/>
+      </Style>
     </Style>
   </Application.Styles>
 
   <Application.Resources>
     <ResourceDictionary>
-      <ResourceDictionary.MergedDictionaries>
-        <ResourceInclude Source="avares://LiveMarkdown.Avalonia/Defaults.axaml"/>
-      </ResourceDictionary.MergedDictionaries>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="{x:Static ThemeVariant.Light}">
+          <Color x:Key="SystemBaseHighColor">#08080B</Color>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="{x:Static ThemeVariant.Dark}">
+          <Color x:Key="SystemBaseHighColor">#E5E5E5</Color>
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
     </ResourceDictionary>
   </Application.Resources>
 </Application>

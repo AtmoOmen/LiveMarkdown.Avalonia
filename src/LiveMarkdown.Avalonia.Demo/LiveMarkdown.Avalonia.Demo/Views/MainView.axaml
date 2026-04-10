@@ -2,93 +2,129 @@
   x:Class="LiveMarkdown.Avalonia.Demo.Views.MainView" xmlns="https://github.com/avaloniaui"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:md="clr-namespace:LiveMarkdown.Avalonia;assembly=LiveMarkdown.Avalonia"
-  xmlns:vm="clr-namespace:LiveMarkdown.Avalonia.Demo.ViewModels" d:DesignHeight="450"
-  d:DesignWidth="800" x:DataType="vm:MainViewModel"
-  mc:Ignorable="d">
+  xmlns:shadui="clr-namespace:ShadUI.Controls;assembly=ShadUI" xmlns:vm="clr-namespace:LiveMarkdown.Avalonia.Demo.ViewModels"
+  d:DesignHeight="600" d:DesignWidth="1000"
+  x:DataType="vm:MainViewModel" mc:Ignorable="d">
+
   <Design.DataContext>
     <vm:MainViewModel/>
   </Design.DataContext>
 
-  <Grid
-    Margin="4" ColumnDefinitions="*,4,*"
-    RowDefinitions="*,Auto">
-    <ScrollViewer
-      x:Name="RawMarkdownTextBlockScrollViewer" Grid.Row="0"
-      Grid.Column="0" Background="#11FFFFFF"
-      CornerRadius="4">
-      <TextBlock
-        Margin="8,4" FontFamily="Consolas, 'Courier New', monospace"
-        Text="{Binding RawMarkdownText}"
-        TextWrapping="Wrap"/>
-    </ScrollViewer>
+  <DockPanel
+    x:Name="RootPanel"
+    Background="{DynamicResource CardBackgroundColor}">
 
-    <ScrollViewer
-      x:Name="MarkdownRendererScrollViewer" Grid.Row="0"
-      Grid.Column="2" Background="#11FFFFFF"
-      CornerRadius="4">
-      <md:MarkdownRenderer
-        x:Name="MarkdownRenderer" Margin="8,4"
-        CodeBlockColorTheme="{Binding SelectedColorTheme}"
-        LinkCommand="{Binding OpenUriCommand}"
-        MarkdownBuilder="{Binding MarkdownBuilder}">
-        <md:MarkdownRenderer.ContextFlyout>
-          <MenuFlyout Placement="Bottom">
-            <MenuItem
-              x:Name="MarkdownRendererContextFlyoutCopyItem"
-              Command="{Binding $parent[md:MarkdownRenderer].Copy}"
-              Cursor="Hand" Header="Copy"
-              InputGesture="{Binding $parent[md:MarkdownRenderer].CopyGesture}"
-              IsEnabled="{Binding $parent[md:MarkdownRenderer].CanCopy}"/>
-          </MenuFlyout>
-        </md:MarkdownRenderer.ContextFlyout>
-        <md:MarkdownRenderer.LinkContextMenu>
-          <ContextMenu>
-            <MenuItem
-              Command="{Binding OpenCommand, DataType=md:Link}"
-              Cursor="Hand" Header="Open Link"/>
-            <MenuItem
-              Command="{Binding CopyCommand, DataType=md:Link}"
-              Cursor="Hand" Header="Copy Link"/>
-            <MenuItem
-              Command="{Binding CopyTextCommand, DataType=md:Link}"
-              Cursor="Hand" Header="Copy Text"/>
-          </ContextMenu>
-        </md:MarkdownRenderer.LinkContextMenu>
-      </md:MarkdownRenderer>
-    </ScrollViewer>
+    <shadui:NavigationBar
+      Margin="12,8"
+      IsExpanded="{Binding IsSidebarExpanded, Mode=TwoWay}"
+      ItemsSource="{Binding NavigationItems}"
+      SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+      ZIndex="1">
+    </shadui:NavigationBar>
 
-    <StackPanel
-      Grid.Row="1" Grid.Column="0"
-      Grid.ColumnSpan="3" Margin="0,8,0,0"
-      Orientation="Horizontal" Spacing="16">
-      <TextBlock
-        Margin="0,0,-4,0" VerticalAlignment="Center"
-        Text="Select sample:"/>
-      <ComboBox
-        VerticalAlignment="Center"
-        ItemsSource="{Binding MarkdownList}"
-        SelectedItem="{Binding SelectedMarkdown, Mode=OneWayToSource}"/>
+    <DockPanel LastChildFill="True">
+      <!--  Toolbar Area  -->
+      <Border
+        DockPanel.Dock="Top" Padding="16,12"
+        BorderBrush="{DynamicResource BorderColor}"
+        BorderThickness="0,0,0,1">
+        <Grid ColumnDefinitions="Auto, *, Auto">
+          <TextBlock
+            Classes="h3" Grid.Column="0"
+            VerticalAlignment="Center" Text="LiveMarkdown.Avalonia"/>
 
-      <TextBlock
-        Margin="0,0,-4,0" VerticalAlignment="Center"
-        Text="Render speed:"/>
-      <Slider
-        Width="160" VerticalAlignment="Center"
-        Maximum="100" Minimum="1"
-        Value="{Binding RenderSpeed}"/>
+          <StackPanel
+            Grid.Column="2" HorizontalAlignment="Right"
+            Orientation="Horizontal" Spacing="12">
+            <TextBlock
+              Classes="Small" VerticalAlignment="Center"
+              Text="Render speed:"/>
+            <Slider
+              Width="100" VerticalAlignment="Center"
+              Maximum="100" Minimum="1"
+              Value="{Binding RenderSpeed}"/>
+            <Button
+              Classes="Secondary" VerticalAlignment="Center"
+              Command="{Binding ResetMarkdownCommand}"
+              Content="Reset"/>
 
-      <Button
-        VerticalAlignment="Center"
-        Command="{Binding ClearMarkdownCommand}"
-        Content="Clear"/>
+            <Rectangle
+              Width="1" Height="16"
+              Margin="4,0" VerticalAlignment="Center"
+              Fill="{DynamicResource BorderColor}"/>
 
-      <TextBlock
-        Margin="0,0,-4,0" VerticalAlignment="Center"
-        Text="Code color theme:"/>
-      <ComboBox
-        VerticalAlignment="Center"
-        ItemsSource="{Binding AvailableColorThemes}"
-        SelectedItem="{Binding SelectedColorTheme, Mode=TwoWay}"/>
-    </StackPanel>
-  </Grid>
+            <TextBlock
+              Classes="Small" VerticalAlignment="Center"
+              Text="Theme:"/>
+            <ComboBox
+              VerticalAlignment="Center"
+              ItemsSource="{Binding AvailableColorThemes}"
+              SelectedItem="{Binding SelectedColorTheme, Mode=TwoWay}"/>
+
+            <Button
+              VerticalAlignment="Center"
+              Command="{Binding ToggleThemeCommand}"
+              Content="🌓 Toggle Mode"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!--  Main Content Area  -->
+      <Grid
+        Margin="16" ColumnDefinitions="*,16,*"
+        RowDefinitions="*">
+
+        <!--  Original Markdown  -->
+        <ScrollViewer
+          x:Name="RawMarkdownTextBlockScrollViewer" Grid.Row="0"
+          Grid.Column="0"
+          Background="{DynamicResource CardBackgroundColor}"
+          BorderBrush="{DynamicResource BorderColor}"
+          BorderThickness="1" CornerRadius="4">
+          <TextBlock
+            Margin="12,12" FontFamily="Consolas, 'Courier New', monospace"
+            Text="{Binding RawMarkdownText}"
+            TextWrapping="Wrap"/>
+        </ScrollViewer>
+
+        <!--  Markdown Renderer  -->
+        <ScrollViewer
+          x:Name="MarkdownRendererScrollViewer" Grid.Row="0"
+          Grid.Column="2"
+          Background="{DynamicResource CardBackgroundColor}"
+          BorderBrush="{DynamicResource BorderColor}"
+          BorderThickness="1" CornerRadius="4">
+          <md:MarkdownRenderer
+            x:Name="MarkdownRenderer" Margin="12,12"
+            CodeBlockColorTheme="{Binding SelectedColorTheme}"
+            LinkCommand="{Binding OpenUriCommand}"
+            MarkdownBuilder="{Binding MarkdownBuilder}">
+            <md:MarkdownRenderer.ContextFlyout>
+              <MenuFlyout Placement="Bottom">
+                <MenuItem
+                  x:Name="MarkdownRendererContextFlyoutCopyItem"
+                  Command="{Binding $parent[md:MarkdownRenderer].Copy}"
+                  Cursor="Hand" Header="Copy"
+                  InputGesture="{Binding $parent[md:MarkdownRenderer].CopyGesture}"
+                  IsEnabled="{Binding $parent[md:MarkdownRenderer].CanCopy}"/>
+              </MenuFlyout>
+            </md:MarkdownRenderer.ContextFlyout>
+            <md:MarkdownRenderer.LinkContextMenu>
+              <ContextMenu>
+                <MenuItem
+                  Command="{Binding OpenCommand, DataType=md:Link}"
+                  Cursor="Hand" Header="Open Link"/>
+                <MenuItem
+                  Command="{Binding CopyCommand, DataType=md:Link}"
+                  Cursor="Hand" Header="Copy Link"/>
+                <MenuItem
+                  Command="{Binding CopyTextCommand, DataType=md:Link}"
+                  Cursor="Hand" Header="Copy Text"/>
+              </ContextMenu>
+            </md:MarkdownRenderer.LinkContextMenu>
+          </md:MarkdownRenderer>
+        </ScrollViewer>
+      </Grid>
+    </DockPanel>
+  </DockPanel>
 </UserControl>
