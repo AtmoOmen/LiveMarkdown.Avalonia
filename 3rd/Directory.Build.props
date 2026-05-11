@@ -1,0 +1,11 @@
+<Project>
+    <PropertyGroup>
+      <TargetFramework>net10.0</TargetFramework>
+      <LangVersion>preview</LangVersion>
+      <ImplicitUsings>enable</ImplicitUsings>
+      <Nullable>enable</Nullable>
+      <WarningsAsErrors>nullable</WarningsAsErrors>
+      <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+</Project>

@@ -8,6 +8,8 @@ namespace LiveMarkdown.Avalonia;
 
 public abstract class MarkdownNode
 {
+    public delegate MarkdownNodePipelineBuilder MarkdownNodePipelineBuilderDelegate(MarkdownNodePipelineBuilder builder);
+
     protected static ImmutableHashSet<IMarkdownNodeFactory> NodeFactories { get; private set; } = ImmutableHashSet.Create<IMarkdownNodeFactory>(
         new MarkdownNodeFactory<AutolinkInlineNode>(),
         new MarkdownNodeFactory<CodeInlineNode>(),
@@ -53,7 +55,7 @@ public abstract class MarkdownNode
     /// </code>
     /// </example>
     /// <param name="builder">The function to configure the pipeline.</param>
-    public static void Edit(Func<MarkdownNodePipelineBuilder, MarkdownNodePipelineBuilder> builder)
+    public static void Edit(MarkdownNodePipelineBuilderDelegate builder)
     {
         NodeFactories = [..builder(new MarkdownNodePipelineBuilder([..NodeFactories])).RegisteredNodeFactories];
     }
