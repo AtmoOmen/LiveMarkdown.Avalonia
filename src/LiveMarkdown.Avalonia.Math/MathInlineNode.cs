@@ -21,7 +21,8 @@ public class MathInlineNode : InlineNode<MathInline>
             {
                 Child = _mathView = new MathView
                 {
-                    DisplayErrorInline = false
+                    DisplayErrorInline = false,
+                    Classes = { "Math" }
                 }
             }
         };
