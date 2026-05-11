@@ -112,13 +112,13 @@
             <md:MarkdownRenderer.LinkContextMenu>
               <ContextMenu>
                 <MenuItem
-                  Command="{Binding OpenCommand, DataType=md:Link}"
+                  Command="{Binding OpenCommand, x:DataType=md:Link}"
                   Cursor="Hand" Header="Open Link"/>
                 <MenuItem
-                  Command="{Binding CopyCommand, DataType=md:Link}"
+                  Command="{Binding CopyCommand, x:DataType=md:Link}"
                   Cursor="Hand" Header="Copy Link"/>
                 <MenuItem
-                  Command="{Binding CopyTextCommand, DataType=md:Link}"
+                  Command="{Binding CopyTextCommand, x:DataType=md:Link}"
                   Cursor="Hand" Header="Copy Text"/>
               </ContextMenu>
             </md:MarkdownRenderer.LinkContextMenu>

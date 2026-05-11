@@ -13,6 +13,7 @@
   <ItemGroup>
     <PackageReference Include="Avalonia"/>
     <PackageReference Include="Avalonia.Fonts.Inter"/>
+    <PackageReference Include="ClassicDiagnostics.Avalonia" />
     <PackageReference Include="CommunityToolkit.Mvvm"/>
   </ItemGroup>
 
