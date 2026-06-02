@@ -268,15 +268,28 @@ public class CodeBlock : TemplatedControl
         }
     }
 
-    private void HandleCopyButtonClick(object? sender, RoutedEventArgs e)
+    private async void HandleCopyButtonClick(object? sender, RoutedEventArgs e)
     {
-        var copyEventArgs = new RoutedEventArgs(CopyingToClipboardEvent);
-        RaiseEvent(copyEventArgs);
-        if (copyEventArgs.Handled) return;
+        try
+        {
+            var copyEventArgs = new RoutedEventArgs(CopyingToClipboardEvent);
+            RaiseEvent(copyEventArgs);
+            if (copyEventArgs.Handled) return;
 
-        var text = Inlines.Text;
-        if (string.IsNullOrEmpty(text)) return;
+            var text = Inlines.Text;
+            if (string.IsNullOrEmpty(text)) return;
 
-        TopLevel.GetTopLevel(this)?.Clipboard?.SetTextAsync(text);
+            if (TopLevel.GetTopLevel(this)?.Clipboard is not { } clipboard)
+            {
+                MarkdownRenderer.VerboseLogger?.Log(this, "Clipboard is not available.");
+                return;
+            }
+
+            await clipboard.SetTextAsync(text);
+        }
+        catch (Exception ex)
+        {
+            MarkdownRenderer.VerboseLogger?.Log(this, "Failed to copy code to clipboard: {Message}", ex.Message);
+        }
     }
 }
