@@ -37,17 +37,39 @@ public class MathBlockNode : BlockNode<MathBlock>
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        if (math.IsOpen)
+        if (math.IsOpen || _mathView.ErrorMessage is not null)
         {
             _mathView.IsVisible = false;
+
+            if (_mathView.ErrorMessage is not null)
+            {
+                _textBlock.Classes.Add("Error");
+            }
+            else
+            {
+                _textBlock.Classes.Remove("Error");
+            }
+
             _textBlock.Text = math.ToString();
             _textBlock.IsVisible = true;
         }
         else
         {
-            _textBlock.IsVisible = false;
             _mathView.LaTeX = math.Lines.ToString();
-            _mathView.IsVisible = true;
+
+            if (_mathView.ErrorMessage is not null)
+            {
+                _mathView.IsVisible = false;
+
+                _textBlock.Classes.Add("Error");
+                _textBlock.Text = _mathView.LaTeX;
+                _textBlock.IsVisible = true;
+            }
+            else
+            {
+                _textBlock.IsVisible = false;
+                _mathView.IsVisible = true;
+            }
         }
 
         return true;

@@ -13,6 +13,11 @@ public static class MarkdownExtensions
         return pipeline;
     }
 
+    public static Range ToRange(this in SourceSpan span)
+    {
+        return new Range(span.Start, span.End + 1);
+    }
+
     /// <summary>
     /// Markdown extension that fixes the spans of code blocks.
     /// </summary>
