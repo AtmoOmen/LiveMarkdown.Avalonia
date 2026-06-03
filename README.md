@@ -320,6 +320,18 @@ Here is a sample style definition that customizes the emphasis styles and adds s
 - A: This is a known issue caused by Skia (the render backend of Avalonia). You can upgrade SkiaSharp version (e.g. >=
   3.117.0) to fix this. [Related issue](https://github.com/AvaloniaUI/Avalonia/issues/18677)
 
+- Q: Why is LaTeX like `\(xxx\)` not rendered?
+- A: The default Markdig math parser supports `$...$` and `$$...$$`. To support `\(...\)` and `\[...\]`, enable the
+  extended math parser before creating any `MarkdownRenderer` instances:
+
+```csharp
+MarkdownRenderer.ConfigurePipeline += x => x.UseExtendedMathematics();
+MarkdownNode.Edit(builder => builder
+    .Register<MathInlineNode>()
+    .Register<MathBlockNode>()
+);
+```
+
 ## 🤝 Contributing
 
 We welcome issues, feature ideas, and PRs! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.

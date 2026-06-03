@@ -13,7 +13,9 @@ public partial class App : Application, ILogSink
     {
         Logger.Sink = this;
 
-        MarkdownRenderer.ConfigurePipeline += x => x.UseMermaid();
+        MarkdownRenderer.ConfigurePipeline += x => x
+            .UseMermaid()
+            .UseExtendedMathematics();
         MarkdownNode.Edit(builder => builder
             .Register<MathInlineNode>()
             .Register<MathBlockNode>()
