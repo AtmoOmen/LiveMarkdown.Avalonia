@@ -10,6 +10,7 @@ public class MathInlineNode : InlineNode<MathInline>
     public override AvaloniaDocs.Inline Inline => _inlineUIContainer;
 
     private readonly AvaloniaDocs.InlineUIContainer _inlineUIContainer;
+    private readonly MarkdownTextBlock _textBlock;
     private readonly MathView _mathView;
 
     public MathInlineNode()
@@ -17,12 +18,20 @@ public class MathInlineNode : InlineNode<MathInline>
         _inlineUIContainer = new AvaloniaDocs.InlineUIContainer
         {
             Classes = { "Math" },
-            Child = new Border
+            Child = new Panel
             {
-                Child = _mathView = new MathView
+                Classes = { "Math" },
+                Children =
                 {
-                    DisplayErrorInline = false,
-                    Classes = { "Math" }
+                    (_textBlock = new MarkdownTextBlock
+                    {
+                        Classes = { "Math" }
+                    }),
+                    (_mathView = new MathView
+                    {
+                        DisplayErrorInline = false,
+                        Classes = { "Math" }
+                    })
                 }
             }
         };
@@ -35,6 +44,21 @@ public class MathInlineNode : InlineNode<MathInline>
         CancellationToken cancellationToken)
     {
         _mathView.LaTeX = math.Content.ToString();
+
+        if (_mathView.ErrorMessage is not null)
+        {
+            _mathView.IsVisible = false;
+
+            _textBlock.Classes.Add("Error");
+            _textBlock.Text = _mathView.LaTeX;
+            _textBlock.IsVisible = true;
+        }
+        else
+        {
+            _textBlock.IsVisible = false;
+            _mathView.IsVisible = true;
+        }
+
         return true;
     }
 }
