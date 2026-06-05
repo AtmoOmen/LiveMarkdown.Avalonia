@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Text;
 using Avalonia.Controls.Documents;
 using Avalonia.Media;
 using TextMateSharp.Grammars;
@@ -99,27 +100,48 @@ public sealed class SyntaxHighlighting
         // Tokenize each line of the source code.
         for (var i = 0; i < inlines.Count; i++)
         {
-            if (inlines[i] is not Run { Text: { } line } run) continue;
-            if (IsRunFormatted(run)) continue;
-
-            var result = _grammar.TokenizeLine(line, ruleStack, TimeSpan.MaxValue);
-            ruleStack = result.RuleStack;
-
-            if (result.Tokens.Length == 1)
+            switch (inlines[i])
             {
-                StyleRun(run, result.Tokens[0].Scopes, themeName);
-            }
-            else
-            {
-                // Create and style a Run for each token.
-                Span span;
-                inlines[i] = span = new Span();
-                foreach (var token in result.Tokens)
+                case Run { Text: { } line } run:
                 {
-                    var text = line.Substring(token.StartIndex, Math.Min(token.EndIndex - token.StartIndex, line.Length - token.StartIndex));
-                    run = new Run(text);
-                    StyleRun(run, token.Scopes, themeName);
-                    span.Inlines.Add(run);
+                    var result = _grammar.TokenizeLine(line, ruleStack, TimeSpan.MaxValue);
+                    ruleStack = result.RuleStack;
+                    if (IsRunFormatted(run)) continue;
+
+                    if (result.Tokens.Length == 1)
+                    {
+                        StyleRun(run, result.Tokens[0].Scopes, themeName);
+                    }
+                    else
+                    {
+                        // Create and style a Run for each token.
+                        Span span;
+                        inlines[i] = span = new Span();
+                        foreach (var token in result.Tokens)
+                        {
+                            var text = line.Substring(token.StartIndex, Math.Min(token.EndIndex - token.StartIndex, line.Length - token.StartIndex));
+                            run = new Run(text);
+                            StyleRun(run, token.Scopes, themeName);
+                            span.Inlines.Add(run);
+                        }
+                    }
+                    break;
+                }
+                case Span { Inlines: { Count: > 0 } spanInlines }:
+                {
+                    var lineBuilder = new StringBuilder();
+                    foreach (var run in spanInlines.OfType<Run>())
+                    {
+                        lineBuilder.Append(run.Text);
+                    }
+
+                    var result = _grammar.TokenizeLine(lineBuilder.ToString(), ruleStack, TimeSpan.MaxValue);
+                    ruleStack = result.RuleStack;
+                    continue;
+                }
+                default:
+                {
+                    continue;
                 }
             }
         }
