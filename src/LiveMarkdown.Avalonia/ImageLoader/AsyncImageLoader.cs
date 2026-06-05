@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -9,13 +9,13 @@ namespace LiveMarkdown.Avalonia;
 /// <summary>
 /// Asynchronously loads images from a given source URL and caches them.
 /// </summary>
-public class AsyncImageLoader
+public static class AsyncImageLoader
 {
     /// <summary>
     /// Attached property for the image source URL.
     /// </summary>
     public static readonly AttachedProperty<string?> SourceProperty =
-        AvaloniaProperty.RegisterAttached<AsyncImageLoader, Image, string?>("Source");
+        AvaloniaProperty.RegisterAttached<Image, Image, string?>("Source");
 
     /// <summary>
     /// Sets the source URL for the image.
@@ -31,7 +31,7 @@ public class AsyncImageLoader
     /// Attached property for the SizeToContent behavior.
     /// </summary>
     public static readonly AttachedProperty<SizeToContent> SizeToContentProperty =
-        AvaloniaProperty.RegisterAttached<AsyncImageLoader, Image, SizeToContent>("SizeToContent", SizeToContent.WidthAndHeight);
+        AvaloniaProperty.RegisterAttached<Image, Image, SizeToContent>("SizeToContent", SizeToContent.WidthAndHeight);
 
     /// <summary>
     /// Sets the SizeToContent behavior for the image.
@@ -48,15 +48,14 @@ public class AsyncImageLoader
     /// Attached property for the image cache.
     /// </summary>
     public static readonly AttachedProperty<AsyncImageLoaderCache?> CacheProperty =
-        AvaloniaProperty.RegisterAttached<AsyncImageLoader, Image, AsyncImageLoaderCache?>("Cache", RamBasedAsyncImageLoaderCache.Shared);
+        AvaloniaProperty.RegisterAttached<Image, Image, AsyncImageLoaderCache?>("Cache");
 
     /// <summary>
     /// Sets the cache for the image loader.
     /// You can use one of the built-in caches (convert from string), or implement your own.
-    /// built-in caches include: `None`, `Ram`. Default is `Ram`.
+    /// built-in caches include: `None`, `Ram`, `File` and `Disk`. Default is `Ram`.
     /// </summary>
-    public static void SetCache(Image obj, AsyncImageLoaderCache? value) =>
-        obj.SetValue(CacheProperty, value);
+    public static void SetCache(Image obj, AsyncImageLoaderCache? value) => obj.SetValue(CacheProperty, value);
 
     /// <summary>
     /// Gets the cache for the image loader.
@@ -64,10 +63,15 @@ public class AsyncImageLoader
     public static AsyncImageLoaderCache? GetCache(Image obj) => obj.GetValue(CacheProperty);
 
     /// <summary>
+    /// Gets or sets the default cache used if an Image does not have its own cache set.
+    /// </summary>
+    public static AsyncImageLoaderCache? DefaultCache { get; set; } = RamBasedAsyncImageLoaderCache.Shared;
+
+    /// <summary>
     /// Attached property for custom image loaders.
     /// </summary>
     public static readonly AttachedProperty<IReadOnlyCollection<AsyncImageLoaderHandler>> HandlersProperty =
-        AvaloniaProperty.RegisterAttached<AsyncImageLoader, Image, IReadOnlyCollection<AsyncImageLoaderHandler>>(
+        AvaloniaProperty.RegisterAttached<Image, Image, IReadOnlyCollection<AsyncImageLoaderHandler>>(
             "Handlers",
             [
                 HttpAsyncImageLoaderHandler.Shared,
@@ -93,7 +97,7 @@ public class AsyncImageLoader
     /// Attached property for image decoders. If null, the DefaultDecoders will be used.
     /// </summary>
     public static readonly AttachedProperty<IReadOnlyCollection<IImageDecoder>?> DecodersProperty =
-        AvaloniaProperty.RegisterAttached<AsyncImageLoader, Image, IReadOnlyCollection<IImageDecoder>?>("Decoders");
+        AvaloniaProperty.RegisterAttached<Image, Image, IReadOnlyCollection<IImageDecoder>?>("Decoders");
 
     /// <summary>
     /// Sets the image decoders used to parse the stream into an IImage.
@@ -123,23 +127,15 @@ public class AsyncImageLoader
         // This method is always called on the UI thread, so we can safely access the UI elements.
         if (ImageLoadTasks.TryGetValue(sender, out var pair))
         {
-            pair.cts.Cancel(); // Cancel the previous loading task if it exists
+            pair.cts.Cancel();
             ImageLoadTasks.Remove(sender);
         }
 
         var newSource = args.NewValue as string;
         if (!Uri.TryCreate(newSource, UriKind.RelativeOrAbsolute, out var uri))
         {
-            sender.Source = null; // Clear the image source if the new value is not a valid URI
+            sender.Source = null;
             ApplySizeToContent(sender, null);
-            return;
-        }
-
-        var cache = GetCache(sender);
-        if (cache?.GetImage(uri) is { } cachedImage)
-        {
-            sender.Source = cachedImage; // Use the cached image if available
-            ApplySizeToContent(sender, cachedImage);
             return;
         }
 
@@ -147,12 +143,13 @@ public class AsyncImageLoader
         var handler = GetHandlers(sender).FirstOrDefault(h => h.SupportedSchemes.Contains(scheme, StringComparer.OrdinalIgnoreCase));
         if (handler is null)
         {
-            sender.Source = null; // No handler found for the URI scheme
+            sender.Source = null;
             ApplySizeToContent(sender, null);
             return;
         }
 
         var decoders = GetDecoders(sender) ?? DefaultDecoders;
+        var cache = GetCache(sender) ?? DefaultCache;
         var newPair = CreateLoadPair(sender, uri, handler, decoders, cache);
         ImageLoadTasks.Add(sender, newPair);
     }
@@ -165,8 +162,6 @@ public class AsyncImageLoader
         var (imageWidth, imageHeight) = loadedImage switch
         {
             Bitmap bitmap => (bitmap.PixelSize.Width, bitmap.PixelSize.Height),
-            // The core does not know about SvgImage anymore, so SvgImages will return (Size.Width, Size.Height) via their IImage interface properties if possible, or we handle it via IImage properties.
-            // Since IImage only exposes Size, we use that universally.
             not null => (loadedImage.Size.Width, loadedImage.Size.Height),
             _ => (double.NaN, double.NaN)
         };
@@ -186,7 +181,6 @@ public class AsyncImageLoader
         var actualWidth = Math.Min(imageWidth, image.MaxWidth);
         var actualHeight = Math.Min(imageHeight, image.MaxHeight);
 
-        // Ensure aspect ratio is maintained
         var widthRatio = actualWidth / imageWidth;
         var heightRatio = actualHeight / imageHeight;
         var minRatio = Math.Min(widthRatio, heightRatio);
@@ -205,88 +199,175 @@ public class AsyncImageLoader
         AsyncImageLoaderCache? cache)
     {
         var cts = new CancellationTokenSource();
-        var task = Task.Run(
-                async () =>
+        var task = Task.Run(() => LoadAndApplyAsync(image, uri, handler, decoders, cache, cts), CancellationToken.None);
+        return (task, cts);
+    }
+
+    private static async Task LoadAndApplyAsync(
+        Image image,
+        Uri uri,
+        AsyncImageLoaderHandler handler,
+        IReadOnlyCollection<IImageDecoder> decoders,
+        AsyncImageLoaderCache? cache,
+        CancellationTokenSource cts)
+    {
+        IImage? result = null;
+        var shouldApply = false;
+
+        try
+        {
+            result = await LoadImageAsync(image, uri, handler, decoders, cache, cts.Token);
+            shouldApply = true;
+        }
+        catch (OperationCanceledException)
+        {
+            // A newer source replaced this request.
+        }
+        catch
+        {
+            shouldApply = true;
+        }
+
+        try
+        {
+            await Dispatcher.UIThread.InvokeAsync(
+                () =>
                 {
-                    try
+                    if (!ImageLoadTasks.TryGetValue(image, out var pair) || pair.cts != cts)
                     {
-#if NETSTANDARD2_0
-                        using var stream = await handler.LoadAsync(uri, cts.Token);
-#else
-                        await using var stream = await handler.LoadAsync(uri, cts.Token);
-#endif
-
-                        if (stream.Length == 0) return null;
-
-                        Stream seekableStream;
-                        if (stream.CanSeek)
-                        {
-                            seekableStream = stream;
-                        }
-                        else
-                        {
-                            seekableStream = new MemoryStream();
-#if NETSTANDARD2_0
-                            await stream.CopyToAsync(seekableStream, 81920, cts.Token);
-#else
-                            await stream.CopyToAsync(seekableStream, cts.Token);
-#endif
-                        }
-
-#if NETSTANDARD2_0
-                        using (seekableStream)
-#else
-                        await using (seekableStream)
-#endif
-                        {
-                            foreach (var decoder in decoders)
-                            {
-                                cts.Token.ThrowIfCancellationRequested();
-                                seekableStream.Position = 0; // Reset stream position for each decoder
-
-                                var result = await decoder.TryDecodeAsync(image, seekableStream, uri, cts.Token);
-                                if (result is not null)
-                                {
-                                    return result;
-                                }
-                            }
-                        }
-
-                        return null; // All decoders failed
+                        return;
                     }
-                    catch (OperationCanceledException)
-                    {
-                        // Task was canceled, do nothing
-                        throw;
-                    }
-                    catch
-                    {
-                        // Handle other exceptions as needed
-                        return null; // Clear the image source on error
-                    }
-                },
-                cts.Token)
-            .ContinueWith(
-                t =>
-                {
-                    Dispatcher.UIThread.Invoke(() =>
-                    {
-                        if (ImageLoadTasks.TryGetValue(image, out var pair) && pair.cts == cts)
-                        {
-                            ImageLoadTasks.Remove(image); // Remove the task from the dictionary
-                        }
 
-                        if (t.Exception is not null) return; // Operation was canceled or failed, do nothing
+                    ImageLoadTasks.Remove(image);
 
-                        var result = t.Result;
-                        if (result is not null) cache?.SetImage(uri, result);
-
+                    if (shouldApply && !cts.IsCancellationRequested)
+                    {
                         image.Source = result;
                         ApplySizeToContent(image, result);
-                    });
-                },
-                cts.Token);
+                    }
+                });
+        }
+        finally
+        {
+            cts.Dispose();
+        }
+    }
 
-        return (task, cts);
+    private static async Task<IImage?> LoadImageAsync(
+        Image image,
+        Uri uri,
+        AsyncImageLoaderHandler handler,
+        IReadOnlyCollection<IImageDecoder> decoders,
+        AsyncImageLoaderCache? cache,
+        CancellationToken cancellationToken)
+    {
+        AsyncImageLoaderCacheEntry? cachedEntry = null;
+        AsyncImageLoaderResponse? response = null;
+
+        try
+        {
+            cachedEntry = cache is null ? null : await cache.GetAsync(uri, cancellationToken);
+            if (cachedEntry is not null && cachedEntry.Metadata.IsFresh(DateTimeOffset.UtcNow))
+            {
+                var cachedImage = await DecodeAsync(image, cachedEntry.Stream, uri, decoders, cancellationToken);
+                if (cachedImage is not null)
+                {
+                    return cachedImage;
+                }
+
+                await cache!.RemoveAsync(uri, cancellationToken);
+                await cachedEntry.DisposeAsync();
+                cachedEntry = null;
+            }
+
+            response = await handler.LoadAsync(uri, cachedEntry?.Metadata, cancellationToken);
+            if (response.IsNotModified)
+            {
+                if (cachedEntry is null) return null;
+
+                if (cache is not null)
+                {
+                    await cache.TouchAsync(uri, response.Metadata, cancellationToken);
+                }
+
+                var cachedImage = await DecodeAsync(image, cachedEntry.Stream, uri, decoders, cancellationToken);
+                if (cachedImage is null && cache is not null)
+                {
+                    await cache.RemoveAsync(uri, cancellationToken);
+                }
+
+                return cachedImage;
+            }
+
+            if (response.Stream is null) return null;
+
+            await using (var seekableStream = await EnsureSeekableStreamAsync(response.Stream, cancellationToken))
+            {
+                if (seekableStream.Length == 0) return null;
+
+                var decodedImage = await DecodeAsync(image, seekableStream, uri, decoders, cancellationToken);
+                if (decodedImage is not null && cache is not null)
+                {
+                    seekableStream.Position = 0;
+                    await cache.SetAsync(uri, seekableStream, response.Metadata, cancellationToken);
+                }
+
+                return decodedImage;
+            }
+        }
+        finally
+        {
+            if (cachedEntry is not null)
+            {
+                await cachedEntry.DisposeAsync();
+            }
+
+            if (response is not null)
+            {
+                await response.DisposeAsync();
+            }
+        }
+    }
+
+    private static async Task<Stream> EnsureSeekableStreamAsync(Stream stream, CancellationToken cancellationToken)
+    {
+        if (stream.CanSeek)
+        {
+            stream.Position = 0;
+            return stream;
+        }
+
+        var memoryStream = new MemoryStream();
+        await stream.CopyToAsync(memoryStream, cancellationToken);
+        memoryStream.Position = 0;
+        return memoryStream;
+    }
+
+    private static async Task<IImage?> DecodeAsync(
+        Image image,
+        Stream stream,
+        Uri uri,
+        IReadOnlyCollection<IImageDecoder> decoders,
+        CancellationToken cancellationToken)
+    {
+        if (!stream.CanSeek)
+        {
+            await using var seekableStream = await EnsureSeekableStreamAsync(stream, cancellationToken);
+            return await DecodeAsync(image, seekableStream, uri, decoders, cancellationToken);
+        }
+
+        foreach (var decoder in decoders)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            stream.Position = 0;
+
+            var result = await decoder.TryDecodeAsync(image, stream, uri, cancellationToken);
+            if (result is not null)
+            {
+                return result;
+            }
+        }
+
+        return null;
     }
 }

@@ -9,8 +9,12 @@ namespace LiveMarkdown.Avalonia;
 /// </summary>
 public class DefaultBitmapDecoder : IImageDecoder
 {
+    /// <summary>
+    /// Gets the shared default bitmap decoder.
+    /// </summary>
     public static DefaultBitmapDecoder Shared { get; } = new();
 
+    /// <inheritdoc/>
     public Task<IImage?> TryDecodeAsync(Image target, Stream stream, Uri uri, CancellationToken cancellationToken)
     {
         try

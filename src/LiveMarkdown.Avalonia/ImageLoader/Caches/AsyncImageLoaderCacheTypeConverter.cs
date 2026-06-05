@@ -4,6 +4,9 @@ using System.Globalization;
 namespace LiveMarkdown.Avalonia;
 
 #if NETSTANDARD2_0
+/// <summary>
+/// Converts XAML string values into built-in <see cref="AsyncImageLoaderCache"/> instances.
+/// </summary>
 public class AsyncImageLoaderCacheTypeConverter : TypeConverter
 {
     public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
@@ -19,6 +22,8 @@ public class AsyncImageLoaderCacheTypeConverter : TypeConverter
             {
                 "None" => null,
                 "Ram" => RamBasedAsyncImageLoaderCache.Shared,
+                "File" => FileBasedAsyncImageLoaderCache.Shared,
+                "Disk" => FileBasedAsyncImageLoaderCache.Shared,
                 _ => throw new NotSupportedException($"Cache type '{str}' is not supported.")
             };
         }
@@ -27,6 +32,9 @@ public class AsyncImageLoaderCacheTypeConverter : TypeConverter
     }
 }
 #else
+/// <summary>
+/// Converts XAML string values into built-in <see cref="AsyncImageLoaderCache"/> instances.
+/// </summary>
 public class AsyncImageLoaderCacheTypeConverter : TypeConverter
 {
     public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
@@ -42,6 +50,7 @@ public class AsyncImageLoaderCacheTypeConverter : TypeConverter
             {
                 "None" => null,
                 "Ram" => RamBasedAsyncImageLoaderCache.Shared,
+                "File" => FileBasedAsyncImageLoaderCache.Shared,
                 _ => throw new NotSupportedException($"Cache type '{str}' is not supported.")
             };
         }

@@ -27,6 +27,7 @@ public partial class App : Application, ILogSink
             SvgImageDecoder.Shared,
             DefaultBitmapDecoder.Shared
         ];
+        AsyncImageLoader.DefaultCache = FileBasedAsyncImageLoaderCache.Shared;
 
         AvaloniaXamlLoader.Load(this);
     }
