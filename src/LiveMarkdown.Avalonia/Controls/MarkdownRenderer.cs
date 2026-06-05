@@ -17,6 +17,7 @@ public partial class MarkdownRenderer : Control
     /// <summary>
     /// Defines the attached SelectionScopeName property.
     /// </summary>
+    [Obsolete("Use MarkdownTextBlock.IsSelectionScope on the shared visual root instead.")]
     public static readonly AttachedProperty<string?> SelectionScopeNameProperty =
         AvaloniaProperty.RegisterAttached<MarkdownRenderer, Visual, string?>("SelectionScopeName");
 
@@ -27,6 +28,7 @@ public partial class MarkdownRenderer : Control
     /// </summary>
     /// <param name="obj"></param>
     /// <param name="value"></param>
+    [Obsolete("Use MarkdownTextBlock.IsSelectionScope on the shared visual root instead.")]
     public static void SetSelectionScopeName(Visual obj, string? value) => obj.SetValue(SelectionScopeNameProperty, value);
 
     /// <summary>
@@ -34,6 +36,7 @@ public partial class MarkdownRenderer : Control
     /// </summary>
     /// <param name="obj"></param>
     /// <returns></returns>
+    [Obsolete("Use MarkdownTextBlock.IsSelectionScope on the shared visual root instead.")]
     public static string? GetSelectionScopeName(Visual obj) => obj.GetValue(SelectionScopeNameProperty);
 
     /// <summary>

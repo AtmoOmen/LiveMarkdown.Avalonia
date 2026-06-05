@@ -2,8 +2,10 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 
 namespace LiveMarkdown.Avalonia;
@@ -48,10 +50,7 @@ public partial class MarkdownRenderer
     {
         get
         {
-            // Get all selected blocks in the current scope.
-            // We fetch this dynamically to ensure consistency across Renderers.
-            var scopeName = GetSelectionScopeName(this);
-            var allBlocks = GetAllSelectableBlocksInScope(this, scopeName);
+            var allBlocks = GetAllSelectableBlocksInScope(GetSelectionScopeRoot());
 
             var sb = new StringBuilder();
             var isFirst = true;
@@ -69,11 +68,6 @@ public partial class MarkdownRenderer
             return sb.ToString();
         }
     }
-    
-    /// <summary>
-    /// All renderers that attached to the visual tree.
-    /// </summary>
-    private static readonly HashSet<MarkdownRenderer> AllRenderer = [];
 
     // Anchor point where the drag started (Block + Offset)
     private (MarkdownTextBlock Block, int Offset)? selectionAnchor;
@@ -82,18 +76,15 @@ public partial class MarkdownRenderer
     // Built on PointerPressed, cleared on PointerReleased.
     private List<MarkdownTextBlock>? activeScopeBlocks;
 
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        base.OnAttachedToVisualTree(e);
-
-        AllRenderer.Add(this);
-    }
+    private DispatcherTimer? selectionAutoScrollTimer;
+    private Point? lastSelectionPointerPosition;
+    private Point? lastSelectionPointerTopLevelPosition;
+    private MarkdownTextBlock? lastSelectionTargetBlock;
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
+        EndSelectionDrag();
         base.OnDetachedFromVisualTree(e);
-
-        AllRenderer.Remove(this);
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -111,16 +102,9 @@ public partial class MarkdownRenderer
             return;
         }
 
-        // 1. Initialize Scope Context
-        var scopeName = GetSelectionScopeName(this);
-        activeScopeBlocks = GetAllSelectableBlocksInScope(this, scopeName).ToList();
-
-        // 2. Find the "Root" MarkdownTextBlock that was hit.
-        // If a nested block is hit, ResolveRootBlock helps us decide if we should start from the inner or outer.
-        // However, for precise selection, we usually want the specific leaf block initially,
-        // and then handle hierarchy during the selection update.
-        // But here, we just find the visual hit.
-        var targetBlock = FindNearestBlockInList(activeScopeBlocks, this, point.Position);
+        // Find the exact text block first, then resolve the topmost shared scope from it.
+        var localBlocks = GetAllSelectableBlocksInScope(this).ToList();
+        var targetBlock = FindNearestBlockInList(localBlocks, this, point.Position);
         if (targetBlock == null) // Truly nothing to select
         {
             base.OnPointerPressed(e);
@@ -129,17 +113,20 @@ public partial class MarkdownRenderer
 
         e.Handled = true;
         Focus();
+        e.Pointer.Capture(this);
 
-        // 3. Clear old selection
+        activeScopeBlocks = GetAllSelectableBlocksInScope(ResolveSelectionScopeRoot(targetBlock, this)).ToList();
+        TrackSelectionPointer(e);
+        lastSelectionTargetBlock = targetBlock;
+
         ClearSelection(activeScopeBlocks);
         UpdateCanCopy();
 
-        // 4. Calculate Anchor
         var position = GetCaretPosition(targetBlock, e);
         selectionAnchor = (targetBlock, position);
 
-        // 5. Handle Click Selection (Single/Double/Triple)
         HandleClickSelection(targetBlock, position, e.ClickCount);
+        StartSelectionAutoScroll();
 
         base.OnPointerPressed(e);
     }
@@ -152,23 +139,8 @@ public partial class MarkdownRenderer
             return;
         }
 
-        // 1. Find the target block under the cursor
-        var currentPoint = e.GetPosition(this);
-        // Use FindNearestBlock to ensure we track selection even if mouse leaves the exact bounds
-        var targetBlock = FindNearestBlockInList(activeScopeBlocks, this, currentPoint);
-
-        if (targetBlock == null)
-        {
-            base.OnPointerMoved(e);
-            return;
-        }
-
-        // 2. Calculate Focus position
-        var pointInBlock = this.TranslatePoint(currentPoint, targetBlock) ?? new Point();
-        var focusOffset = targetBlock.TextLayout.HitTestPoint(pointInBlock).TextPosition;
-
-        // 3. Update Selection Range
-        UpdateSelectionRange(selectionAnchor.Value, (targetBlock, focusOffset));
+        TrackSelectionPointer(e);
+        UpdateSelectionRangeFromPoint(e.GetPosition(this));
 
         e.Handled = true;
 
@@ -184,11 +156,220 @@ public partial class MarkdownRenderer
             return;
         }
 
-        selectionAnchor = null;
-        activeScopeBlocks = null; // Release cache
+        EndSelectionDrag(e.Pointer);
         e.Handled = true;
 
         base.OnPointerReleased(e);
+    }
+
+    protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
+    {
+        EndSelectionDrag();
+        base.OnPointerCaptureLost(e);
+    }
+
+    private void StartSelectionAutoScroll()
+    {
+        if (selectionAutoScrollTimer is null)
+        {
+            selectionAutoScrollTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(16)
+            };
+            selectionAutoScrollTimer.Tick += HandleSelectionAutoScrollTick;
+        }
+
+        if (!selectionAutoScrollTimer.IsEnabled)
+        {
+            selectionAutoScrollTimer.Start();
+        }
+    }
+
+    private void EndSelectionDrag(IPointer? pointer = null)
+    {
+        selectionAnchor = null;
+        activeScopeBlocks = null;
+        lastSelectionPointerPosition = null;
+        lastSelectionPointerTopLevelPosition = null;
+        lastSelectionTargetBlock = null;
+        selectionAutoScrollTimer?.Stop();
+        pointer?.Capture(null);
+    }
+
+    private void TrackSelectionPointer(PointerEventArgs e)
+    {
+        lastSelectionPointerPosition = e.GetPosition(this);
+
+        if (TopLevel.GetTopLevel(this) is Visual topLevel)
+        {
+            lastSelectionPointerTopLevelPosition = e.GetPosition(topLevel);
+        }
+        else
+        {
+            lastSelectionPointerTopLevelPosition = null;
+        }
+    }
+
+    private void HandleSelectionAutoScrollTick(object? sender, EventArgs e)
+    {
+        if (selectionAnchor is null || activeScopeBlocks is null || lastSelectionPointerPosition is null)
+        {
+            selectionAutoScrollTimer?.Stop();
+            return;
+        }
+
+        if (!TryAutoScrollSelection()) return;
+
+        if (GetLastSelectionPointerPosition(this) is { } point)
+        {
+            UpdateSelectionRangeFromPoint(point);
+        }
+    }
+
+    private bool TryAutoScrollSelection()
+    {
+        var currentPoint = GetLastSelectionPointerPosition(this) ?? lastSelectionPointerPosition ?? default;
+        var targetBlock = activeScopeBlocks is { } blocks
+            ? FindNearestBlockInList(blocks, this, currentPoint)
+            : lastSelectionTargetBlock;
+
+        if (targetBlock is not null)
+        {
+            lastSelectionTargetBlock = targetBlock;
+        }
+
+        var start = (Visual?)lastSelectionTargetBlock ?? this;
+        foreach (var scrollViewer in GetAutoScrollViewers(start))
+        {
+            if (GetLastSelectionPointerPosition(scrollViewer) is not { } pointerInViewer) continue;
+
+            var delta = GetAutoScrollDelta(scrollViewer, pointerInViewer);
+            if (delta == default) continue;
+
+            if (TryApplyAutoScroll(scrollViewer, delta)) return true;
+
+            if (!scrollViewer.IsScrollChainingEnabled)
+            {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    private Point? GetLastSelectionPointerPosition(Visual relativeTo)
+    {
+        if (lastSelectionPointerTopLevelPosition is { } topLevelPoint &&
+            TopLevel.GetTopLevel(this) is Visual topLevel &&
+            topLevel.TranslatePoint(topLevelPoint, relativeTo) is { } translatedFromTopLevel)
+        {
+            return translatedFromTopLevel;
+        }
+
+        if (lastSelectionPointerPosition is { } rendererPoint)
+        {
+            return this.TranslatePoint(rendererPoint, relativeTo);
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<ScrollViewer> GetAutoScrollViewers(Visual start)
+    {
+        for (Visual? current = start; current is not null; current = current.GetVisualParent())
+        {
+            if (current is ScrollViewer scrollViewer)
+            {
+                yield return scrollViewer;
+            }
+        }
+    }
+
+    private static Vector GetAutoScrollDelta(ScrollViewer scrollViewer, Point pointer)
+    {
+        return GetAutoScrollDelta(
+            scrollViewer.Bounds.Size,
+            pointer,
+            scrollViewer.HorizontalScrollBarVisibility,
+            scrollViewer.VerticalScrollBarVisibility);
+    }
+
+    internal static Vector GetAutoScrollDelta(
+        Size boundsSize,
+        Point pointer,
+        ScrollBarVisibility horizontalScrollBarVisibility,
+        ScrollBarVisibility verticalScrollBarVisibility)
+    {
+        var bounds = new Rect(boundsSize);
+        var x = horizontalScrollBarVisibility == ScrollBarVisibility.Disabled
+            ? 0
+            : GetAutoScrollAxisDelta(pointer.X, bounds.Left, bounds.Right);
+        var y = verticalScrollBarVisibility == ScrollBarVisibility.Disabled
+            ? 0
+            : GetAutoScrollAxisDelta(pointer.Y, bounds.Top, bounds.Bottom);
+
+        return new Vector(x, y);
+    }
+
+    private static double GetAutoScrollAxisDelta(double coordinate, double min, double max)
+    {
+        if (coordinate < min) return -GetAutoScrollVelocity(min - coordinate);
+        if (coordinate > max) return GetAutoScrollVelocity(coordinate - max);
+        return 0;
+    }
+
+    private static double GetAutoScrollVelocity(double distance)
+    {
+        if (distance <= 0) return 0;
+        return Math.Clamp(distance * 0.35, 2, 48);
+    }
+
+    private static bool TryApplyAutoScroll(ScrollViewer scrollViewer, Vector delta)
+    {
+        var oldOffset = scrollViewer.Offset;
+        var newOffset = CoerceAutoScrollOffset(
+            oldOffset,
+            scrollViewer.Extent,
+            scrollViewer.Viewport,
+            delta,
+            scrollViewer.HorizontalScrollBarVisibility,
+            scrollViewer.VerticalScrollBarVisibility);
+        if (newOffset == oldOffset) return false;
+
+        scrollViewer.Offset = newOffset;
+        return true;
+    }
+
+    internal static Vector CoerceAutoScrollOffset(
+        Vector oldOffset,
+        Size extent,
+        Size viewport,
+        Vector delta,
+        ScrollBarVisibility horizontalScrollBarVisibility,
+        ScrollBarVisibility verticalScrollBarVisibility)
+    {
+        var maxX = GetScrollMaximum(extent.Width, viewport.Width);
+        var maxY = GetScrollMaximum(extent.Height, viewport.Height);
+
+        var x = oldOffset.X;
+        if (delta.X != 0 && horizontalScrollBarVisibility != ScrollBarVisibility.Disabled && maxX > 0)
+        {
+            x = Math.Clamp(oldOffset.X + delta.X, 0, maxX);
+        }
+
+        var y = oldOffset.Y;
+        if (delta.Y != 0 && verticalScrollBarVisibility != ScrollBarVisibility.Disabled && maxY > 0)
+        {
+            y = Math.Clamp(oldOffset.Y + delta.Y, 0, maxY);
+        }
+
+        return new Vector(x, y);
+    }
+
+    private static double GetScrollMaximum(double extent, double viewport)
+    {
+        var maximum = Math.Max(extent - viewport, 0);
+        return double.IsNaN(maximum) ? 0 : maximum;
     }
 
     private void HandleKeyDown(object? sender, KeyEventArgs e)
@@ -419,37 +600,59 @@ public partial class MarkdownRenderer
         return Math.Sqrt(dx * dx + dy * dy);
     }
 
-    private static IEnumerable<MarkdownTextBlock> GetAllSelectableBlocksInScope(MarkdownRenderer current, string? scopeName)
+    internal Visual GetSelectionScopeRoot() => ResolveSelectionScopeRoot(this, this);
+
+    internal static Visual ResolveSelectionScopeRoot(Visual visual, Visual fallback)
     {
-        // 1. Find all renderers in the same scope
-        var renderers = AllRenderer
-            .Where(r => GetSelectionScopeName(r) == scopeName)
-            .ToList();
-
-        // 2. If no renderers found, use the current one
-        if (renderers.Count == 0) renderers.Add(current);
-
-        // 3. Collect all MarkdownTextBlocks from the renderers
-        // The order of blocks is important, so we traverse the visual tree in DFS order,
-        // which ensures we get the correct hierarchy and selection context.
-        foreach (var block in renderers.SelectMany(r => r.GetVisualDescendants().OfType<MarkdownTextBlock>()))
+        Visual? scopeRoot = null;
+        for (var current = visual; current is not null; current = current.GetVisualParent())
         {
-            // We want ALL blocks, including nested ones, because we handle them in the logic
-            yield return block;
+            if (MarkdownTextBlock.GetIsSelectionScope(current))
+            {
+                scopeRoot = current;
+            }
         }
+
+        return scopeRoot ?? fallback;
+    }
+
+    internal static IEnumerable<MarkdownTextBlock> GetAllSelectableBlocksInScope(Visual scopeRoot)
+    {
+        // We want all blocks, including nested ones, because hierarchy is handled by
+        // GetEffectiveStart/GetEffectiveEnd. DFS order provides the document order.
+        return scopeRoot.GetSelfAndVisualDescendants().OfType<MarkdownTextBlock>();
     }
 
     private static bool IsNestedBlock(MarkdownTextBlock child) => child.FindAncestorOfType<MarkdownTextBlock>() is not null;
 
     private static int GetCaretPosition(MarkdownTextBlock block, PointerEventArgs e)
     {
-        var point = e.GetPosition(block);
+        return GetCaretPosition(block, e.GetPosition(block));
+    }
 
+    private static int GetCaretPosition(MarkdownTextBlock block, Point point)
+    {
         // Clamp point to block bounds to avoid HitTestPoint failures
         var x = Math.Clamp(point.X, 0, Math.Max(0, block.Bounds.Width));
         var y = Math.Clamp(point.Y, 0, Math.Max(0, block.Bounds.Height));
 
         return block.TextLayout.HitTestPoint(new Point(x, y)).TextPosition;
+    }
+
+    private bool UpdateSelectionRangeFromPoint(Point currentPoint)
+    {
+        if (selectionAnchor is not { } anchor || activeScopeBlocks is not { } blocks) return false;
+
+        // Use nearest block so selection keeps tracking even after the pointer leaves exact text bounds.
+        var targetBlock = FindNearestBlockInList(blocks, this, currentPoint);
+        if (targetBlock is null) return false;
+
+        var pointInBlock = this.TranslatePoint(currentPoint, targetBlock) ?? new Point();
+        var focusOffset = GetCaretPosition(targetBlock, pointInBlock);
+        lastSelectionTargetBlock = targetBlock;
+
+        UpdateSelectionRange(anchor, (targetBlock, focusOffset));
+        return true;
     }
 
     private void HandleClickSelection(MarkdownTextBlock block, int position, int clickCount)
@@ -506,7 +709,7 @@ public partial class MarkdownRenderer
     /// </summary>
     public void SelectAll()
     {
-        SelectAll(GetAllSelectableBlocksInScope(this, GetSelectionScopeName(this)));
+        SelectAll(GetAllSelectableBlocksInScope(GetSelectionScopeRoot()));
         UpdateCanCopy();
     }
 
@@ -515,7 +718,7 @@ public partial class MarkdownRenderer
     /// </summary>
     public void ClearSelection()
     {
-        ClearSelection(GetAllSelectableBlocksInScope(this, GetSelectionScopeName(this)));
+        ClearSelection(GetAllSelectableBlocksInScope(GetSelectionScopeRoot()));
         UpdateCanCopy();
     }
 

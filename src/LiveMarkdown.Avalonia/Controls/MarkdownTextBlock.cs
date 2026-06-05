@@ -24,6 +24,22 @@ namespace LiveMarkdown.Avalonia;
 public class MarkdownTextBlock : SelectableTextBlock
 {
     /// <summary>
+    /// Defines whether the target visual is a shared text selection scope.
+    /// </summary>
+    public static readonly AttachedProperty<bool> IsSelectionScopeProperty =
+        AvaloniaProperty.RegisterAttached<MarkdownTextBlock, Visual, bool>("IsSelectionScope");
+
+    /// <summary>
+    /// Sets whether the target visual is a shared text selection scope.
+    /// </summary>
+    public static void SetIsSelectionScope(Visual obj, bool value) => obj.SetValue(IsSelectionScopeProperty, value);
+
+    /// <summary>
+    /// Gets whether the target visual is a shared text selection scope.
+    /// </summary>
+    public static bool GetIsSelectionScope(Visual obj) => obj.GetValue(IsSelectionScopeProperty);
+
+    /// <summary>
     /// Defines the <see cref="LinkContextMenu"/> property.
     /// </summary>
     public static readonly StyledProperty<ContextMenu?> LinkContextMenuProperty =
@@ -207,7 +223,7 @@ public class MarkdownTextBlock : SelectableTextBlock
                     case LineBreak:
                     case InlineUIContainer:
                     {
-                        length++;
+                        length += inline is LineBreak ? Environment.NewLine.Length : 1;
                         break;
                     }
                 }

@@ -365,6 +365,30 @@ Here is a sample style definition that customizes the emphasis styles and adds s
 - A: This is a known issue caused by Skia (the render backend of Avalonia). You can upgrade SkiaSharp version (e.g. >=
   3.117.0) to fix this. [Related issue](https://github.com/AvaloniaUI/Avalonia/issues/18677)
 
+- Q: How does cross-block text selection work?
+- A: `MarkdownRenderer` uses `MarkdownTextBlock` to provide selection across Markdown blocks, including paragraphs,
+  headings, tables, inline code, and code blocks. By default, the bundled style marks each `MarkdownRenderer` as a
+  selection scope, so users can drag-select text across all selectable text blocks inside the same renderer.
+
+If you need multiple renderers or custom containers to share one selection, set
+`MarkdownTextBlock.IsSelectionScope="True"` on their nearest shared visual parent:
+
+```xml
+<StackPanel md:MarkdownTextBlock.IsSelectionScope="True">
+  <md:MarkdownRenderer/>
+  <md:MarkdownRenderer/>
+</StackPanel>
+```
+
+When scopes are nested, the topmost scope is used. This makes it possible to set a broad application-level selection
+scope, while still keeping the default renderer-level behavior for simple cases. The old
+`MarkdownRenderer.SelectionScopeName` API is kept for compatibility, but new code should use
+`MarkdownTextBlock.IsSelectionScope`.
+
+During drag selection, moving the pointer outside a `ScrollViewer` automatically scrolls the nearest scrollable parent.
+For nested scroll viewers, the renderer follows Avalonia scroll chaining: it tries the inner `ScrollViewer` first and
+continues to outer scroll viewers only when `ScrollViewer.IsScrollChainingEnabled` allows it.
+
 - Q: Why is LaTeX like `\(xxx\)` not rendered?
 - A: The default Markdig math parser supports `$...$` and `$$...$$`. To support `\(...\)` and `\[...\]`, enable the
   extended math parser before creating any `MarkdownRenderer` instances:
