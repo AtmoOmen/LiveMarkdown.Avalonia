@@ -1,0 +1,149 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Documents;
+using Avalonia.Controls.Primitives;
+using NUnit.Framework;
+
+namespace LiveMarkdown.Avalonia.Tests;
+
+[TestFixture]
+public class MarkdownSelectionTests
+{
+    [Test]
+    public void EscapedTextLength_CountsLineBreakLikeActualText()
+    {
+        var textBlock = CreateMultilineTextBlock("first", "last");
+        var expected = "first" + Environment.NewLine + "last";
+
+        Assert.That(textBlock.ActualText, Is.EqualTo(expected));
+        Assert.That(textBlock.EscapedTextLength, Is.EqualTo(expected.Length));
+    }
+
+    [Test]
+    public void SelectAll_IncludesTextAfterLineBreak()
+    {
+        var textBlock = CreateMultilineTextBlock("first", "last");
+
+        textBlock.SelectAll();
+
+        Assert.That(textBlock.ActualSelectedText, Is.EqualTo("first" + Environment.NewLine + "last"));
+    }
+
+    [Test]
+    public void CodeBlockInlines_SelectAllIncludesLastLine()
+    {
+        var codeBlock = new CodeBlock
+        {
+            Code = "first\nmiddle\nlast"
+        };
+        var textBlock = new MarkdownTextBlock
+        {
+            Inlines = codeBlock.Inlines
+        };
+
+        textBlock.SelectAll();
+
+        Assert.That(textBlock.EscapedTextLength, Is.EqualTo(textBlock.ActualText.Length));
+        Assert.That(textBlock.ActualSelectedText, Is.EqualTo("first" + Environment.NewLine + "middle" + Environment.NewLine + "last"));
+    }
+
+    [Test]
+    public void ResolveSelectionScopeRoot_UsesTopmostScope()
+    {
+        var outer = new StackPanel();
+        var inner = new StackPanel();
+        var textBlock = new MarkdownTextBlock();
+        var fallback = new MarkdownRenderer();
+
+        MarkdownTextBlock.SetIsSelectionScope(outer, true);
+        MarkdownTextBlock.SetIsSelectionScope(inner, true);
+
+        outer.Children.Add(inner);
+        inner.Children.Add(textBlock);
+
+        Assert.That(MarkdownRenderer.ResolveSelectionScopeRoot(textBlock, fallback), Is.SameAs(outer));
+    }
+
+    [Test]
+    public void ResolveSelectionScopeRoot_FallsBackToRendererWhenNoScopeExists()
+    {
+        var renderer = new MarkdownRenderer();
+        var textBlock = new MarkdownTextBlock();
+
+        Assert.That(MarkdownRenderer.ResolveSelectionScopeRoot(textBlock, renderer), Is.SameAs(renderer));
+    }
+
+    [Test]
+    public void GetAllSelectableBlocksInScope_ReturnsBlocksInVisualOrder()
+    {
+        var root = new StackPanel();
+        var first = new MarkdownTextBlock { Text = "first" };
+        var second = new MarkdownTextBlock { Text = "second" };
+
+        root.Children.Add(first);
+        root.Children.Add(new Border { Child = second });
+
+        Assert.That(MarkdownRenderer.GetAllSelectableBlocksInScope(root).ToArray(), Is.EqualTo(new[] { first, second }));
+    }
+
+    [Test]
+    public void AutoScrollDelta_StartsWhenPointerLeavesBounds()
+    {
+        var delta = MarkdownRenderer.GetAutoScrollDelta(
+            new Size(100, 100),
+            new Point(50, 120),
+            ScrollBarVisibility.Auto,
+            ScrollBarVisibility.Auto);
+
+        Assert.That(delta.X, Is.EqualTo(0));
+        Assert.That(delta.Y, Is.GreaterThan(0));
+    }
+
+    [Test]
+    public void AutoScrollDelta_IgnoresDisabledAxis()
+    {
+        var delta = MarkdownRenderer.GetAutoScrollDelta(
+            new Size(100, 100),
+            new Point(120, 120),
+            ScrollBarVisibility.Disabled,
+            ScrollBarVisibility.Auto);
+
+        Assert.That(delta.X, Is.EqualTo(0));
+        Assert.That(delta.Y, Is.GreaterThan(0));
+    }
+
+    [Test]
+    public void CoerceAutoScrollOffset_ClampsAtExtentBoundary()
+    {
+        var offset = MarkdownRenderer.CoerceAutoScrollOffset(
+            new Vector(0, 95),
+            new Size(100, 200),
+            new Size(100, 100),
+            new Vector(0, 20),
+            ScrollBarVisibility.Auto,
+            ScrollBarVisibility.Auto);
+
+        Assert.That(offset, Is.EqualTo(new Vector(0, 100)));
+    }
+
+    [Test]
+    public void ScrollViewer_ChainingIsConfigurableForNestedAutoScroll()
+    {
+        var scrollViewer = new ScrollViewer();
+
+        Assert.That(scrollViewer.IsScrollChainingEnabled, Is.True);
+
+        scrollViewer.IsScrollChainingEnabled = false;
+
+        Assert.That(scrollViewer.IsScrollChainingEnabled, Is.False);
+    }
+
+    private static MarkdownTextBlock CreateMultilineTextBlock(string firstLine, string lastLine)
+    {
+        var textBlock = new MarkdownTextBlock();
+        textBlock.Inlines!.Add(new Run(firstLine));
+        textBlock.Inlines.Add(new LineBreak());
+        textBlock.Inlines.Add(new Run(lastLine));
+        return textBlock;
+    }
+}

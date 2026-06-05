@@ -113,6 +113,7 @@
 
   <Style Selector="md|MarkdownRenderer">
     <Setter Property="Focusable" Value="True"/>
+    <Setter Property="md:MarkdownTextBlock.IsSelectionScope" Value="True"/>
 
     <Style Selector="^ StackPanel">
       <Setter Property="Spacing" Value="4"/>
