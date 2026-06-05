@@ -2,14 +2,22 @@
 
 namespace LiveMarkdown.Avalonia;
 
+/// <summary>
+/// Loads image bytes from data URLs.
+/// </summary>
 public class DataUrlAsyncImageLoaderHandler : AsyncImageLoaderHandler
 {
+    /// <summary>
+    /// Gets the shared data URL image loader handler.
+    /// </summary>
     public static DataUrlAsyncImageLoaderHandler Shared { get; } = new();
 
+    /// <inheritdoc/>
     public override IEnumerable<string> SupportedSchemes => ["data"];
 
     private DataUrlAsyncImageLoaderHandler() { }
 
+    /// <inheritdoc/>
     public override Task<Stream> LoadAsync(Uri uri, CancellationToken cancellationToken)
     {
         if (uri.Scheme != "data") throw new NotSupportedException("Only data URIs are supported.");

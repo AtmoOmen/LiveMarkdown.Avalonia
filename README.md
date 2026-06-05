@@ -218,7 +218,43 @@ MarkdownRenderer.ConfigurePipeline += x => x.UseMermaid();
 MarkdownNode.Register<MermaidBlockNode>();
 ```
 
-## 🪄 Style Customization
+### 7. (Optional) Configure Image cache
+
+`AsyncImageLoader` uses the in-memory `RamBasedAsyncImageLoaderCache.Shared` by default.
+If you want persistent caching for remote images, enable the file-backed cache explicitly:
+
+```xml
+<Image md:AsyncImageLoader.Source="https://example.com/image.png" md:AsyncImageLoader.Cache="File"/>
+```
+
+Or set it globally:
+
+```csharp
+AsyncImageLoader.DefaultCache = FileBasedAsyncImageLoaderCache.Shared;
+```
+
+`FileBasedAsyncImageLoaderCache` defaults to a cache directory under `%LocalAppData%/LiveMarkdown.ImageCache`,
+but you can configure it to any directory you want.
+
+```csharp
+using LiveMarkdown.Avalonia;
+
+FileBasedAsyncImageLoaderCache.CacheDirectory = Path.Combine(
+    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+    "YourApp",
+    "ImageCache");
+FileBasedAsyncImageLoaderCache.MaxCacheSizeBytes = 256L * 1024L * 1024L;
+FileBasedAsyncImageLoaderCache.MaxEntrySizeBytes = 32L * 1024L * 1024L;
+FileBasedAsyncImageLoaderCache.DefaultFreshnessLifetime = TimeSpan.FromDays(7);
+HttpAsyncImageLoaderHandler.Shared.EnableConditionalRequests = true;
+```
+
+The file cache stores original image bytes under SHA-256 keys and uses common HTTP freshness/validation headers
+such as `Cache-Control`, `Expires`, `ETag`, and `Last-Modified` when available.
+
+For advanced scenarios, you can even implement your own `AsyncImageLoaderCache`.
+
+## 🪄  Style Customization
 
 Markdown elements can be styled using Avalonia's powerful styling system. You can override
 the [default styles](https://github.com/DearVa/LiveMarkdown.Avalonia/blob/main/src/LiveMarkdown.Avalonia/Styles.axaml)
@@ -310,6 +346,15 @@ Here is a sample style definition that customizes the emphasis styles and adds s
     <Style Selector="^.Highlight">
       <Setter Property="Background" Value="DarkOrange"/>
     </Style>
+  </Style>
+
+  <!-- You can set the style for error LaTex rendering result like this -->
+  <Style Selector="^ md|MarkdownTextBlock.Math.Error">
+    <Setter Property="Foreground" Value="Red"/>
+  </Style>
+
+  <Style Selector="^ md|MarkdownTextBlock.MathBlock.Error">
+    <Setter Property="Foreground" Value="Red"/>
   </Style>
 </Style>
 ```

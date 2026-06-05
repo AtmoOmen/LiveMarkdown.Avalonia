@@ -40,6 +40,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveMarkdown.Avalonia.Svg.S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveMarkdown.Avalonia.Mermaid", "src\LiveMarkdown.Avalonia.Mermaid\LiveMarkdown.Avalonia.Mermaid.csproj", "{F3FD21AC-08A9-4FBA-A55C-528C90497E8B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveMarkdown.Avalonia.Tests", "tests\LiveMarkdown.Avalonia.Tests\LiveMarkdown.Avalonia.Tests.csproj", "{D406D9F1-9151-404C-8224-B41F49482E31}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -90,10 +94,15 @@ Global
 		{F3FD21AC-08A9-4FBA-A55C-528C90497E8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F3FD21AC-08A9-4FBA-A55C-528C90497E8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F3FD21AC-08A9-4FBA-A55C-528C90497E8B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D406D9F1-9151-404C-8224-B41F49482E31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D406D9F1-9151-404C-8224-B41F49482E31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D406D9F1-9151-404C-8224-B41F49482E31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D406D9F1-9151-404C-8224-B41F49482E31}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{D406D9F1-9151-404C-8224-B41F49482E31} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

@@ -1,8 +1,10 @@
 using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Data.Core.Plugins;
 using Avalonia.Logging;
 using Avalonia.Markup.Xaml;
+using LiveMarkdown.Avalonia.Demo.ViewModels;
 using LiveMarkdown.Avalonia.Demo.Views;
 
 namespace LiveMarkdown.Avalonia.Demo;
@@ -27,6 +29,7 @@ public partial class App : Application, ILogSink
             SvgImageDecoder.Shared,
             DefaultBitmapDecoder.Shared
         ];
+        AsyncImageLoader.DefaultCache = FileBasedAsyncImageLoaderCache.Shared;
 
         AvaloniaXamlLoader.Load(this);
     }
