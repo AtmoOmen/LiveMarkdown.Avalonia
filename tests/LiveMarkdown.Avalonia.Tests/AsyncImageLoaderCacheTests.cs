@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
@@ -32,9 +33,7 @@ public class AsyncImageLoaderCacheTests
         FileBasedAsyncImageLoaderCache.MaxEntrySizeBytes = 32L * 1024L * 1024L;
         FileBasedAsyncImageLoaderCache.DefaultFreshnessLifetime = TimeSpan.FromDays(7);
         FileBasedAsyncImageLoaderCache.CleanupInterval = TimeSpan.Zero;
-        FileBasedAsyncImageLoaderCache.CacheableSchemes.Clear();
-        FileBasedAsyncImageLoaderCache.CacheableSchemes.Add("http");
-        FileBasedAsyncImageLoaderCache.CacheableSchemes.Add("https");
+        FileBasedAsyncImageLoaderCache.CacheableSchemes = ImmutableHashSet.Create<string>("http", "https");
     }
 
     [TearDown]
@@ -45,11 +44,13 @@ public class AsyncImageLoaderCacheTests
         FileBasedAsyncImageLoaderCache.MaxEntrySizeBytes = _originalMaxEntrySizeBytes;
         FileBasedAsyncImageLoaderCache.DefaultFreshnessLifetime = _originalDefaultFreshnessLifetime;
         FileBasedAsyncImageLoaderCache.CleanupInterval = _originalCleanupInterval;
-        FileBasedAsyncImageLoaderCache.CacheableSchemes.Clear();
+
+        var cacheableSchemesBuilder = ImmutableHashSet.CreateBuilder<string>();
         foreach (var scheme in _originalCacheableSchemes)
         {
-            FileBasedAsyncImageLoaderCache.CacheableSchemes.Add(scheme);
+            cacheableSchemesBuilder.Add(scheme);
         }
+        FileBasedAsyncImageLoaderCache.CacheableSchemes = cacheableSchemesBuilder.ToImmutable();
 
         if (_cacheDirectory is not null && Directory.Exists(_cacheDirectory))
         {
