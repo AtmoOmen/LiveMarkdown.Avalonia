@@ -225,10 +225,12 @@ public partial class MarkdownRenderer : Control
         if (pendingChange is null) pendingChange = e;
         else
         {
+            var startIndex = Math.Min(pendingChange.Value.StartIndex, e.StartIndex);
+            var endIndex = Math.Max(pendingChange.Value.StartIndex + pendingChange.Value.Length, e.StartIndex + e.Length);
             pendingChange = new ObservableStringBuilderChangedEventArgs(
                 e.NewString,
-                Math.Min(pendingChange.Value.StartIndex, e.StartIndex),
-                Math.Max(pendingChange.Value.Length, e.Length));
+                startIndex,
+                endIndex - startIndex);
         }
 
         InvalidateArrange();
