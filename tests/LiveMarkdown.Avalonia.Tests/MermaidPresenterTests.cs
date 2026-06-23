@@ -180,4 +180,92 @@ public class MermaidPresenterTests
         Assert.That(presenter.DesiredSize.Width, Is.GreaterThan(0));
         Assert.That(presenter.DesiredSize.Height, Is.GreaterThan(0));
     }
+
+    [Test]
+    public void Measure_SequenceDiagramSmokeTestDoesNotThrow()
+    {
+        AssertMermaidMeasures(
+            """
+            sequenceDiagram
+                autonumber
+                actor User
+                participant API
+                participant DB
+                User->>API: Request
+                API-->>User: Accepted
+                API->>API: Validate
+                loop Retry
+                    API->>DB: Write
+                end
+                alt Success
+                    DB-->>API: OK
+                else Failure
+                    DB-->>API: Error
+                end
+                Note over API,DB: smoke test note
+                destroy DB
+                API-xDB: Close
+            """);
+    }
+
+    [Test]
+    public void Measure_ClassDiagramSmokeTestDoesNotThrow()
+    {
+        AssertMermaidMeasures(
+            """
+            classDiagram
+                class Animal {
+                    <<abstract>>
+                    +string Name
+                    +Speak() void
+                }
+                class Dog {
+                    +Run() void
+                }
+                class IRepository~T~ {
+                    <<interface>>
+                    +Save(T item) void
+                }
+                Animal <|-- Dog
+                Dog *-- "1" Collar : owns
+                IRepository <|.. Dog : persists
+                note for Dog "Loyal companion"
+            """);
+    }
+
+    [Test]
+    public void Measure_ErDiagramSmokeTestDoesNotThrow()
+    {
+        AssertMermaidMeasures(
+            """
+            erDiagram
+                CUSTOMER ||--o{ ORDER : places
+                ORDER ||--|{ ORDER_ITEM : contains
+                PRODUCT ||--o{ ORDER_ITEM : appears_in
+                CUSTOMER {
+                    string id PK
+                    string email UK "contact email"
+                }
+                ORDER {
+                    string id PK
+                    date createdAt
+                }
+                ORDER_ITEM {
+                    string id PK
+                    int quantity
+                }
+                PRODUCT {
+                    string id PK
+                    string name
+                }
+            """);
+    }
+
+    private static void AssertMermaidMeasures(string text)
+    {
+        var presenter = new MermaidPresenter { Text = text };
+        Assert.DoesNotThrow(() => presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)));
+        Assert.That(presenter.DesiredSize.Width, Is.GreaterThan(0));
+        Assert.That(presenter.DesiredSize.Height, Is.GreaterThan(0));
+    }
 }
