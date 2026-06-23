@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using System.Globalization;
 using Avalonia.Media;
 using Mermaider;
 using Mermaider.Layout;
@@ -8,6 +9,14 @@ using Mermaider.Parsing;
 
 namespace LiveMarkdown.Avalonia;
 
+/// <summary>
+/// Avalonia control that parses Mermaid source and renders supported diagrams using native drawing APIs.
+/// </summary>
+/// <remarks>
+/// The presenter owns the styled properties that determine visual appearance. Diagram-specific
+/// renderers should read colors, pens, and font sizes from this control instead of hard-coding
+/// renderer-local constants.
+/// </remarks>
 public class MermaidPresenter : Control
 {
     /// <summary>
@@ -53,6 +62,96 @@ public class MermaidPresenter : Control
     {
         get => GetValue(FontSizeProperty);
         set => SetValue(FontSizeProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="NodeLabelFontSize"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> NodeLabelFontSizeProperty =
+        AvaloniaProperty.Register<MermaidPresenter, double>(nameof(NodeLabelFontSize), 16);
+
+    /// <summary>
+    /// Font size used for primary node labels.
+    /// </summary>
+    public double NodeLabelFontSize
+    {
+        get => GetValue(NodeLabelFontSizeProperty);
+        set => SetValue(NodeLabelFontSizeProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="EdgeLabelFontSize"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> EdgeLabelFontSizeProperty =
+        AvaloniaProperty.Register<MermaidPresenter, double>(nameof(EdgeLabelFontSize), 14);
+
+    /// <summary>
+    /// Font size used for labels attached to edges and connectors.
+    /// </summary>
+    public double EdgeLabelFontSize
+    {
+        get => GetValue(EdgeLabelFontSizeProperty);
+        set => SetValue(EdgeLabelFontSizeProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="GroupHeaderFontSize"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> GroupHeaderFontSizeProperty =
+        AvaloniaProperty.Register<MermaidPresenter, double>(nameof(GroupHeaderFontSize), 14);
+
+    /// <summary>
+    /// Font size used for group or subgraph header labels.
+    /// </summary>
+    public double GroupHeaderFontSize
+    {
+        get => GetValue(GroupHeaderFontSizeProperty);
+        set => SetValue(GroupHeaderFontSizeProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="MemberFontSize"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> MemberFontSizeProperty =
+        AvaloniaProperty.Register<MermaidPresenter, double>(nameof(MemberFontSize), 14);
+
+    /// <summary>
+    /// Font size used for member-like rows, such as future class diagram fields and methods.
+    /// </summary>
+    public double MemberFontSize
+    {
+        get => GetValue(MemberFontSizeProperty);
+        set => SetValue(MemberFontSizeProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="AnnotationFontSize"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> AnnotationFontSizeProperty =
+        AvaloniaProperty.Register<MermaidPresenter, double>(nameof(AnnotationFontSize), 12);
+
+    /// <summary>
+    /// Font size used for secondary annotations, notes, and low-emphasis diagram text.
+    /// </summary>
+    public double AnnotationFontSize
+    {
+        get => GetValue(AnnotationFontSizeProperty);
+        set => SetValue(AnnotationFontSizeProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="KeyBadgeFontSize"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> KeyBadgeFontSizeProperty =
+        AvaloniaProperty.Register<MermaidPresenter, double>(nameof(KeyBadgeFontSize), 12);
+
+    /// <summary>
+    /// Font size used for compact badges or key labels in chart-like diagrams.
+    /// </summary>
+    public double KeyBadgeFontSize
+    {
+        get => GetValue(KeyBadgeFontSizeProperty);
+        set => SetValue(KeyBadgeFontSizeProperty, value);
     }
 
     /// <summary>
@@ -413,7 +512,7 @@ public class MermaidPresenter : Control
     /// <summary>
     /// Cached DottedLinePen based on the current DottedLineStroke and DottedLineStrokeThickness properties. This is used to optimize pen creation during rendering.
     /// </summary>
-    internal IPen? DottedLinePen => GetCachedPen(ref _dottedLinePen, DottedLineStroke, DottedLineStrokeThickness);
+    internal IPen? DottedLinePen => GetCachedPen(ref _dottedLinePen, DottedLineStroke, DottedLineStrokeThickness, DottedDashStyle);
 
     /// <summary>
     /// Defines the <see cref="EdgeLabelStroke"/> property.
@@ -450,8 +549,11 @@ public class MermaidPresenter : Control
     /// </summary>
     internal IPen? EdgeLabelPen => GetCachedPen(ref _edgeLabelPen, EdgeLabelStroke, EdgeLabelStrokeThickness);
 
+    internal IPen? StateEndPen => GetCachedPen(ref _stateEndPen, Foreground, Math.Max(NodeStrokeThickness * 2, 1));
+
     private readonly Dictionary<string, IBrush> _brushCache = new();
     private readonly Dictionary<string, IPen> _penCache = new();
+    private static readonly DashStyle DottedDashStyle = new([4, 4], 0);
 
     private IPen? _groupPen;
     private IPen? _nodePen;
@@ -460,14 +562,66 @@ public class MermaidPresenter : Control
     private IPen? _thickLinePen;
     private IPen? _dottedLinePen;
     private IPen? _edgeLabelPen;
+    private IPen? _stateEndPen;
 
-    private object? _pendingDiagram;
+    private MermaidDiagramState _state = MermaidDiagramState.Empty;
 
     static MermaidPresenter()
     {
-        AffectsMeasure<MermaidPresenter>(TextProperty);
+        AffectsMeasure<MermaidPresenter>(
+            TextProperty,
+            FontFamilyProperty,
+            FontSizeProperty,
+            NodeLabelFontSizeProperty,
+            EdgeLabelFontSizeProperty,
+            GroupHeaderFontSizeProperty,
+            MemberFontSizeProperty,
+            AnnotationFontSizeProperty,
+            KeyBadgeFontSizeProperty);
+
+        AffectsRender<MermaidPresenter>(
+            BackgroundBrushProperty,
+            GroupFillProperty,
+            GroupHeaderFillProperty,
+            NodeFillProperty,
+            AccentFillProperty,
+            ForegroundProperty,
+            SecondaryForegroundProperty,
+            AccentForegroundProperty,
+            ArrowFillProperty,
+            EdgeLabelBackgroundProperty,
+            GroupStrokeProperty,
+            GroupStrokeThicknessProperty,
+            NodeStrokeProperty,
+            NodeStrokeThicknessProperty,
+            AccentStrokeProperty,
+            AccentStrokeThicknessProperty,
+            LineStrokeProperty,
+            LineStrokeThicknessProperty,
+            ThickLineStrokeProperty,
+            ThickLineStrokeThicknessProperty,
+            DottedLineStrokeProperty,
+            DottedLineStrokeThicknessProperty,
+            EdgeLabelStrokeProperty,
+            EdgeLabelStrokeThicknessProperty,
+            FontFamilyProperty,
+            FontSizeProperty,
+            NodeLabelFontSizeProperty,
+            EdgeLabelFontSizeProperty,
+            GroupHeaderFontSizeProperty,
+            MemberFontSizeProperty,
+            AnnotationFontSizeProperty,
+            KeyBadgeFontSizeProperty);
     }
 
+    /// <summary>
+    /// Returns a cached brush for a Mermaider style color, or a presenter-provided fallback.
+    /// </summary>
+    /// <remarks>
+    /// This method is primarily for renderer code that needs to honor per-node or per-edge style
+    /// overrides from the parsed model. Invalid colors and Mermaid's <c>none</c> value intentionally
+    /// fall back to the current Avalonia style instead of throwing during rendering.
+    /// </remarks>
     public IBrush? GetCachedBrush(string? colorHex, IBrush? fallback)
     {
         if (string.IsNullOrWhiteSpace(colorHex) || colorHex == "none") return fallback;
@@ -485,6 +639,14 @@ public class MermaidPresenter : Control
         }
     }
 
+    /// <summary>
+    /// Returns a cached pen for Mermaider style stroke values, preserving fallback dash and cap settings.
+    /// </summary>
+    /// <remarks>
+    /// Width strings are parsed using invariant culture because Mermaid style data is culture-neutral.
+    /// If either color or width is unusable, the fallback pen is returned so malformed diagram style
+    /// snippets do not break the entire diagram.
+    /// </remarks>
     public IPen? GetCachedPen(string? colorHex, string? widthString, IPen? fallback)
     {
         if (string.IsNullOrWhiteSpace(colorHex) && string.IsNullOrWhiteSpace(widthString)) return fallback;
@@ -493,155 +655,100 @@ public class MermaidPresenter : Control
 
         var brush = GetCachedBrush(colorHex, fallback?.Brush);
         var width = fallback?.Thickness ?? 0d;
-        if (double.TryParse(widthString, out var w)) width = w;
+        if (double.TryParse(widthString, NumberStyles.Float, CultureInfo.InvariantCulture, out var w)) width = w;
         if (brush is null || width <= 0) return fallback;
 
-        var pen = new Pen(brush, width);
+        var pen = new Pen(brush, width, fallback?.DashStyle, fallback?.LineCap ?? PenLineCap.Flat, fallback?.LineJoin ?? PenLineJoin.Miter, fallback?.MiterLimit ?? 10);
         _penCache[key] = pen;
         return pen;
     }
 
-    private static IPen? GetCachedPen(ref IPen? cachedPen, IBrush? brush, double thickness)
+    private static IPen? GetCachedPen(ref IPen? cachedPen, IBrush? brush, double thickness, IDashStyle? dashStyle = null)
     {
         if (cachedPen is not null) return cachedPen;
         if (brush is null || thickness <= 0) return null;
-        cachedPen = new Pen(brush, thickness);
+        cachedPen = new Pen(brush, thickness, dashStyle);
         return cachedPen;
     }
 
+    /// <inheritdoc/>
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
 
         switch (change.Property.Name)
         {
+            case nameof(Text):
+                _state = MermaidDiagramState.Empty;
+                break;
+            case nameof(Foreground):
+                _stateEndPen = null;
+                _penCache.Clear();
+                break;
             case nameof(GroupStroke):
             case nameof(GroupStrokeThickness):
                 _groupPen = null;
+                _penCache.Clear();
                 break;
             case nameof(NodeStroke):
             case nameof(NodeStrokeThickness):
                 _nodePen = null;
+                _stateEndPen = null;
+                _penCache.Clear();
                 break;
             case nameof(AccentStroke):
             case nameof(AccentStrokeThickness):
                 _accentPen = null;
+                _penCache.Clear();
                 break;
             case nameof(LineStroke):
             case nameof(LineStrokeThickness):
                 _linePen = null;
+                _penCache.Clear();
                 break;
             case nameof(ThickLineStroke):
             case nameof(ThickLineStrokeThickness):
                 _thickLinePen = null;
+                _penCache.Clear();
                 break;
             case nameof(DottedLineStroke):
             case nameof(DottedLineStrokeThickness):
                 _dottedLinePen = null;
+                _penCache.Clear();
                 break;
             case nameof(EdgeLabelStroke):
             case nameof(EdgeLabelStrokeThickness):
                 _edgeLabelPen = null;
+                _penCache.Clear();
                 break;
         }
     }
 
+    /// <inheritdoc/>
     protected override Size MeasureOverride(Size availableSize)
     {
-        if (Text is not { Length: > 0 } text) return default;
-
-        var lines = MermaidRenderer.PreprocessLines(text);
-        if (lines.Length == 0) return default;
-
-        var size = default(Size);
-        var diagramType = DiagramDetector.Detect(text.AsSpan());
-        switch (diagramType)
-        {
-            case DiagramType.Sequence:
-            {
-                var positionedSequenceDiagram = SequenceLayout.Layout(SequenceParser.Parse(lines));
-                size = new Size(positionedSequenceDiagram.Width, positionedSequenceDiagram.Height);
-                _pendingDiagram = positionedSequenceDiagram;
-                break;
-            }
-            case DiagramType.Class:
-            {
-                var positionedClassDiagram = MermaidRenderer.LayoutProvider.LayoutClass(ClassParser.Parse(lines));
-                size = new Size(positionedClassDiagram.Width, positionedClassDiagram.Height);
-                _pendingDiagram = positionedClassDiagram;
-                break;
-            }
-            case DiagramType.Er:
-            {
-                var positionedErDiagram = MermaidRenderer.LayoutProvider.LayoutEr(ErParser.Parse(lines));
-                size = new Size(positionedErDiagram.Width, positionedErDiagram.Height);
-                _pendingDiagram = positionedErDiagram;
-                break;
-            }
-            case DiagramType.Pie:
-            {
-                var pieChart = PieParser.Parse(lines); // TODO: size
-                _pendingDiagram = pieChart;
-                break;
-            }
-            case DiagramType.Quadrant:
-            {
-                var quadrantChart = QuadrantParser.Parse(lines); // TODO: size
-                _pendingDiagram = quadrantChart;
-                break;
-            }
-            case DiagramType.Timeline:
-            {
-                var timelineDiagram = TimelineParser.Parse(lines); // TODO: size
-                _pendingDiagram = timelineDiagram;
-                break;
-            }
-            case DiagramType.GitGraph:
-            {
-                var gitGraphDiagram = GitGraphParser.Parse(lines); // TODO: size
-                _pendingDiagram = gitGraphDiagram;
-                break;
-            }
-            case DiagramType.Radar:
-            {
-                var radarDiagram = RadarParser.Parse(lines); // TODO: size
-                _pendingDiagram = radarDiagram;
-                break;
-            }
-            case DiagramType.Treemap:
-            {
-                var treemapDiagram = TreemapParser.Parse(MermaidRenderer.PreprocessLinesPreserveIndent(text)); // TODO: size
-                _pendingDiagram = treemapDiagram;
-                break;
-            }
-            case DiagramType.Venn:
-            {
-                var vennDiagram = VennParser.Parse(MermaidRenderer.PreprocessLinesPreserveIndent(text)); // TODO: size
-                _pendingDiagram = vennDiagram;
-                break;
-            }
-            case DiagramType.Flowchart:
-            {
-                var positionedGraph = MermaidRenderer.LayoutProvider.LayoutFlowchart(FlowchartParser.Parse(lines));
-                size = new Size(positionedGraph.Width, positionedGraph.Height);
-                _pendingDiagram = positionedGraph;
-                break;
-            }
-            case DiagramType.State:
-            {
-                var positionedGraph = MermaidRenderer.LayoutProvider.LayoutFlowchart(StateParser.Parse(lines));
-                size = new Size(positionedGraph.Width, positionedGraph.Height);
-                _pendingDiagram = positionedGraph;
-                break;
-            }
-        }
-
-        return size;
+        _state = BuildState(Text);
+        return _state.DesiredSize;
     }
 
+    /// <inheritdoc/>
     public override void Render(DrawingContext dc)
     {
-        switch (_pendingDiagram)
+        var state = _state;
+        if (state == MermaidDiagramState.Empty && Text is { Length: > 0 })
+        {
+            state = _state = BuildState(Text);
+        }
+
+        DrawBackground(dc);
+
+        if (state.Error is { } error)
+        {
+            DrawError(dc, error);
+            return;
+        }
+
+        switch (state.Diagram)
         {
             case PositionedSequenceDiagram positionedSequenceDiagram:
             {
@@ -699,5 +806,123 @@ public class MermaidPresenter : Control
                 break;
             }
         }
+    }
+
+    private MermaidDiagramState BuildState(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return MermaidDiagramState.Empty;
+        }
+
+        MermaidInput? input = null;
+        try
+        {
+            input = MermaidInputPreprocessor.Process(text);
+            if (input.Lines.Length == 0)
+            {
+                return MermaidDiagramState.Empty;
+            }
+
+            var size = default(Size);
+            var diagramType = DiagramDetector.Detect(input.CleanedText.AsSpan());
+            object diagram = diagramType switch
+            {
+                DiagramType.Sequence => LayoutSequence(input, out size),
+                DiagramType.Class => LayoutClass(input, out size),
+                DiagramType.Er => LayoutEr(input, out size),
+                DiagramType.Pie => PieParser.Parse(input.Lines),
+                DiagramType.Quadrant => QuadrantParser.Parse(input.Lines),
+                DiagramType.Timeline => TimelineParser.Parse(input.Lines),
+                DiagramType.GitGraph => GitGraphParser.Parse(input.Lines),
+                DiagramType.Radar => RadarParser.Parse(input.Lines),
+                DiagramType.Treemap => TreemapParser.Parse(input.PreserveIndentLines),
+                DiagramType.Venn => VennParser.Parse(input.Lines),
+                DiagramType.Flowchart => LayoutFlowchart(input, out size),
+                DiagramType.State => LayoutState(input, out size),
+                _ => throw new NotSupportedException($"Diagram type '{diagramType}' is not supported by the native Mermaid presenter yet.")
+            };
+
+            return MermaidDiagramState.Success(diagramType, diagram, size, input);
+        }
+        catch (Exception ex)
+        {
+            return MermaidDiagramState.Failed(ex, MeasureError(ex), input);
+        }
+    }
+
+    private static PositionedSequenceDiagram LayoutSequence(MermaidInput input, out Size size)
+    {
+        var diagram = SequenceLayout.Layout(SequenceParser.Parse(input.Lines));
+        size = new Size(diagram.Width, diagram.Height);
+        return diagram;
+    }
+
+    private static PositionedClassDiagram LayoutClass(MermaidInput input, out Size size)
+    {
+        var diagram = MermaidRenderer.LayoutProvider.LayoutClass(ClassParser.Parse(input.Lines));
+        size = new Size(diagram.Width, diagram.Height);
+        return diagram;
+    }
+
+    private static PositionedErDiagram LayoutEr(MermaidInput input, out Size size)
+    {
+        var diagram = MermaidRenderer.LayoutProvider.LayoutEr(ErParser.Parse(input.Lines));
+        size = new Size(diagram.Width, diagram.Height);
+        return diagram;
+    }
+
+    private static PositionedGraph LayoutFlowchart(MermaidInput input, out Size size)
+    {
+        var diagram = MermaidRenderer.LayoutProvider.LayoutFlowchart(FlowchartParser.Parse(input.Lines));
+        size = new Size(diagram.Width, diagram.Height);
+        return diagram;
+    }
+
+    private static PositionedGraph LayoutState(MermaidInput input, out Size size)
+    {
+        var diagram = MermaidRenderer.LayoutProvider.LayoutFlowchart(StateParser.Parse(input.Lines));
+        size = new Size(diagram.Width, diagram.Height);
+        return diagram;
+    }
+
+    private void DrawBackground(DrawingContext dc)
+    {
+        if (BackgroundBrush is null || Bounds.Width <= 0 || Bounds.Height <= 0)
+        {
+            return;
+        }
+
+        dc.DrawRectangle(BackgroundBrush, null, new Rect(0, 0, Bounds.Width, Bounds.Height));
+    }
+
+    private void DrawError(DrawingContext dc, Exception error)
+    {
+        var text = CreateErrorText(error, Bounds.Width > 16 ? Bounds.Width - 16 : double.PositiveInfinity);
+        dc.DrawText(text, new global::Avalonia.Point(8, 8));
+    }
+
+    private Size MeasureError(Exception error)
+    {
+        var message = $"Failed to render Mermaid diagram: {error.Message}";
+        var width = Math.Clamp(message.Length * Math.Max(EdgeLabelFontSize * 0.55, 6) + 16, 240, 520);
+        var lines = Math.Max(1, Math.Ceiling((message.Length * Math.Max(EdgeLabelFontSize * 0.55, 6)) / Math.Max(width - 16, 1)));
+        var height = (lines * Math.Max(EdgeLabelFontSize * 1.35, 16)) + 16;
+        return new Size(width, height);
+    }
+
+    private FormattedText CreateErrorText(Exception error, double maxTextWidth)
+    {
+        return new FormattedText(
+            $"Failed to render Mermaid diagram: {error.Message}",
+            CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight,
+            new Typeface(FontFamily),
+            EdgeLabelFontSize,
+            SecondaryForeground ?? Foreground)
+        {
+            MaxTextWidth = maxTextWidth,
+            TextAlignment = TextAlignment.Left
+        };
     }
 }

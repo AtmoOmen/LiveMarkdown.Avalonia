@@ -5,7 +5,7 @@
     <LangVersion>preview</LangVersion>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
@@ -37,6 +37,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="samples\Markdig.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="samples\Mermaid.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="samples\Test.md">

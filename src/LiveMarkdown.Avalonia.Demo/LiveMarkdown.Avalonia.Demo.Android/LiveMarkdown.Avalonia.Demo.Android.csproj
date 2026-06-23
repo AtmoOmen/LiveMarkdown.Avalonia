@@ -9,6 +9,7 @@
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <TargetFrameworkVersion>21</TargetFrameworkVersion>
   </PropertyGroup>
 
   <ItemGroup>

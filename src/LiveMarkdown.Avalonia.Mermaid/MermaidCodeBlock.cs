@@ -17,7 +17,7 @@ public class MermaidBlockParser : FencedBlockParserBase<MermaidCodeBlock>
 
     public override BlockState TryOpen(BlockProcessor processor)
     {
-        if (!processor.Line.AsSpan().EndsWith(InfoPrefix, StringComparison.OrdinalIgnoreCase))
+        if (!IsMermaidFenceOpening(processor.Line.AsSpan()))
         {
             return BlockState.None;
         }
@@ -28,6 +28,41 @@ public class MermaidBlockParser : FencedBlockParserBase<MermaidCodeBlock>
     protected override MermaidCodeBlock CreateFencedBlock(BlockProcessor processor)
     {
         return new MermaidCodeBlock(this);
+    }
+
+    private static bool IsMermaidFenceOpening(ReadOnlySpan<char> line)
+    {
+        line = line.TrimStart();
+        if (line.Length < 4 || line[0] is not ('`' or '~'))
+        {
+            return false;
+        }
+
+        var fence = line[0];
+        var index = 0;
+        while (index < line.Length && line[index] == fence)
+        {
+            index++;
+        }
+
+        if (index < 3)
+        {
+            return false;
+        }
+
+        var info = line[index..].TrimStart();
+        if (info.Length == 0)
+        {
+            return false;
+        }
+
+        var tokenEnd = 0;
+        while (tokenEnd < info.Length && !char.IsWhiteSpace(info[tokenEnd]))
+        {
+            tokenEnd++;
+        }
+
+        return info[..tokenEnd].Equals("mermaid", StringComparison.OrdinalIgnoreCase);
     }
 }
 

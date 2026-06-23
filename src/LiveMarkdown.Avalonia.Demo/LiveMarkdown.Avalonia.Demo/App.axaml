@@ -6,6 +6,7 @@
   <Application.Styles>
     <FluentTheme/>
     <StyleInclude Source="avares://LiveMarkdown.Avalonia/Styles.axaml"/>
+    <StyleInclude Source="avares://LiveMarkdown.Avalonia.Mermaid/Styles.axaml"/>
 
     <Style Selector="md|MarkdownRenderer">
       <Style Selector="^ Span.Emphasis">
@@ -22,6 +23,26 @@
         </Style>
         <Style Selector="^.Highlight">
           <Setter Property="Background" Value="DarkOrange"/>
+        </Style>
+      </Style>
+
+      <Setter Property="CodeBlockColorTheme" Value="{DynamicResource ColorTheme}"/>
+
+      <Style Selector="^ InlineUIContainer.Code">
+        <Style Selector="^ md|MarkdownTextBlock">
+          <Setter Property="Foreground" Value="{DynamicResource QuoteColor}"/>
+          <Setter Property="FontSize" Value="{DynamicResource FontSizeM}"/>
+        </Style>
+      </Style>
+
+      <Style Selector="^ Border.QuoteBlock">
+        <Setter Property="BorderBrush" Value="{DynamicResource QuoteColor}"/>
+      </Style>
+
+      <Style Selector="^ md|CodeBlock">
+        <Style Selector="^ /template/ StackPanel">
+          <Setter Property="Spacing" Value="0"/>
+          <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
       </Style>
     </Style>
