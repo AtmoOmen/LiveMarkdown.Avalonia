@@ -128,6 +128,25 @@ internal static class MermaidTextRenderer
     }
 
     /// <summary>
+    /// Draws a Mermaid label whose inline markup has already been parsed during diagram preparation.
+    /// </summary>
+    public static void DrawInlineText(
+        DrawingContext dc,
+        MermaidPresenter presenter,
+        MermaidTextLayout layout,
+        double x,
+        double y,
+        double fontSize,
+        IBrush? brush,
+        TextAlignment alignment,
+        bool centerVertically = false,
+        FontWeight fontWeight = default)
+    {
+        var ft = CreateFormattedText(presenter, layout, fontSize, brush, alignment, fontWeight);
+        DrawFormattedText(dc, ft, x, y, alignment, centerVertically);
+    }
+
+    /// <summary>
     /// Draws an inline label centered in a rounded background rectangle.
     /// </summary>
     /// <remarks>
@@ -150,6 +169,38 @@ internal static class MermaidTextRenderer
         TextAlignment alignment = TextAlignment.Center)
     {
         var layout = MermaidInlineTextParser.Parse(text, isMarkdown);
+        DrawTextWithBackground(
+            dc,
+            presenter,
+            layout,
+            centerX,
+            centerY,
+            fontSize,
+            textBrush,
+            backgroundBrush,
+            backgroundPen,
+            padding,
+            radius,
+            alignment);
+    }
+
+    /// <summary>
+    /// Draws a prepared inline label centered in a rounded background rectangle.
+    /// </summary>
+    public static void DrawTextWithBackground(
+        DrawingContext dc,
+        MermaidPresenter presenter,
+        MermaidTextLayout layout,
+        double centerX,
+        double centerY,
+        double fontSize,
+        IBrush? textBrush,
+        IBrush? backgroundBrush,
+        IPen? backgroundPen,
+        double padding,
+        double radius,
+        TextAlignment alignment = TextAlignment.Center)
+    {
         var ft = CreateFormattedText(presenter, layout, fontSize, textBrush, alignment);
         var width = ft.Width + padding * 2;
         var height = ft.Height + padding;

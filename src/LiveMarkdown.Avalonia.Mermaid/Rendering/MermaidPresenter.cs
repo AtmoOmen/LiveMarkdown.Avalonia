@@ -624,13 +624,14 @@ public class MermaidPresenter : Control
     /// </remarks>
     public IBrush? GetCachedBrush(string? colorHex, IBrush? fallback)
     {
-        if (string.IsNullOrWhiteSpace(colorHex) || colorHex == "none") return fallback;
-        if (_brushCache.TryGetValue(colorHex, out var brush)) return brush;
+        var normalized = MermaidStyleValue.NormalizeColor(colorHex);
+        if (normalized is null || normalized.Equals("none", StringComparison.OrdinalIgnoreCase)) return fallback;
+        if (_brushCache.TryGetValue(normalized, out var brush)) return brush;
 
         try
         {
-            var parsed = new SolidColorBrush(Color.Parse(colorHex));
-            _brushCache[colorHex] = parsed;
+            var parsed = new SolidColorBrush(Color.Parse(normalized));
+            _brushCache[normalized] = parsed;
             return parsed;
         }
         catch
@@ -649,16 +650,24 @@ public class MermaidPresenter : Control
     /// </remarks>
     public IPen? GetCachedPen(string? colorHex, string? widthString, IPen? fallback)
     {
-        if (string.IsNullOrWhiteSpace(colorHex) && string.IsNullOrWhiteSpace(widthString)) return fallback;
-        var key = $"{colorHex}_{widthString}";
+        var normalizedColor = MermaidStyleValue.NormalizeColor(colorHex);
+        var normalizedWidth = MermaidStyleValue.NormalizeLength(widthString);
+        if (normalizedColor is null && normalizedWidth is null) return fallback;
+        var key = $"{normalizedColor}_{normalizedWidth}";
         if (_penCache.TryGetValue(key, out var existingPen)) return existingPen;
 
-        var brush = GetCachedBrush(colorHex, fallback?.Brush);
+        var brush = GetCachedBrush(normalizedColor, fallback?.Brush);
         var width = fallback?.Thickness ?? 0d;
-        if (double.TryParse(widthString, NumberStyles.Float, CultureInfo.InvariantCulture, out var w)) width = w;
+        if (double.TryParse(normalizedWidth, NumberStyles.Float, CultureInfo.InvariantCulture, out var w)) width = w;
         if (brush is null || width <= 0) return fallback;
 
-        var pen = new Pen(brush, width, fallback?.DashStyle, fallback?.LineCap ?? PenLineCap.Flat, fallback?.LineJoin ?? PenLineJoin.Miter, fallback?.MiterLimit ?? 10);
+        var pen = new Pen(
+            brush,
+            width,
+            fallback?.DashStyle,
+            fallback?.LineCap ?? PenLineCap.Flat,
+            fallback?.LineJoin ?? PenLineJoin.Miter,
+            fallback?.MiterLimit ?? 10);
         _penCache[key] = pen;
         return pen;
     }
@@ -800,6 +809,11 @@ public class MermaidPresenter : Control
                 VennRenderer.Render(dc, this, vennDiagram);
                 break;
             }
+            case PreparedPositionedGraph preparedGraph:
+            {
+                DefaultRenderer.Render(dc, this, preparedGraph);
+                break;
+            }
             case PositionedGraph positionedGraph:
             {
                 DefaultRenderer.Render(dc, this, positionedGraph);
@@ -872,18 +886,18 @@ public class MermaidPresenter : Control
         return diagram;
     }
 
-    private static PositionedGraph LayoutFlowchart(MermaidInput input, out Size size)
+    private static PreparedPositionedGraph LayoutFlowchart(MermaidInput input, out Size size)
     {
         var diagram = MermaidRenderer.LayoutProvider.LayoutFlowchart(FlowchartParser.Parse(input.Lines));
         size = new Size(diagram.Width, diagram.Height);
-        return diagram;
+        return PreparedPositionedGraph.Prepare(diagram);
     }
 
-    private static PositionedGraph LayoutState(MermaidInput input, out Size size)
+    private static PreparedPositionedGraph LayoutState(MermaidInput input, out Size size)
     {
         var diagram = MermaidRenderer.LayoutProvider.LayoutFlowchart(StateParser.Parse(input.Lines));
         size = new Size(diagram.Width, diagram.Height);
-        return diagram;
+        return PreparedPositionedGraph.Prepare(diagram);
     }
 
     private void DrawBackground(DrawingContext dc)
