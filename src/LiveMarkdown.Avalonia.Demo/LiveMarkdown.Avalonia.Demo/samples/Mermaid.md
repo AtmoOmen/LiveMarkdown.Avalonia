@@ -9,34 +9,28 @@ This page collects representative Mermaid diagrams for the native renderer. Some
 title: Native Flowchart
 ---
 %%{init: {"theme": "base", "title": "Flowchart Init Title"}}%%
-flowchart TD
+flowchart LR
     accTitle: Flowchart sample
     accDescr: A small flowchart with node shapes, edge labels, styles, and markdown labels.
 
-    Start([Start])
+    Source([Markdown source])
     Parse["`**Parse** markdown`"]
-    Cache{Cache hit?}
-    Render[/Render native/]
-    Error((Error))
+    Detect{Mermaid block?}
+    Native[/Native renderer/]
+    Markdown[Markdown blocks]
+    Cache[(Diagram cache)]
+    Compose[Compose visual tree]
     Done([Done])
 
-    Start --> Parse
-    Parse -->|yes| Cache
-    Cache -->|hit| Done
-    Cache -.->|miss| Render
-    Render ==> Done
-    Parse -->|invalid| Error
-
-    subgraph Pipeline [Rendering Pipeline]
-        Parse
-        Cache
-        Render
-    end
+    Source --> Parse --> Detect
+    Detect -->|yes| Native --> Cache --> Compose
+    Detect -->|no| Markdown --> Compose
+    Compose --> Done
 
     classDef accent fill:#e8f3ff,stroke:#2f80ed,color:#123;
-    classDef danger fill:#ffe8e8,stroke:#d64545,color:#3a1111;
-    class Parse,Render accent
-    class Error danger
+    classDef neutral fill:#f5f5f5,stroke:#777,color:#222;
+    class Native,Cache accent
+    class Markdown,Compose neutral
 ```
 
 ## State Diagram

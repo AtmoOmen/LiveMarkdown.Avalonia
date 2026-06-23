@@ -1,5 +1,7 @@
 using Avalonia;
+using Avalonia.Media;
 using Markdig;
+using Mermaider;
 using NUnit.Framework;
 
 namespace LiveMarkdown.Avalonia.Tests;
@@ -97,6 +99,46 @@ public class MermaidPresenterTests
     }
 
     [Test]
+    public void MermaidStyleValue_NormalizesCssLikeColorAndLengthValues()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(MermaidStyleValue.NormalizeColor("#123;"), Is.EqualTo("#112233"));
+            Assert.That(MermaidStyleValue.NormalizeColor("#123"), Is.EqualTo("#112233"));
+            Assert.That(MermaidStyleValue.NormalizeColor("#112233;"), Is.EqualTo("#112233"));
+            Assert.That(MermaidStyleValue.NormalizeColor(" none ; "), Is.EqualTo("none"));
+            Assert.That(MermaidStyleValue.NormalizeColor("#abcd"), Is.EqualTo("#ddaabbcc"));
+            Assert.That(MermaidStyleValue.NormalizeLength("2px;"), Is.EqualTo("2"));
+            Assert.That(MermaidStyleValue.NormalizeLength("1.5;"), Is.EqualTo("1.5"));
+        });
+    }
+
+    [Test]
+    public void GetCachedBrush_UsesNormalizedMermaidStyleColor()
+    {
+        var presenter = new MermaidPresenter();
+
+        var brush = presenter.GetCachedBrush("#123;", Brushes.White);
+
+        Assert.That(brush, Is.TypeOf<SolidColorBrush>());
+        Assert.That(((SolidColorBrush)brush!).Color, Is.EqualTo(Color.Parse("#112233")));
+        Assert.That(presenter.GetCachedBrush("definitely-not-a-color;", Brushes.White), Is.SameAs(Brushes.White));
+    }
+
+    [Test]
+    public void GetCachedPen_UsesNormalizedStrokeWidth()
+    {
+        var presenter = new MermaidPresenter();
+        var fallback = new Pen(Brushes.White, 1);
+
+        var pen = presenter.GetCachedPen("#123;", "2px;", fallback);
+
+        Assert.That(pen, Is.Not.Null);
+        Assert.That(pen!.Thickness, Is.EqualTo(2));
+        Assert.That(((SolidColorBrush)pen.Brush!).Color, Is.EqualTo(Color.Parse("#112233")));
+    }
+
+    [Test]
     public void MermaidInlineTextParser_MarkdownParsesInlineStyles()
     {
         var layout = MermaidInlineTextParser.ParseMarkdown("***both*** `code`\nnext");
@@ -179,6 +221,62 @@ public class MermaidPresenterTests
         Assert.DoesNotThrow(() => presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)));
         Assert.That(presenter.DesiredSize.Width, Is.GreaterThan(0));
         Assert.That(presenter.DesiredSize.Height, Is.GreaterThan(0));
+    }
+
+    [Test]
+    public void PreparedPositionedGraph_FlowchartCachesParsedLabels()
+    {
+        var positioned = MermaidRenderer.LayoutProvider.LayoutFlowchart(MermaidRenderer.Parse(
+            """
+            flowchart LR
+                A["`**Bold** *Italic*`"] -->|yes| B
+            """));
+
+        var prepared = PreparedPositionedGraph.Prepare(positioned);
+
+        Assert.That(prepared.Edges, Has.One.Matches<PreparedPositionedEdge>(
+            edge => edge.LabelLayout is { Text: "yes" }));
+        Assert.That(prepared.Nodes, Has.One.Matches<PreparedPositionedNode>(
+            node => node.Node.Id == "A" &&
+                    node.LabelLayout.Text == "Bold Italic" &&
+                    node.LabelLayout.Spans.Count >= 2));
+    }
+
+    [Test]
+    public void PreparedPositionedGraph_FlowchartCachesEdgeGeometryWhenPlatformIsAvailable()
+    {
+        var positioned = MermaidRenderer.LayoutProvider.LayoutFlowchart(MermaidRenderer.Parse(
+            """
+            flowchart LR
+                A --> B
+            """));
+
+        var prepared = PreparedPositionedGraph.Prepare(positioned);
+        var edge = prepared.Edges.Single(edge => edge.Edge.Points.Count >= 2);
+
+        var first = GetRoundedPathOrIgnore(edge);
+        var second = GetRoundedPathOrIgnore(edge);
+
+        Assert.That(first, Is.Not.Null);
+        Assert.That(second, Is.SameAs(first));
+    }
+
+    [Test]
+    public void PreparedPositionedGraph_StateCachesEdgeGeometryWhenPlatformIsAvailable()
+    {
+        var positioned = MermaidRenderer.LayoutProvider.LayoutFlowchart(MermaidRenderer.Parse(
+            """
+            stateDiagram-v2
+                [*] --> Idle
+                Idle --> [*]
+            """));
+
+        var prepared = PreparedPositionedGraph.Prepare(positioned);
+
+        foreach (var edge in prepared.Edges.Where(edge => edge.Edge.Points.Count >= 2))
+        {
+            Assert.That(GetRoundedPathOrIgnore(edge), Is.Not.Null);
+        }
     }
 
     [Test]
@@ -267,5 +365,18 @@ public class MermaidPresenterTests
         Assert.DoesNotThrow(() => presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)));
         Assert.That(presenter.DesiredSize.Width, Is.GreaterThan(0));
         Assert.That(presenter.DesiredSize.Height, Is.GreaterThan(0));
+    }
+
+    private static StreamGeometry? GetRoundedPathOrIgnore(PreparedPositionedEdge edge)
+    {
+        try
+        {
+            return edge.RoundedPath;
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("IPlatformRenderInterface", StringComparison.Ordinal))
+        {
+            Assert.Ignore("StreamGeometry creation requires an Avalonia platform render interface.");
+            return null;
+        }
     }
 }

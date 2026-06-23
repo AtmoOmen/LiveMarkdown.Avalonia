@@ -24,12 +24,20 @@ public static class DefaultRenderer
     /// </summary>
     public static void Render(DrawingContext dc, MermaidPresenter presenter, PositionedGraph graph)
     {
+        Render(dc, presenter, PreparedPositionedGraph.Prepare(graph));
+    }
+
+    /// <summary>
+    /// Draws a prepared positioned graph using the brushes, pens, and font sizes supplied by the presenter.
+    /// </summary>
+    internal static void Render(DrawingContext dc, MermaidPresenter presenter, PreparedPositionedGraph graph)
+    {
         foreach (var group in graph.Groups)
             DrawGroupBody(dc, presenter, group);
 
         foreach (var edge in graph.Edges)
         {
-            if (edge.Style != EdgeStyle.Invisible)
+            if (edge.Edge.Style != EdgeStyle.Invisible)
                 DrawEdge(dc, presenter, edge);
         }
 
@@ -38,7 +46,7 @@ public static class DefaultRenderer
 
         foreach (var edge in graph.Edges)
         {
-            if (edge.Style != EdgeStyle.Invisible && edge.Label is not null)
+            if (edge.Edge.Style != EdgeStyle.Invisible && edge.Edge.Label is not null)
                 DrawEdgeLabel(dc, presenter, edge);
         }
 
@@ -53,17 +61,19 @@ public static class DefaultRenderer
     // Group rendering
     // ========================================================================
 
-    private static void DrawGroupBody(DrawingContext dc, MermaidPresenter presenter, PositionedGroup group)
+    private static void DrawGroupBody(DrawingContext dc, MermaidPresenter presenter, PreparedPositionedGroup preparedGroup)
     {
+        var group = preparedGroup.Group;
         var rect = new Rect(group.X, group.Y, group.Width, group.Height);
         dc.DrawRectangle(presenter.GroupFill, presenter.GroupPen, rect, RenderConstants.Radii.Group, RenderConstants.Radii.Group);
 
-        foreach (var child in group.Children)
+        foreach (var child in preparedGroup.Children)
             DrawGroupBody(dc, presenter, child);
     }
 
-    private static void DrawGroupHeader(DrawingContext dc, MermaidPresenter presenter, PositionedGroup group)
+    private static void DrawGroupHeader(DrawingContext dc, MermaidPresenter presenter, PreparedPositionedGroup preparedGroup)
     {
+        var group = preparedGroup.Group;
         var headerHeight = presenter.GroupHeaderFontSize + 16;
         var rect = new Rect(group.X, group.Y, group.Width, headerHeight);
 
@@ -72,8 +82,7 @@ public static class DefaultRenderer
         MermaidTextRenderer.DrawInlineText(
             dc,
             presenter,
-            group.Label,
-            isMarkdown: false,
+            preparedGroup.LabelLayout,
             group.X + 12,
             group.Y + headerHeight / 2.0,
             presenter.GroupHeaderFontSize,
@@ -81,7 +90,7 @@ public static class DefaultRenderer
             TextAlignment.Left,
             centerVertically: true);
 
-        foreach (var child in group.Children)
+        foreach (var child in preparedGroup.Children)
             DrawGroupHeader(dc, presenter, child);
     }
 
@@ -89,8 +98,9 @@ public static class DefaultRenderer
     // Edge rendering
     // ========================================================================
 
-    private static void DrawEdge(DrawingContext dc, MermaidPresenter presenter, PositionedEdge edge)
+    private static void DrawEdge(DrawingContext dc, MermaidPresenter presenter, PreparedPositionedEdge preparedEdge)
     {
+        var edge = preparedEdge.Edge;
         if (edge.Points.Count < 2) return;
 
         var pen = edge.Style switch
@@ -100,13 +110,10 @@ public static class DefaultRenderer
             _ => presenter.LinePen
         };
 
-        var geometry = new StreamGeometry();
-        using (var context = geometry.Open())
+        if (preparedEdge.RoundedPath is not null)
         {
-            MermaidDrawingHelpers.BuildRoundedPathContext(context, edge.Points, CornerRadius);
+            dc.DrawGeometry(null, pen, preparedEdge.RoundedPath);
         }
-
-        dc.DrawGeometry(null, pen, geometry);
 
         if (edge.HasArrowEnd)
             MermaidDrawingHelpers.DrawArrowHead(dc, presenter.ArrowFill, edge.Points[^2], edge.Points[^1], false, ArrowSize);
@@ -115,15 +122,16 @@ public static class DefaultRenderer
             MermaidDrawingHelpers.DrawArrowHead(dc, presenter.ArrowFill, edge.Points[1], edge.Points[0], true, ArrowSize);
     }
 
-    private static void DrawEdgeLabel(DrawingContext dc, MermaidPresenter presenter, PositionedEdge edge)
+    private static void DrawEdgeLabel(DrawingContext dc, MermaidPresenter presenter, PreparedPositionedEdge preparedEdge)
     {
-        var mid = edge.LabelPosition ?? MermaidDrawingHelpers.Midpoint(edge.Points);
-        var label = edge.Label!;
+        if (preparedEdge.LabelLayout is null)
+            return;
+
+        var mid = preparedEdge.LabelPosition;
         MermaidTextRenderer.DrawTextWithBackground(
             dc,
             presenter,
-            label,
-            isMarkdown: false,
+            preparedEdge.LabelLayout,
             mid.X,
             mid.Y,
             presenter.EdgeLabelFontSize,
@@ -138,8 +146,9 @@ public static class DefaultRenderer
     // Node rendering
     // ========================================================================
 
-    private static void DrawNode(DrawingContext dc, MermaidPresenter presenter, PositionedNode node)
+    private static void DrawNode(DrawingContext dc, MermaidPresenter presenter, PreparedPositionedNode preparedNode)
     {
+        var node = preparedNode.Node;
         var (x, y, w, h) = (node.X, node.Y, node.Width, node.Height);
 
         var styleFill = node.InlineStyle?.GetValueOrDefault("fill");
@@ -269,19 +278,19 @@ public static class DefaultRenderer
                 break;
         }
 
-        DrawNodeLabel(dc, presenter, node);
+        DrawNodeLabel(dc, presenter, preparedNode);
     }
 
-    private static void DrawNote(DrawingContext dc, MermaidPresenter presenter, PositionedGraphNote note)
+    private static void DrawNote(DrawingContext dc, MermaidPresenter presenter, PreparedPositionedNote preparedNote)
     {
+        var note = preparedNote.Note;
         var rect = new Rect(note.X, note.Y, note.Width, note.Height);
         dc.DrawRectangle(presenter.AccentFill, presenter.AccentPen, rect, 6, 6);
 
         MermaidTextRenderer.DrawInlineText(
             dc,
             presenter,
-            note.Text,
-            isMarkdown: false,
+            preparedNote.TextLayout,
             note.X + note.Width / 2,
             note.Y + note.Height / 2,
             presenter.EdgeLabelFontSize,
@@ -294,8 +303,9 @@ public static class DefaultRenderer
     // Text / Markdown rendering
     // ========================================================================
 
-    private static void DrawNodeLabel(DrawingContext dc, MermaidPresenter presenter, PositionedNode node)
+    private static void DrawNodeLabel(DrawingContext dc, MermaidPresenter presenter, PreparedPositionedNode preparedNode)
     {
+        var node = preparedNode.Node;
         if (node.Shape is NodeShape.StateStart or NodeShape.StateEnd or NodeShape.ForkJoin && string.IsNullOrEmpty(node.Label))
             return;
 
@@ -308,8 +318,7 @@ public static class DefaultRenderer
         MermaidTextRenderer.DrawInlineText(
             dc,
             presenter,
-            node.Label,
-            node.IsMarkdown,
+            preparedNode.LabelLayout,
             cx,
             cy,
             presenter.NodeLabelFontSize,
