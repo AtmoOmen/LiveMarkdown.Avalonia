@@ -53,7 +53,26 @@ public class ObservableStringBuilder : INotifyPropertyChanged
     /// </summary>
     public event ObservableStringBuilderChangedEventHandler? Changed;
 
-    private readonly StringBuilder stringBuilder = new();
+    private readonly StringBuilder stringBuilder;
+
+    public ObservableStringBuilder()
+    {
+        stringBuilder = new StringBuilder();
+    }
+
+    public ObservableStringBuilder(int capacity)
+    {
+        stringBuilder = new StringBuilder(capacity);
+    }
+
+    public ObservableStringBuilder(string? initialValue) : this(initialValue?.Length ?? 0)
+    {
+        if (!string.IsNullOrEmpty(initialValue))
+        {
+            stringBuilder.Append(initialValue);
+            Length = stringBuilder.Length;
+        }
+    }
 
     /// <summary>
     /// Appends a string to the string builder and raises an event.

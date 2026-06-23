@@ -36,8 +36,7 @@ updating, **especially when streaming large model outputs**.
 - 🎨 **Customizable styles**: Easily style Markdown elements using Avalonia's powerful styling system
 - 🔗 **Link support**: Clickable links with customizable behavior
 - 📊 **Table support**: Render tables with proper formatting
-- 📜 **Code block syntax highlighting**: Supports multiple languages
-  with [TextMateSharp](https://github.com/danipen/TextMateSharp)
+- 📜 **Code block syntax highlighting**: Supports multiple languages with [TextMateSharp](https://github.com/danipen/TextMateSharp)
 - 🖼️ **Image support**: Load online, local even `avares` images asynchronously
 - ✍️ **Selectable text**: Text can be selected across different Markdown elements
 
@@ -138,6 +137,8 @@ markdownBuilder.Append("\n\nThis is a **live** Markdown viewer for Avalonia appl
 // Clear the content
 markdownBuilder.Clear();
 ```
+
+Note that `MarkdownBuilder` is designed for efficient updates, but is NOT thread-safe. Make sure to update it on the UI thread.
 
 If you want to load local images with relative paths, you can set the `MarkdownRenderer.ImageBasePath` property.
 
@@ -361,6 +362,22 @@ Here is a sample style definition that customizes the emphasis styles and adds s
 
 ## 🤔 FAQ
 
+- Q: Wait, I just want to render a single Markdown string, why do I need to use `ObservableStringBuilder`?
+- A: `ObservableStringBuilder` is used for efficient string updates, especially in streaming scenarios. 
+  If you just want to bind to a single Markdown string, you can use the value converter as follows:
+
+  ```xml
+  <md:MarkdownRenderer MarkdownBuilder="{Binding MarkdownString, Converter={x:Static md:ValueConverters.ToObservableStringBuilder}}"/>
+  ```
+  
+  or set the `MarkdownBuilder` property in code-behind:
+  
+  ```csharp
+  MarkdownRenderer.MarkdownBuilder = new ObservableStringBuilder(MarkdownString);
+  ```
+
+  However, if you want to append content incrementally (e.g., streaming output from an LLM), `ObservableStringBuilder` is more efficient.
+
 - Q: Why some emojis not rendered correctly (rendered in single color)?
 - A: This is a known issue caused by Skia (the render backend of Avalonia). You can upgrade SkiaSharp version (e.g. >=
   3.117.0) to fix this. [Related issue](https://github.com/AvaloniaUI/Avalonia/issues/18677)
@@ -370,36 +387,36 @@ Here is a sample style definition that customizes the emphasis styles and adds s
   headings, tables, inline code, and code blocks. By default, the bundled style marks each `MarkdownRenderer` as a
   selection scope, so users can drag-select text across all selectable text blocks inside the same renderer.
 
-If you need multiple renderers or custom containers to share one selection, set
-`MarkdownTextBlock.IsSelectionScope="True"` on their nearest shared visual parent:
-
-```xml
-<StackPanel md:MarkdownTextBlock.IsSelectionScope="True">
-  <md:MarkdownRenderer/>
-  <md:MarkdownRenderer/>
-</StackPanel>
-```
-
-When scopes are nested, the topmost scope is used. This makes it possible to set a broad application-level selection
-scope, while still keeping the default renderer-level behavior for simple cases. The old
-`MarkdownRenderer.SelectionScopeName` API is kept for compatibility, but new code should use
-`MarkdownTextBlock.IsSelectionScope`.
-
-During drag selection, moving the pointer outside a `ScrollViewer` automatically scrolls the nearest scrollable parent.
-For nested scroll viewers, the renderer follows Avalonia scroll chaining: it tries the inner `ScrollViewer` first and
-continues to outer scroll viewers only when `ScrollViewer.IsScrollChainingEnabled` allows it.
+  If you need multiple renderers or custom containers to share one selection, set
+  `MarkdownTextBlock.IsSelectionScope="True"` on their nearest shared visual parent:
+  
+  ```xml
+  <StackPanel md:MarkdownTextBlock.IsSelectionScope="True">
+    <md:MarkdownRenderer/>
+    <md:MarkdownRenderer/>
+  </StackPanel>
+  ```
+  
+  When scopes are nested, the topmost scope is used. This makes it possible to set a broad application-level selection
+  scope, while still keeping the default renderer-level behavior for simple cases. The old
+  `MarkdownRenderer.SelectionScopeName` API is kept for compatibility, but new code should use
+  `MarkdownTextBlock.IsSelectionScope`.
+  
+  During drag selection, moving the pointer outside a `ScrollViewer` automatically scrolls the nearest scrollable parent.
+  For nested scroll viewers, the renderer follows Avalonia scroll chaining: it tries the inner `ScrollViewer` first and
+  continues to outer scroll viewers only when `ScrollViewer.IsScrollChainingEnabled` allows it.
 
 - Q: Why is LaTeX like `\(xxx\)` not rendered?
 - A: The default Markdig math parser supports `$...$` and `$$...$$`. To support `\(...\)` and `\[...\]`, enable the
   extended math parser before creating any `MarkdownRenderer` instances:
 
-```csharp
-MarkdownRenderer.ConfigurePipeline += x => x.UseExtendedMathematics();
-MarkdownNode.Edit(builder => builder
-    .Register<MathInlineNode>()
-    .Register<MathBlockNode>()
-);
-```
+  ```csharp
+  MarkdownRenderer.ConfigurePipeline += x => x.UseExtendedMathematics();
+  MarkdownNode.Edit(builder => builder
+      .Register<MathInlineNode>()
+      .Register<MathBlockNode>()
+  );
+  ```
 
 ## 🤝 Contributing
 
