@@ -20,10 +20,14 @@ public class MermaidBlockNode : BlockNode<MermaidCodeBlock>
                 {
                     Classes = { "MermaidBlock" }
                 }),
-                (_presenter = new MermaidPresenter
+                new PanAndZoom
                 {
-                    Classes = { "MermaidBlock" }
-                })
+                    Classes = { "MermaidBlock" },
+                    Content = _presenter = new MermaidPresenter
+                    {
+                        Classes = { "MermaidBlock" }
+                    }
+                }
             }
         };
     }

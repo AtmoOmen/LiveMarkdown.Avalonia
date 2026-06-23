@@ -125,11 +125,19 @@ public sealed class PanAndZoom : ContentControl
     /// <summary>
     /// Gets the current zoom scale.
     /// </summary>
+    /// <remarks>
+    /// The scale is applied as a render transform to the content after it has been measured and
+    /// arranged at its natural size.
+    /// </remarks>
     public double Scale { get; private set; } = 1;
 
     /// <summary>
     /// Gets the current offset of the content relative to the viewport.
     /// </summary>
+    /// <remarks>
+    /// The offset is expressed in viewport pixels and is applied after scaling. For example,
+    /// <c>Offset = (20, 10)</c> moves the already-scaled content 20 pixels right and 10 pixels down.
+    /// </remarks>
     public Vector Offset { get; private set; }
 
     private readonly Dictionary<int, PointerState> _pointers = new();
@@ -141,7 +149,10 @@ public sealed class PanAndZoom : ContentControl
     /// <summary>
     /// Initializes a new instance of the <see cref="PanAndZoom"/> class.
     /// </summary>
-    public PanAndZoom() { }
+    public PanAndZoom()
+    {
+        ClipToBounds = true;
+    }
 
     /// <inheritdoc/>
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -192,6 +203,7 @@ public sealed class PanAndZoom : ContentControl
         }
     }
 
+    /// <inheritdoc/>
     protected override Size MeasureOverride(Size availableSize)
     {
         var measured = base.MeasureOverride(availableSize);
@@ -209,6 +221,7 @@ public sealed class PanAndZoom : ContentControl
         return CalculateViewportSize(_contentSize, availableSize);
     }
 
+    /// <inheritdoc/>
     protected override Size ArrangeOverride(Size finalSize)
     {
         var arranged = base.ArrangeOverride(finalSize);
@@ -231,6 +244,7 @@ public sealed class PanAndZoom : ContentControl
         return arranged;
     }
 
+    /// <inheritdoc/>
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);
@@ -247,6 +261,7 @@ public sealed class PanAndZoom : ContentControl
         e.Handled = true;
     }
 
+    /// <inheritdoc/>
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
@@ -281,6 +296,7 @@ public sealed class PanAndZoom : ContentControl
         }
     }
 
+    /// <inheritdoc/>
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
@@ -288,12 +304,14 @@ public sealed class PanAndZoom : ContentControl
         e.Handled = true;
     }
 
+    /// <inheritdoc/>
     protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
     {
         base.OnPointerCaptureLost(e);
         ReleasePointer(e.Pointer);
     }
 
+    /// <inheritdoc/>
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
         base.OnPointerWheelChanged(e);
@@ -303,6 +321,13 @@ public sealed class PanAndZoom : ContentControl
         e.Handled = true;
     }
 
+    /// <summary>
+    /// Resets the view according to <see cref="FitToViewport"/>.
+    /// </summary>
+    /// <remarks>
+    /// When fitting is enabled, reset recomputes from the latest measured content and viewport sizes.
+    /// Otherwise it returns to a one-to-one scale at the origin.
+    /// </remarks>
     internal void ResetView()
     {
         _hasUserView = false;
@@ -318,6 +343,9 @@ public sealed class PanAndZoom : ContentControl
         }
     }
 
+    /// <summary>
+    /// Applies a viewport-space pan delta and marks the current view as user-controlled.
+    /// </summary>
     internal void PanBy(Vector delta)
     {
         if (delta == default)
@@ -328,6 +356,9 @@ public sealed class PanAndZoom : ContentControl
         SetView(Scale, Offset + delta, markUserView: true);
     }
 
+    /// <summary>
+    /// Zooms around a viewport point so the content coordinate below that point remains stationary.
+    /// </summary>
     internal void ZoomAt(Point center, double requestedScale)
     {
         var nextScale = ClampScale(requestedScale);
@@ -335,6 +366,13 @@ public sealed class PanAndZoom : ContentControl
         SetView(nextScale, nextOffset, markUserView: true);
     }
 
+    /// <summary>
+    /// Calculates the post-zoom offset that keeps the same content point under a viewport center.
+    /// </summary>
+    /// <remarks>
+    /// The invariant is <c>(center - oldOffset) / oldScale == (center - newOffset) / newScale</c>.
+    /// Rearranging gives <c>newOffset = center - (center - oldOffset) * (newScale / oldScale)</c>.
+    /// </remarks>
     internal static Vector CalculateZoomOffset(Point center, double oldScale, double newScale, Vector oldOffset)
     {
         if (!IsPositiveFinite(oldScale) || !IsPositiveFinite(newScale))
@@ -348,6 +386,13 @@ public sealed class PanAndZoom : ContentControl
             center.Y - (center.Y - oldOffset.Y) * ratio);
     }
 
+    /// <summary>
+    /// Calculates the scale and offset required to show the whole content inside a viewport.
+    /// </summary>
+    /// <remarks>
+    /// The returned offset centers the scaled content. If either size is empty or non-finite, the
+    /// method falls back to scale 1 and offset 0 so layout remains deterministic.
+    /// </remarks>
     internal static (double Scale, Vector Offset) CalculateFitView(
         Size contentSize,
         Size viewportSize,
@@ -381,6 +426,8 @@ public sealed class PanAndZoom : ContentControl
         SetView(scale, offset, markUserView: false);
     }
 
+    // The view state lives on the viewport, while content stays arranged at natural size.
+    // This makes Reset recompute cheaply from measured sizes without forcing diagram relayout.
     private void SetView(double scale, Vector offset, bool markUserView)
     {
         Scale = ClampScale(scale);
@@ -401,22 +448,39 @@ public sealed class PanAndZoom : ContentControl
             Matrix.CreateScale(Scale, Scale) * Matrix.CreateTranslation(Offset.X, Offset.Y));
     }
 
+    // Two touch points are handled as a combined gesture: pinch distance changes scale, and midpoint
+    // movement pans at the same time. This mirrors common map/image viewer interaction.
     private bool TryHandleTouchGesture()
     {
-        var touches = _pointers.Values
-            .Where(pointer => pointer.PointerType == PointerType.Touch)
-            .Take(2)
-            .ToList();
+        PointerState? firstTouch = null;
+        PointerState? secondTouch = null;
 
-        if (touches.Count < 2)
+        foreach (var pointer in _pointers.Values)
+        {
+            if (pointer.PointerType != PointerType.Touch)
+            {
+                continue;
+            }
+
+            if (firstTouch is null)
+            {
+                firstTouch = pointer;
+                continue;
+            }
+
+            secondTouch = pointer;
+            break;
+        }
+
+        if (firstTouch is not { } first || secondTouch is not { } second)
         {
             return false;
         }
 
-        var previousMidpoint = Midpoint(touches[0].PreviousPosition, touches[1].PreviousPosition);
-        var midpoint = Midpoint(touches[0].Position, touches[1].Position);
-        var previousDistance = Distance(touches[0].PreviousPosition, touches[1].PreviousPosition);
-        var distance = Distance(touches[0].Position, touches[1].Position);
+        var previousMidpoint = Midpoint(first.PreviousPosition, second.PreviousPosition);
+        var midpoint = Midpoint(first.Position, second.Position);
+        var previousDistance = Distance(first.PreviousPosition, second.PreviousPosition);
+        var distance = Distance(first.Position, second.Position);
 
         if (previousDistance > 0 && distance > 0)
         {

@@ -13,7 +13,6 @@
   <ItemGroup>
     <PackageReference Include="Avalonia"/>
     <PackageReference Include="Avalonia.Fonts.Inter"/>
-    <PackageReference Include="ClassicDiagnostics.Avalonia" />
     <PackageReference Include="CommunityToolkit.Mvvm"/>
   </ItemGroup>
 
@@ -33,6 +32,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="samples\Markdig.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="samples\Mermaid.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="samples\Test.md">

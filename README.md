@@ -72,10 +72,27 @@ sponsors!
   - [x] Online images
   - [x] Local images
   - [x] `avares` images
+  - [x] Extensible Async image loading
+  - [x] Extensible Image caching (Memory and File-based, with HTTP freshness support)
 - [x] Selectable text across elements
 - [x] LaTeX support
 - [ ] HTML support
 - [ ] 🚧 Mermaid diagram support
+  - [x] Pan&Zoom support
+  - [x] Flowchart
+  - [x] State diagram
+  - [ ] Sequence diagram
+  - [ ] Class diagram
+  - [ ] ER diagram
+  - [ ] Pie chart
+  - [ ] Quadrant chart
+  - [ ] Timeline chart
+  - [ ] Git Graph
+  - [ ] Radar Graph
+  - [ ] Treemap
+  - [ ] Venn diagram
+- [x] Extensible Markdown pipeline and node registration
+- [x] Customizable styles for Markdown elements
 
 ## 🚀 Getting Started
 
@@ -210,13 +227,19 @@ Mermaid diagram rendering is supported via the `LiveMarkdown.Avalonia.Mermaid` p
 dotnet add package LiveMarkdown.Avalonia.Mermaid
 ```
 
-Then register the `MermaidDiagramNode` before using Mermaid diagrams in your Markdown content (e.g. App.axaml.cs):
+Then register the `MermaidBlockNode` before using Mermaid diagrams in your Markdown content (e.g. App.axaml.cs):
 
 ```csharp
 using LiveMarkdown.Avalonia;
 
 MarkdownRenderer.ConfigurePipeline += x => x.UseMermaid();
 MarkdownNode.Register<MermaidBlockNode>();
+```
+
+You can also include the default Mermaid styles and override them from your application styles:
+
+```xml
+<StyleInclude Source="avares://LiveMarkdown.Avalonia.Mermaid/Styles.axaml"/>
 ```
 
 ### 7. (Optional) Configure Image cache

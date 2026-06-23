@@ -1,0 +1,30 @@
+<Styles
+  xmlns="https://github.com/avaloniaui" xmlns:md="clr-namespace:LiveMarkdown.Avalonia">
+  <Style Selector="md|MermaidPresenter">
+    <Setter Property="FontSize" Value="{DynamicResource FontSizeM}"/>
+    <Setter Property="NodeLabelFontSize" Value="{DynamicResource FontSizeL}"/>
+    <Setter Property="EdgeLabelFontSize" Value="{DynamicResource FontSizeM}"/>
+    <Setter Property="GroupHeaderFontSize" Value="{DynamicResource FontSizeM}"/>
+    <Setter Property="MemberFontSize" Value="{DynamicResource FontSizeM}"/>
+    <Setter Property="AnnotationFontSize" Value="{DynamicResource FontSizeS}"/>
+    <Setter Property="KeyBadgeFontSize" Value="{DynamicResource FontSizeS}"/>
+    <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}"/>
+    <Setter Property="SecondaryForeground" Value="{DynamicResource ForegroundColor}"/>
+    <Setter Property="LineStroke" Value="{DynamicResource BorderColor}"/>
+    <Setter Property="ThickLineStroke" Value="{DynamicResource BorderColor}"/>
+    <Setter Property="DottedLineStroke" Value="{DynamicResource BorderColor}"/>
+    <Setter Property="GroupStroke" Value="{DynamicResource BorderColor}"/>
+    <Setter Property="NodeStroke" Value="{DynamicResource BorderColor}"/>
+    <Setter Property="EdgeLabelStroke" Value="{DynamicResource BorderColor}"/>
+    <Setter Property="NodeFill" Value="{DynamicResource CardBackgroundColor}"/>
+    <Setter Property="GroupFill" Value="{DynamicResource CardBackgroundColor}"/>
+    <Setter Property="GroupHeaderFill" Value="{DynamicResource SecondaryCardBackgroundColor}"/>
+    <Setter Property="EdgeLabelBackground" Value="{DynamicResource CardBackgroundColor}"/>
+  </Style>
+
+  <Style Selector="md|PanAndZoom.MermaidBlock">
+    <Setter Property="FitToViewport" Value="True"/>
+    <Setter Property="ClipToBounds" Value="True"/>
+    <Setter Property="MaxHeight" Value="600"/>
+  </Style>
+</Styles>

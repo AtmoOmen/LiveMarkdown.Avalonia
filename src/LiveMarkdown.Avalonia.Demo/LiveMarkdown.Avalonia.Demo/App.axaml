@@ -1,12 +1,12 @@
 <Application
   x:Class="LiveMarkdown.Avalonia.Demo.App" xmlns="https://github.com/avaloniaui"
-  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:grammars="clr-namespace:TextMateSharp.Grammars;assembly=TextMateSharp.Grammars"
-  xmlns:md="clr-namespace:LiveMarkdown.Avalonia;assembly=LiveMarkdown.Avalonia" xmlns:mermaid="clr-namespace:LiveMarkdown.Avalonia;assembly=LiveMarkdown.Avalonia.Mermaid"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:md="clr-namespace:LiveMarkdown.Avalonia;assembly=LiveMarkdown.Avalonia"
   xmlns:shadui="clr-namespace:ShadUI.Controls;assembly=ShadUI" RequestedThemeVariant="Default">
 
   <Application.Styles>
     <shadui:ShadTheme/>
     <StyleInclude Source="avares://LiveMarkdown.Avalonia/Styles.axaml"/>
+    <StyleInclude Source="avares://LiveMarkdown.Avalonia.Mermaid/Styles.axaml"/>
 
     <Style Selector="md|MarkdownRenderer">
       <Style Selector="^ Span.Emphasis">
@@ -44,18 +44,6 @@
           <Setter Property="Spacing" Value="0"/>
           <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
-      </Style>
-
-      <Style Selector="^ mermaid|MermaidPresenter">
-        <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}"/>
-        <Setter Property="SecondaryForeground" Value="{DynamicResource SecondaryForegroundColor}"/>
-        <Setter Property="LineStroke" Value="{DynamicResource BorderColor}"/>
-        <Setter Property="ArrowFill" Value="{DynamicResource PrimaryColor}"/>
-        <Setter Property="AccentFill" Value="{DynamicResource PrimaryColor}"/>
-        <Setter Property="AccentStroke" Value="{DynamicResource PrimaryColor}"/>
-        <Setter Property="AccentForeground" Value="{DynamicResource PrimaryForegroundColor}"/>
-        <Setter Property="NodeFill" Value="{DynamicResource DialogBackgroundColor}"/>
-        <Setter Property="NodeStroke" Value="{DynamicResource BorderColor}"/>
       </Style>
     </Style>
   </Application.Styles>
