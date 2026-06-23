@@ -67,6 +67,38 @@ internal static class MermaidDrawingHelpers
     }
 
     /// <summary>
+    /// Creates a rounded polyline geometry from Mermaider layout points.
+    /// </summary>
+    public static StreamGeometry CreateRoundedPath(IReadOnlyList<MermaidPoint> points, double radius)
+    {
+        var geometry = new StreamGeometry();
+        if (points.Count == 0)
+        {
+            return geometry;
+        }
+
+        using (var context = geometry.Open())
+        {
+            BuildRoundedPathContext(context, points, radius);
+        }
+
+        return geometry;
+    }
+
+    /// <summary>
+    /// Draws a rounded polyline path when at least two points are available.
+    /// </summary>
+    public static void DrawRoundedPath(DrawingContext dc, IReadOnlyList<MermaidPoint> points, IPen? pen, double radius)
+    {
+        if (points.Count < 2 || pen is null)
+        {
+            return;
+        }
+
+        dc.DrawGeometry(null, pen, CreateRoundedPath(points, radius));
+    }
+
+    /// <summary>
     /// Draws a filled triangular arrowhead aligned with the segment from <paramref name="from"/> to
     /// <paramref name="to"/>.
     /// </summary>
@@ -111,6 +143,89 @@ internal static class MermaidDrawingHelpers
         {
             dc.DrawGeometry(brush, null, arrowGeom);
         }
+    }
+
+    /// <summary>
+    /// Draws an arrow marker at an arbitrary Avalonia endpoint.
+    /// </summary>
+    public static void DrawArrowHead(
+        DrawingContext dc,
+        IBrush? fill,
+        IPen? stroke,
+        AvaloniaPoint from,
+        AvaloniaPoint to,
+        double arrowSize,
+        bool filled)
+    {
+        if (!TryGetDirection(from, to, out var ux, out var uy))
+        {
+            return;
+        }
+
+        var px = -uy;
+        var py = ux;
+        var backX = to.X - ux * arrowSize;
+        var backY = to.Y - uy * arrowSize;
+        var half = arrowSize / 2;
+
+        var p1 = new AvaloniaPoint(backX + px * half, backY + py * half);
+        var p2 = to;
+        var p3 = new AvaloniaPoint(backX - px * half, backY - py * half);
+
+        if (filled)
+        {
+            DrawPolygon(dc, fill, null, p1, p2, p3);
+        }
+        else if (stroke is not null)
+        {
+            dc.DrawLine(stroke, p1, p2);
+            dc.DrawLine(stroke, p2, p3);
+        }
+    }
+
+    /// <summary>
+    /// Draws a diamond marker for class composition and aggregation relationships.
+    /// </summary>
+    public static void DrawDiamondMarker(
+        DrawingContext dc,
+        IBrush? fill,
+        IPen? stroke,
+        AvaloniaPoint from,
+        AvaloniaPoint to,
+        double size)
+    {
+        if (!TryGetDirection(from, to, out var ux, out var uy))
+        {
+            return;
+        }
+
+        var px = -uy;
+        var py = ux;
+        var half = size / 2;
+        var center = new AvaloniaPoint(to.X - ux * half, to.Y - uy * half);
+        var back = new AvaloniaPoint(to.X - ux * size, to.Y - uy * size);
+
+        DrawPolygon(
+            dc,
+            fill,
+            stroke,
+            to,
+            new AvaloniaPoint(center.X + px * half, center.Y + py * half),
+            back,
+            new AvaloniaPoint(center.X - px * half, center.Y - py * half));
+    }
+
+    /// <summary>
+    /// Draws a lollipop marker at an endpoint.
+    /// </summary>
+    public static void DrawCircleMarker(
+        DrawingContext dc,
+        IBrush? fill,
+        IPen? stroke,
+        AvaloniaPoint center,
+        double radius)
+    {
+        dc.DrawEllipse(fill, stroke, center, radius, radius);
     }
 
     /// <summary>
@@ -180,4 +295,21 @@ internal static class MermaidDrawingHelpers
 
     private static double Distance(MermaidPoint a, MermaidPoint b) =>
         Math.Sqrt((b.X - a.X) * (b.X - a.X) + (b.Y - a.Y) * (b.Y - a.Y));
+
+    private static bool TryGetDirection(AvaloniaPoint from, AvaloniaPoint to, out double ux, out double uy)
+    {
+        var dx = to.X - from.X;
+        var dy = to.Y - from.Y;
+        var length = Math.Sqrt(dx * dx + dy * dy);
+        if (length <= 0.001)
+        {
+            ux = 0;
+            uy = 0;
+            return false;
+        }
+
+        ux = dx / length;
+        uy = dy / length;
+        return true;
+    }
 }
