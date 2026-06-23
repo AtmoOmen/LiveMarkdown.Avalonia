@@ -51,20 +51,12 @@ public static class ErRenderer
     private static void DrawEntityBox(DrawingContext dc, MermaidPresenter presenter, PositionedErEntity entity)
     {
         var rect = new Rect(entity.X, entity.Y, entity.Width, entity.Height);
-        var headerRect = new Rect(entity.X, entity.Y, entity.Width, entity.HeaderHeight);
-
-        dc.DrawRectangle(
-            presenter.NodeFill,
-            presenter.NodePen,
-            rect,
-            RenderConstants.Radii.Rectangle,
-            RenderConstants.Radii.Rectangle);
-        dc.DrawRectangle(
-            presenter.GroupHeaderFill,
-            presenter.NodePen,
-            headerRect,
-            RenderConstants.Radii.Rectangle,
-            RenderConstants.Radii.Rectangle);
+        using (dc.PushClip(new RoundedRect(rect, RenderConstants.Radii.Rectangle, RenderConstants.Radii.Rectangle)))
+        {
+            var headerRect = new Rect(entity.X, entity.Y, entity.Width, entity.HeaderHeight);
+            dc.DrawRectangle(presenter.GroupHeaderFill, presenter.NodePen, headerRect);
+        }
+        dc.DrawRectangle(presenter.NodeFill, presenter.NodePen, rect, RenderConstants.Radii.Rectangle, RenderConstants.Radii.Rectangle);
 
         MermaidTextRenderer.DrawInlineText(
             dc,

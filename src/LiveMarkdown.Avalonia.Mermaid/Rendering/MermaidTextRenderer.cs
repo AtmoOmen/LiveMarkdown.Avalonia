@@ -97,7 +97,12 @@ internal static class MermaidTextRenderer
         bool centerVertically = false)
     {
         var originY = centerVertically ? y - text.Height / 2 : y - text.Height;
-        var originX = alignment == TextAlignment.Center ? x - text.Width / 2 : x;
+        var originX = alignment switch
+        {
+            TextAlignment.Center => x - text.Width / 2,
+            TextAlignment.Right => x - text.Width,
+            _ => x
+        };
         dc.DrawText(text, new Point(originX, originY));
     }
 
