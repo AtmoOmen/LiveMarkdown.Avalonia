@@ -206,6 +206,38 @@ public class MermaidPresenterTests
         presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         Assert.That(GetActiveRenderers(presenter).Single(), Is.TypeOf<TimelineRenderer>());
 
+        presenter.Text = """
+                         gitGraph
+                             commit id: "init"
+                         """;
+        presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Assert.That(GetActiveRenderers(presenter).Single(), Is.TypeOf<GitGraphRenderer>());
+
+        presenter.Text = """
+                         radar-beta
+                             axis a["A"], b["B"]
+                             curve current["Current"]{1, 2}
+                         """;
+        presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Assert.That(GetActiveRenderers(presenter).Single(), Is.TypeOf<RadarRenderer>());
+
+        presenter.Text = """
+                         treemap-beta
+                           "Root"
+                             "A": 1
+                         """;
+        presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Assert.That(GetActiveRenderers(presenter).Single(), Is.TypeOf<TreemapRenderer>());
+
+        presenter.Text = """
+                         venn-beta
+                             set A["A"]: 1
+                             set B["B"]: 1
+                             union A, B["Both"]
+                         """;
+        presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Assert.That(GetActiveRenderers(presenter).Single(), Is.TypeOf<VennRenderer>());
+
         presenter.Text = string.Empty;
         presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         Assert.That(GetActiveRenderers(presenter), Is.Empty);
@@ -606,6 +638,70 @@ public class MermaidPresenterTests
     }
 
     [Test]
+    public void Measure_GitGraphSmokeTestDoesNotThrow()
+    {
+        AssertMermaidMeasures(
+            """
+            gitGraph
+                commit id: "init"
+                branch native-renderer order: 2
+                checkout native-renderer
+                commit id: "flowchart"
+                commit id: "text" tag: "helpers"
+                checkout main
+                commit id: "docs"
+                merge native-renderer id: "merge-native" tag: "demo"
+            """);
+    }
+
+    [Test]
+    public void Measure_RadarChartSmokeTestDoesNotThrow()
+    {
+        AssertMermaidMeasures(
+            """
+            radar-beta
+                title Renderer Coverage
+                axis flow["Flowchart"], state["State"], seq["Sequence"], cls["Class"], er["ER"], charts["Charts"]
+                min 0
+                max 100
+                graticule polygon
+                curve current["Current"]{90, 80, 15, 10, 10, 5}
+                curve target["Target"]{100, 100, 90, 90, 85, 80}
+            """);
+    }
+
+    [Test]
+    public void Measure_TreemapDiagramSmokeTestDoesNotThrow()
+    {
+        AssertMermaidMeasures(
+            """
+            treemap-beta
+              "Mermaid Native Renderer"
+                "Foundation"
+                  "Preprocessor": 20
+                  "Presenter state": 20
+                "Diagram Renderers"
+                  "Sequence": 15
+                  "Class": 12
+                  "ER": 10
+            """);
+    }
+
+    [Test]
+    public void Measure_VennDiagramSmokeTestDoesNotThrow()
+    {
+        AssertMermaidMeasures(
+            """
+            venn-beta
+                set Markdig["Markdown"]: 100
+                set Mermaider["Mermaid model"]: 100
+                set Avalonia["DrawingContext"]: 100
+                union Markdig, Mermaider["Preprocessed labels"]
+                union Mermaider, Avalonia["Native layout"]
+            """);
+    }
+
+    [Test]
     public void Measure_EmptyPieStillUsesStableCanvas()
     {
         AssertMermaidMeasures(
@@ -624,6 +720,36 @@ public class MermaidPresenterTests
             Text = """
                    timeline
                        title Empty Timeline
+                   """
+        };
+
+        presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+
+        Assert.That(presenter.DesiredSize, Is.EqualTo(new Size(200, 100)));
+    }
+
+    [Test]
+    public void Measure_EmptyGitGraphUsesSvgFallbackSize()
+    {
+        var presenter = new MermaidPresenter
+        {
+            Text = """
+                   gitGraph
+                   """
+        };
+
+        presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+
+        Assert.That(presenter.DesiredSize, Is.EqualTo(new Size(200, 100)));
+    }
+
+    [Test]
+    public void Measure_EmptyRadarUsesSvgFallbackSize()
+    {
+        var presenter = new MermaidPresenter
+        {
+            Text = """
+                   radar-beta
                    """
         };
 
@@ -659,23 +785,62 @@ public class MermaidPresenterTests
             Points = [new QuadrantPoint("A", 0.5, 0.5)]
         };
         var timeline = new TimelineDiagram { Sections = [new TimelineSection(null, [new TimelinePeriod("2024", ["Built"])])] };
+        var gitGraph = new GitGraph { Actions = [new GitCommitAction { Id = "a" }, new GitCommitAction { Id = "b" }] };
+        var radar = new RadarChart
+        {
+            Axes = [new RadarAxis("a", "A"), new RadarAxis("b", "B")],
+            Curves = [new RadarCurve("current", "Current", [1, 2])],
+            Max = 2
+        };
+        var treemap = new TreemapDiagram
+        {
+            Roots =
+            [
+                new TreemapNode
+                {
+                    Label = "Root",
+                    Children = [new TreemapNode { Label = "A", Value = 1, Children = [] }]
+                }
+            ]
+        };
+        var venn = new VennDiagram
+        {
+            Sets = [new VennSet("A", "A"), new VennSet("B", "B")],
+            Unions = [new VennUnion(["A", "B"], "Both")]
+        };
         var pieRenderer = new PieRenderer();
         var quadrantRenderer = new QuadrantRenderer();
         var timelineRenderer = new TimelineRenderer();
+        var gitGraphRenderer = new GitGraphRenderer();
+        var radarRenderer = new RadarRenderer();
+        var treemapRenderer = new TreemapRenderer();
+        var vennRenderer = new VennRenderer();
 
         var pieDefault = pieRenderer.MeasureDiagram(pie);
         var quadrantDefault = quadrantRenderer.MeasureDiagram(quadrant);
         var timelineDefault = timelineRenderer.MeasureDiagram(timeline);
+        var gitGraphDefault = gitGraphRenderer.MeasureDiagram(gitGraph);
+        var radarDefault = radarRenderer.MeasureDiagram(radar);
+        var treemapDefault = treemapRenderer.MeasureDiagram(treemap);
+        var vennDefault = vennRenderer.MeasureDiagram(venn);
 
         pieRenderer.PieTopPadding += 40;
         quadrantRenderer.XAxisLabelReserve += 40;
         timelineRenderer.LeftPadding += 40;
+        gitGraphRenderer.CommitSpacing += 40;
+        radarRenderer.Radius += 40;
+        treemapRenderer.ChartWidth += 40;
+        vennRenderer.CenterX += 40;
 
         Assert.Multiple(() =>
         {
             Assert.That(pieRenderer.MeasureDiagram(pie).Height, Is.GreaterThan(pieDefault.Height));
             Assert.That(quadrantRenderer.MeasureDiagram(quadrant).Height, Is.GreaterThan(quadrantDefault.Height));
             Assert.That(timelineRenderer.MeasureDiagram(timeline).Width, Is.GreaterThan(timelineDefault.Width));
+            Assert.That(gitGraphRenderer.MeasureDiagram(gitGraph).Width, Is.GreaterThan(gitGraphDefault.Width));
+            Assert.That(radarRenderer.MeasureDiagram(radar).Width, Is.GreaterThan(radarDefault.Width));
+            Assert.That(treemapRenderer.MeasureDiagram(treemap).Width, Is.GreaterThan(treemapDefault.Width));
+            Assert.That(vennRenderer.MeasureDiagram(venn).Width, Is.GreaterThan(vennDefault.Width));
         });
     }
 
