@@ -41,7 +41,7 @@ public class MermaidBlockNode : BlockNode<MermaidCodeBlock>
         if (mermaid.IsOpen)
         {
             _presenter.IsVisible = false;
-            _textBlock.Text = mermaid.ToString();
+            _textBlock.Text = mermaid.Lines.ToString();
             _textBlock.IsVisible = true;
         }
         else

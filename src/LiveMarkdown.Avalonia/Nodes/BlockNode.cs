@@ -8,6 +8,16 @@ public abstract class BlockNode : MarkdownNode
 {
     public abstract Control Control { get; }
 
+    internal static bool HasMoreSpecificBlockNodeFactory(Type blockType, Type fallbackMarkdownType)
+    {
+        return NodeFactories
+            .OfType<IMarkdownNodeFactory<BlockNode>>()
+            .Any(factory =>
+                factory.MarkdownType != fallbackMarkdownType &&
+                fallbackMarkdownType.IsAssignableFrom(factory.MarkdownType) &&
+                factory.MarkdownType.IsAssignableFrom(blockType));
+    }
+
     protected static BlockNode CreateBlockNode(
         DocumentNode documentNode,
         Block block,
@@ -32,6 +42,13 @@ public abstract class BlockNode : MarkdownNode
 
 public abstract class BlockNode<TBlock> : BlockNode where TBlock : Block
 {
+    protected override bool IsDirty(MarkdownObject markdownObject, in ObservableStringBuilderChangedEventArgs change)
+    {
+        return base.IsDirty(markdownObject, in change) ||
+            markdownObject is not TBlock block ||
+            !MatchesBlock(block);
+    }
+
     /// <summary>
     /// Determines whether the given block matches the type TBlock.
     /// Default implementation checks for exact type match.

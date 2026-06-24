@@ -44,6 +44,21 @@ public class MermaidPresenterTests
     }
 
     [Test]
+    public void MermaidBlockParser_AcceptsOpenMermaidFence()
+    {
+        var document = Markdown.Parse(
+            """
+            ```mermaid
+            graph TD
+                A --> B
+            """,
+            new MarkdownPipelineBuilder().UseMermaid().Build());
+
+        Assert.That(document[0], Is.TypeOf<MermaidCodeBlock>());
+        Assert.That(((MermaidCodeBlock)document[0]).IsOpen, Is.True);
+    }
+
+    [Test]
     public void MermaidInputPreprocessor_RemovesInitAndAccessibilityLines()
     {
         var input = MermaidInputPreprocessor.Process(
