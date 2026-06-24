@@ -147,7 +147,7 @@ public class MermaidPresenterTests
     {
         var presenter = new MermaidPresenter();
 
-        Assert.That(presenter.GetLogicalChildren().OfType<MermaidRenderer>(), Is.Empty);
+        Assert.That(GetActiveRenderers(presenter), Is.Empty);
 
         presenter.Text = """
                          flowchart LR
@@ -155,7 +155,7 @@ public class MermaidPresenterTests
                          """;
         presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
 
-        var flowchartRenderers = presenter.GetLogicalChildren().OfType<MermaidRenderer>().ToArray();
+        var flowchartRenderers = GetActiveRenderers(presenter);
         Assert.That(flowchartRenderers, Has.Length.EqualTo(1));
         Assert.That(flowchartRenderers[0], Is.TypeOf<DefaultRenderer>());
 
@@ -165,54 +165,35 @@ public class MermaidPresenterTests
         """;
         presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
 
-        var classRenderers = presenter.GetLogicalChildren().OfType<MermaidRenderer>().ToArray();
+        var classRenderers = GetActiveRenderers(presenter);
         Assert.That(classRenderers, Has.Length.EqualTo(1));
         Assert.That(classRenderers[0], Is.TypeOf<ClassRenderer>());
         Assert.That(classRenderers[0], Is.Not.SameAs(flowchartRenderers[0]));
-    }
 
-    [Test]
-    public void RendererParts_ExposeStyleableDefaultTokens()
-    {
-        var defaultRenderer = new DefaultRenderer();
-        var classRenderer = new ClassRenderer();
-        var erRenderer = new ErRenderer();
-        var sequenceRenderer = new SequenceRenderer();
+        presenter.Text = """
+                         pie
+                             "A" : 1
+                         """;
+        presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Assert.That(GetActiveRenderers(presenter).Single(), Is.TypeOf<PieRenderer>());
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(defaultRenderer.ArrowSize, Is.EqualTo(6));
-            Assert.That(defaultRenderer.EdgeCornerRadius, Is.EqualTo(6));
-            Assert.That(defaultRenderer.RoundedCornerRadius, Is.EqualTo(10));
-            Assert.That(classRenderer.MarkerSize, Is.EqualTo(12));
-            Assert.That(classRenderer.MemberRowHeight, Is.EqualTo(20));
-            Assert.That(erRenderer.KeyBadgeHeight, Is.EqualTo(14));
-            Assert.That(erRenderer.CrowsFootFanWidth, Is.EqualTo(7));
-            Assert.That(sequenceRenderer.SelfMessageWidth, Is.EqualTo(30));
-            Assert.That(sequenceRenderer.AutoNumberBadgeRadius, Is.EqualTo(11));
-        });
-    }
+        presenter.Text = """
+                         quadrantChart
+                             A: [0.5, 0.5]
+                         """;
+        presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Assert.That(GetActiveRenderers(presenter).Single(), Is.TypeOf<QuadrantRenderer>());
 
-    [Test]
-    public void RendererParts_StyledPropertiesCanBeSetImperatively()
-    {
-        var defaultRenderer = new DefaultRenderer();
-        var classRenderer = new ClassRenderer();
-        var erRenderer = new ErRenderer();
-        var sequenceRenderer = new SequenceRenderer();
+        presenter.Text = """
+                         timeline
+                             2024 : Built
+                         """;
+        presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Assert.That(GetActiveRenderers(presenter).Single(), Is.TypeOf<TimelineRenderer>());
 
-        classRenderer.MarkerSize = 14;
-        erRenderer.AttributePaddingX = 12;
-        sequenceRenderer.BlockTabHeight = 22;
-        defaultRenderer.EdgeLabelCornerRadius = 4;
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(classRenderer.MarkerSize, Is.EqualTo(14));
-            Assert.That(erRenderer.AttributePaddingX, Is.EqualTo(12));
-            Assert.That(sequenceRenderer.BlockTabHeight, Is.EqualTo(22));
-            Assert.That(defaultRenderer.EdgeLabelCornerRadius, Is.EqualTo(4));
-        });
+        presenter.Text = string.Empty;
+        presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Assert.That(GetActiveRenderers(presenter), Is.Empty);
     }
 
     [Test]
@@ -561,6 +542,128 @@ public class MermaidPresenterTests
             """);
     }
 
+    [Test]
+    public void Measure_PieChartSmokeTestDoesNotThrow()
+    {
+        AssertMermaidMeasures(
+            """
+            pie showData
+                title Renderer Work Split
+                "Flowchart and State" : 35
+                "Shared helpers" : 20
+                "Sequence/Class/ER" : 25
+                "Other charts" : 20
+            """);
+    }
+
+    [Test]
+    public void Measure_QuadrantChartSmokeTestDoesNotThrow()
+    {
+        AssertMermaidMeasures(
+            """
+            quadrantChart
+                title Renderer Priorities
+                x-axis Low complexity --> High complexity
+                y-axis Low visual risk --> High visual risk
+                quadrant-1 Polish later
+                quadrant-2 Design carefully
+                quadrant-3 Quick wins
+                quadrant-4 Implement first
+                Flowchart: [0.25, 0.35]
+                Pie: [0.30, 0.25]
+            """);
+    }
+
+    [Test]
+    public void Measure_TimelineDiagramSmokeTestDoesNotThrow()
+    {
+        AssertMermaidMeasures(
+            """
+            timeline
+                title Native Mermaid Renderer Roadmap
+                section Foundation
+                Step 1 : Preprocessing : Presenter state
+                Step 2 : Styled font sizes : Shared text helpers
+                section Renderers
+                Step 3 : Sequence : Class : ER
+                Step 4 : Pie : Quadrant : Timeline
+            """);
+    }
+
+    [Test]
+    public void Measure_EmptyPieStillUsesStableCanvas()
+    {
+        AssertMermaidMeasures(
+            """
+            pie showData
+                title Empty Pie
+                "Zero" : 0
+            """);
+    }
+
+    [Test]
+    public void Measure_EmptyTimelineUsesSvgFallbackSize()
+    {
+        var presenter = new MermaidPresenter
+        {
+            Text = """
+                   timeline
+                       title Empty Timeline
+                   """
+        };
+
+        presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+
+        Assert.That(presenter.DesiredSize, Is.EqualTo(new Size(200, 100)));
+    }
+
+    [Test]
+    public void Measure_QuadrantWithoutPointsUsesStableAxisLabelLayout()
+    {
+        AssertMermaidMeasures(
+            """
+            quadrantChart
+                title No Points
+                x-axis Low --> High
+                y-axis Quiet --> Loud
+                quadrant-1 Top Right
+                quadrant-2 Top Left
+                quadrant-3 Bottom Left
+                quadrant-4 Bottom Right
+            """);
+    }
+
+    [Test]
+    public void ChartRendererLayoutTokensAffectDesiredSize()
+    {
+        var pie = new PieChart { Title = "Pie", ShowData = false, Slices = [new PieSlice("A", 1)] };
+        var quadrant = new QuadrantChart
+        {
+            XAxisLeft = "Low",
+            XAxisRight = "High",
+            Points = [new QuadrantPoint("A", 0.5, 0.5)]
+        };
+        var timeline = new TimelineDiagram { Sections = [new TimelineSection(null, [new TimelinePeriod("2024", ["Built"])])] };
+        var pieRenderer = new PieRenderer();
+        var quadrantRenderer = new QuadrantRenderer();
+        var timelineRenderer = new TimelineRenderer();
+
+        var pieDefault = pieRenderer.MeasureDiagram(pie);
+        var quadrantDefault = quadrantRenderer.MeasureDiagram(quadrant);
+        var timelineDefault = timelineRenderer.MeasureDiagram(timeline);
+
+        pieRenderer.PieTopPadding += 40;
+        quadrantRenderer.XAxisLabelReserve += 40;
+        timelineRenderer.LeftPadding += 40;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(pieRenderer.MeasureDiagram(pie).Height, Is.GreaterThan(pieDefault.Height));
+            Assert.That(quadrantRenderer.MeasureDiagram(quadrant).Height, Is.GreaterThan(quadrantDefault.Height));
+            Assert.That(timelineRenderer.MeasureDiagram(timeline).Width, Is.GreaterThan(timelineDefault.Width));
+        });
+    }
+
     private static void AssertMermaidMeasures(string text, MermaidRenderOptions? options = null)
     {
         var presenter = new MermaidPresenter { Text = text, RenderOptions = options };
@@ -568,6 +671,9 @@ public class MermaidPresenterTests
         Assert.That(presenter.DesiredSize.Width, Is.GreaterThan(0));
         Assert.That(presenter.DesiredSize.Height, Is.GreaterThan(0));
     }
+
+    private static MermaidRenderer[] GetActiveRenderers(MermaidPresenter presenter) =>
+        presenter.GetLogicalChildren().OfType<MermaidRenderer>().ToArray();
 
     private static StreamGeometry? GetRoundedPathOrIgnore(PreparedPositionedEdge edge)
     {

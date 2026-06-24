@@ -226,17 +226,9 @@ public class SequenceRenderer : MermaidRenderer
     );
 
     /// <summary>
-    /// Draws a positioned sequence diagram.
-    /// </summary>
-    public static void Render(DrawingContext dc, MermaidPresenter presenter, PositionedSequenceDiagram diagram)
-    {
-        new SequenceRenderer().RenderDiagram(dc, presenter, diagram);
-    }
-
-    /// <summary>
     /// Draws a positioned sequence diagram using this renderer part's current styled values.
     /// </summary>
-    internal void RenderDiagram(DrawingContext dc, MermaidPresenter presenter, PositionedSequenceDiagram diagram)
+    public void RenderDiagram(DrawingContext dc, MermaidPresenter presenter, PositionedSequenceDiagram diagram)
     {
         var style = CreateStyleSnapshot();
         foreach (var box in diagram.Boxes)

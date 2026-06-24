@@ -180,6 +180,18 @@ public class DefaultRenderer : MermaidRenderer
     );
 
     /// <summary>
+    /// Draws a positioned graph using this renderer part's current styled values.
+    /// </summary>
+    /// <param name="dc"></param>
+    /// <param name="presenter"></param>
+    /// <param name="positionedGraph"></param>
+    /// <param name="options"></param>
+    public void RenderGraph(DrawingContext dc, MermaidPresenter presenter, PositionedGraph positionedGraph, MermaidRenderOptions? options = null)
+    {
+        RenderGraph(dc, presenter, PreparedPositionedGraph.Prepare(positionedGraph), options);
+    }
+
+    /// <summary>
     /// Draws a prepared positioned graph using this renderer part's current styled values.
     /// </summary>
     internal void RenderGraph(DrawingContext dc, MermaidPresenter presenter, PreparedPositionedGraph graph, MermaidRenderOptions? options = null)

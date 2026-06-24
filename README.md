@@ -84,9 +84,9 @@ sponsors!
   - [ ] Sequence diagram
   - [ ] Class diagram
   - [ ] ER diagram
-  - [ ] Pie chart
-  - [ ] Quadrant chart
-  - [ ] Timeline chart
+  - [x] Pie chart
+  - [x] Quadrant chart
+  - [x] Timeline chart
   - [ ] Git Graph
   - [ ] Radar Graph
   - [ ] Treemap
