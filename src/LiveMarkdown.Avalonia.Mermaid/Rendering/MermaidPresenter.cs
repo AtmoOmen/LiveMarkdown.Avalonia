@@ -815,26 +815,22 @@ public class MermaidPresenter : Control
             }
             case GitGraph gitGraph:
             {
-                ClearActiveRendererPart();
-                GitGraphRenderer.Render(dc, this, gitGraph);
+                UseRendererPart<GitGraphRenderer>().RenderDiagram(dc, this, gitGraph);
                 break;
             }
             case RadarChart radarChart:
             {
-                ClearActiveRendererPart();
-                RadarRenderer.Render(dc, this, radarChart);
+                UseRendererPart<RadarRenderer>().RenderDiagram(dc, this, radarChart);
                 break;
             }
             case TreemapDiagram treemapDiagram:
             {
-                ClearActiveRendererPart();
-                TreemapRenderer.Render(dc, this, treemapDiagram);
+                UseRendererPart<TreemapRenderer>().RenderDiagram(dc, this, treemapDiagram);
                 break;
             }
             case VennDiagram vennDiagram:
             {
-                ClearActiveRendererPart();
-                VennRenderer.Render(dc, this, vennDiagram);
+                UseRendererPart<VennRenderer>().RenderDiagram(dc, this, vennDiagram);
                 break;
             }
             case PreparedPositionedGraph preparedGraph:
@@ -908,6 +904,18 @@ public class MermaidPresenter : Control
             case DiagramType.Timeline:
                 UseRendererPart<TimelineRenderer>();
                 break;
+            case DiagramType.GitGraph:
+                UseRendererPart<GitGraphRenderer>();
+                break;
+            case DiagramType.Radar:
+                UseRendererPart<RadarRenderer>();
+                break;
+            case DiagramType.Treemap:
+                UseRendererPart<TreemapRenderer>();
+                break;
+            case DiagramType.Venn:
+                UseRendererPart<VennRenderer>();
+                break;
             default:
                 ClearActiveRendererPart();
                 break;
@@ -948,10 +956,10 @@ public class MermaidPresenter : Control
                 DiagramType.Pie => LayoutPie(input, UseRendererPart<PieRenderer>(), out size),
                 DiagramType.Quadrant => LayoutQuadrant(input, UseRendererPart<QuadrantRenderer>(), out size),
                 DiagramType.Timeline => LayoutTimeline(input, UseRendererPart<TimelineRenderer>(), out size),
-                DiagramType.GitGraph => GitGraphParser.Parse(input.Lines),
-                DiagramType.Radar => RadarParser.Parse(input.Lines),
-                DiagramType.Treemap => TreemapParser.Parse(input.PreserveIndentLines),
-                DiagramType.Venn => VennParser.Parse(input.Lines),
+                DiagramType.GitGraph => LayoutGitGraph(input, UseRendererPart<GitGraphRenderer>(), out size),
+                DiagramType.Radar => LayoutRadar(input, UseRendererPart<RadarRenderer>(), out size),
+                DiagramType.Treemap => LayoutTreemap(input, UseRendererPart<TreemapRenderer>(), out size),
+                DiagramType.Venn => LayoutVenn(input, UseRendererPart<VennRenderer>(), out size),
                 DiagramType.Flowchart => LayoutFlowchart(input, options, out size),
                 DiagramType.State => LayoutState(input, options, out size),
                 _ => throw new NotSupportedException($"Diagram type '{diagramType}' is not supported by the native Mermaid presenter yet.")
@@ -984,6 +992,34 @@ public class MermaidPresenter : Control
     private static TimelineDiagram LayoutTimeline(MermaidInput input, TimelineRenderer renderer, out Size size)
     {
         var diagram = TimelineParser.Parse(input.Lines);
+        size = renderer.MeasureDiagram(diagram);
+        return diagram;
+    }
+
+    private static GitGraph LayoutGitGraph(MermaidInput input, GitGraphRenderer renderer, out Size size)
+    {
+        var diagram = GitGraphParser.Parse(input.Lines);
+        size = renderer.MeasureDiagram(diagram);
+        return diagram;
+    }
+
+    private static RadarChart LayoutRadar(MermaidInput input, RadarRenderer renderer, out Size size)
+    {
+        var diagram = RadarParser.Parse(input.Lines);
+        size = renderer.MeasureDiagram(diagram);
+        return diagram;
+    }
+
+    private static TreemapDiagram LayoutTreemap(MermaidInput input, TreemapRenderer renderer, out Size size)
+    {
+        var diagram = TreemapParser.Parse(input.PreserveIndentLines);
+        size = renderer.MeasureDiagram(diagram);
+        return diagram;
+    }
+
+    private static VennDiagram LayoutVenn(MermaidInput input, VennRenderer renderer, out Size size)
+    {
+        var diagram = VennParser.Parse(input.Lines);
         size = renderer.MeasureDiagram(diagram);
         return diagram;
     }
