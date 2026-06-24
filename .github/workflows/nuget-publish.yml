@@ -112,9 +112,21 @@ jobs:
             "-p:InformationalVersion=$env:PACKAGE_VERSION"
             "-p:IncludeSourceRevisionInInformationalVersion=false"
           )
+
+          $releaseNotesProps = Join-Path $env:RUNNER_TEMP "LiveMarkdown.PackageReleaseNotes.props"
+          $escapedReleaseNotes = [System.Security.SecurityElement]::Escape($env:PACKAGE_RELEASE_NOTES)
+          $releaseNotesXml = @(
+            "<Project>"
+            "  <PropertyGroup>"
+            "    <PackageReleaseNotes>$escapedReleaseNotes</PackageReleaseNotes>"
+            "  </PropertyGroup>"
+            "</Project>"
+          ) -join [Environment]::NewLine
+          [System.IO.File]::WriteAllText($releaseNotesProps, $releaseNotesXml, [System.Text.UTF8Encoding]::new($false))
+
           $packProperties = $versionProperties + @(
             "-p:Copyright=$copyright"
-            "-p:PackageReleaseNotes=$env:PACKAGE_RELEASE_NOTES"
+            "-p:CustomBeforeMicrosoftCommonTargets=$releaseNotesProps"
             "-p:IncludeSymbols=true"
             "-p:SymbolPackageFormat=snupkg"
           )
