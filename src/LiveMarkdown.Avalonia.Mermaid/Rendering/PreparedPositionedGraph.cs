@@ -13,21 +13,18 @@ namespace LiveMarkdown.Avalonia;
 /// brushes, and font settings retain normal Avalonia behavior.
 /// </remarks>
 internal sealed record PreparedPositionedGraph(
-    PositionedGraph Graph,
     IReadOnlyList<PreparedPositionedGroup> Groups,
     IReadOnlyList<PreparedPositionedEdge> Edges,
     IReadOnlyList<PreparedPositionedNode> Nodes,
-    IReadOnlyList<PreparedPositionedNote> Notes)
+    IReadOnlyList<PreparedPositionedNote> Notes
+)
 {
-    private const double EdgeCornerRadius = 6;
-
     /// <summary>
     /// Builds a prepared graph from Mermaider's positioned graph.
     /// </summary>
     public static PreparedPositionedGraph Prepare(PositionedGraph graph)
     {
         return new PreparedPositionedGraph(
-            graph,
             graph.Groups.Select(PrepareGroup).ToList(),
             graph.Edges.Select(PrepareEdge).ToList(),
             graph.Nodes.Select(PrepareNode).ToList(),
@@ -44,12 +41,10 @@ internal sealed record PreparedPositionedGraph(
 
     private static PreparedPositionedEdge PrepareEdge(PositionedEdge edge)
     {
-        var labelLayout = edge.Label is null
-            ? null
-            : MermaidInlineTextParser.Parse(edge.Label, isMarkdown: false);
+        var labelLayout = edge.Label is null ? null : MermaidInlineTextParser.Parse(edge.Label, isMarkdown: false);
         var labelPosition = edge.LabelPosition ?? MermaidDrawingHelpers.Midpoint(edge.Points);
 
-        return new PreparedPositionedEdge(edge, EdgeCornerRadius, labelPosition, labelLayout);
+        return new PreparedPositionedEdge(edge, labelPosition, labelLayout);
     }
 
     private static PreparedPositionedNode PrepareNode(PositionedNode node)
@@ -73,7 +68,8 @@ internal sealed record PreparedPositionedGraph(
 internal sealed record PreparedPositionedGroup(
     PositionedGroup Group,
     MermaidTextLayout LabelLayout,
-    IReadOnlyList<PreparedPositionedGroup> Children);
+    IReadOnlyList<PreparedPositionedGroup> Children
+);
 
 /// <summary>
 /// Prepared edge label and lazy rounded path for a Flowchart/State graph.
@@ -85,11 +81,14 @@ internal sealed record PreparedPositionedGroup(
 /// </remarks>
 internal sealed class PreparedPositionedEdge(
     PositionedEdge edge,
-    double cornerRadius,
-    Mermaider.Models.Point labelPosition,
-    MermaidTextLayout? labelLayout)
+    Point labelPosition,
+    MermaidTextLayout? labelLayout
+)
 {
+    private const double DefaultCornerRadius = 6;
+
     private StreamGeometry? _roundedPath;
+    private double _roundedPathRadius = double.NaN;
 
     /// <summary>
     /// Original Mermaider edge model.
@@ -99,7 +98,7 @@ internal sealed class PreparedPositionedEdge(
     /// <summary>
     /// Label anchor resolved during preparation.
     /// </summary>
-    public Mermaider.Models.Point LabelPosition { get; } = labelPosition;
+    public Point LabelPosition { get; } = labelPosition;
 
     /// <summary>
     /// Parsed label text, when the edge has a label.
@@ -110,9 +109,31 @@ internal sealed class PreparedPositionedEdge(
     /// Gets the cached rounded edge path, creating it on the first render-capable access.
     /// </summary>
     public StreamGeometry? RoundedPath =>
-        Edge.Points.Count >= 2
-            ? _roundedPath ??= MermaidDrawingHelpers.CreateRoundedPath(Edge.Points, cornerRadius)
-            : null;
+        GetRoundedPath(DefaultCornerRadius);
+
+    /// <summary>
+    /// Gets the cached rounded edge path for the requested corner radius.
+    /// </summary>
+    /// <remarks>
+    /// The cache is keyed by radius because flowchart/state edge roundness is now styleable. This
+    /// keeps pan/zoom redraws cheap while still responding correctly when a style changes the radius.
+    /// </remarks>
+    public StreamGeometry? GetRoundedPath(double cornerRadius)
+    {
+        if (Edge.Points.Count < 2)
+        {
+            return null;
+        }
+
+        if (_roundedPath is not null && Math.Abs(_roundedPathRadius - cornerRadius) < 0.001)
+        {
+            return _roundedPath;
+        }
+
+        _roundedPathRadius = cornerRadius;
+        _roundedPath = MermaidDrawingHelpers.CreateRoundedPath(Edge.Points, cornerRadius);
+        return _roundedPath;
+    }
 }
 
 /// <summary>

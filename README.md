@@ -219,7 +219,7 @@ You can also set the `AsyncImageLoader.Decoders` property on a per-renderer basi
 
 > [!WARNING]
 > Mermaid diagram rendering is currently in early preview stage, and may have some issues.
-> Only flowchart and state diagram are supported for now, and the rendering performance may not be optimal.
+> Some diagram types are still being implemented, and advanced Mermaid theme semantics are not fully mapped to native Avalonia rendering yet.
 
 Mermaid diagram rendering is supported via the `LiveMarkdown.Avalonia.Mermaid` package. You can install it via NuGet:
 
@@ -241,6 +241,48 @@ You can also include the default Mermaid styles and override them from your appl
 ```xml
 <StyleInclude Source="avares://LiveMarkdown.Avalonia.Mermaid/Styles.axaml"/>
 ```
+
+#### Mermaider options
+
+`MermaidPresenter.RenderOptions` lets the native renderer use the same Mermaider options for the parts of rendering that are still owned by Mermaider: parsing constraints, layout spacing, custom layout providers, strict mode, and rounded-edge routing.
+
+```csharp
+using LiveMarkdown.Avalonia;
+using Mermaider.Models;
+
+var presenter = new MermaidPresenter
+{
+    RenderOptions = new RenderOptions
+    {
+        Padding = 56,
+        NodeSpacing = 48,
+        LayerSpacing = 72,
+        RoundedEdges = false,
+        Strict = new StrictModeOptions
+        {
+            // Add pre-approved classes here when strict mode is enabled.
+            AllowedClasses = []
+        }
+    }
+};
+```
+
+The native renderer intentionally does not map `RenderOptions` color, font, or theme values back into Avalonia properties. Use Avalonia styles for visual appearance instead, for example `md|MermaidPresenter.MermaidBlock` for the presenter and renderer-part selectors such as `md|MermaidPresenter md|DefaultRenderer` for diagram-specific tokens.
+
+For Markdown Mermaid blocks, complex `RenderOptions` objects are usually easiest to configure in C# in one central place. You can also assign a shared options object from a style:
+
+```xml
+<Style Selector="md|MermaidPresenter.MermaidBlock">
+  <Setter Property="RenderOptions" Value="{StaticResource MermaidRenderOptions}"/>
+</Style>
+```
+
+Current native synchronization scope:
+
+- Flowchart and state diagrams pass `Padding`, `NodeSpacing`, `LayerSpacing`, `LayoutProvider`, `Strict`, and `RoundedEdges` to Mermaider layout.
+- Class and ER diagrams use `RenderOptions.LayoutProvider` when supplied.
+- Sequence diagrams use Mermaider's sequence layout, which currently does not accept `RenderOptions`.
+- Colors, fonts, and Mermaid theme variables remain Avalonia style concerns in native rendering.
 
 ### 7. (Optional) Configure Image cache
 

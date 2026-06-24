@@ -1,11 +1,12 @@
-﻿using Avalonia;
+﻿using System.Globalization;
+using Avalonia;
 using Avalonia.Controls;
-using System.Globalization;
 using Avalonia.Media;
-using Mermaider;
 using Mermaider.Layout;
 using Mermaider.Models;
 using Mermaider.Parsing;
+using MermaidRenderOptions = Mermaider.Models.RenderOptions;
+using Point = Avalonia.Point;
 
 namespace LiveMarkdown.Avalonia;
 
@@ -32,6 +33,26 @@ public class MermaidPresenter : Control
     {
         get => GetValue(TextProperty);
         set => SetValue(TextProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="RenderOptions"/> property.
+    /// </summary>
+    public static readonly StyledProperty<MermaidRenderOptions?> RenderOptionsProperty =
+        AvaloniaProperty.Register<MermaidPresenter, MermaidRenderOptions?>(nameof(RenderOptions));
+
+    /// <summary>
+    /// Mermaider options used by the native parse, layout, and strict-validation pipeline.
+    /// </summary>
+    /// <remarks>
+    /// These options are forwarded to Mermaider where the native path delegates work to Mermaider,
+    /// such as graph layout spacing, custom layout providers, strict mode, and rounded-edge routing.
+    /// Visual choices such as colors and fonts are intentionally controlled by Avalonia styles instead.
+    /// </remarks>
+    public MermaidRenderOptions? RenderOptions
+    {
+        get => GetValue(RenderOptionsProperty);
+        set => SetValue(RenderOptionsProperty, value);
     }
 
     /// <summary>
@@ -564,12 +585,14 @@ public class MermaidPresenter : Control
     private IPen? _edgeLabelPen;
     private IPen? _stateEndPen;
 
+    private MermaidRenderer? _activeRenderer;
     private MermaidDiagramState _state = MermaidDiagramState.Empty;
 
     static MermaidPresenter()
     {
         AffectsMeasure<MermaidPresenter>(
             TextProperty,
+            RenderOptionsProperty,
             FontFamilyProperty,
             FontSizeProperty,
             NodeLabelFontSizeProperty,
@@ -688,6 +711,7 @@ public class MermaidPresenter : Control
         switch (change.Property.Name)
         {
             case nameof(Text):
+            case nameof(RenderOptions):
                 _state = MermaidDiagramState.Empty;
                 break;
             case nameof(Foreground):
@@ -761,64 +785,126 @@ public class MermaidPresenter : Control
         {
             case PositionedSequenceDiagram positionedSequenceDiagram:
             {
-                SequenceRenderer.Render(dc, this, positionedSequenceDiagram);
+                UseRendererPart<SequenceRenderer>().RenderDiagram(dc, this, positionedSequenceDiagram);
                 break;
             }
             case PositionedClassDiagram positionedClassDiagram:
             {
-                ClassRenderer.Render(dc, this, positionedClassDiagram);
+                UseRendererPart<ClassRenderer>().RenderDiagram(dc, this, positionedClassDiagram);
                 break;
             }
             case PositionedErDiagram positionedErDiagram:
             {
-                ErRenderer.Render(dc, this, positionedErDiagram);
+                UseRendererPart<ErRenderer>().RenderDiagram(dc, this, positionedErDiagram);
                 break;
             }
             case PieChart pieChart:
             {
+                ClearActiveRendererPart();
                 PieRenderer.Render(dc, this, pieChart);
                 break;
             }
             case QuadrantChart quadrantChart:
             {
+                ClearActiveRendererPart();
                 QuadrantRenderer.Render(dc, this, quadrantChart);
                 break;
             }
             case TimelineDiagram timelineDiagram:
             {
+                ClearActiveRendererPart();
                 TimelineRenderer.Render(dc, this, timelineDiagram);
                 break;
             }
             case GitGraph gitGraph:
             {
+                ClearActiveRendererPart();
                 GitGraphRenderer.Render(dc, this, gitGraph);
                 break;
             }
             case RadarChart radarChart:
             {
+                ClearActiveRendererPart();
                 RadarRenderer.Render(dc, this, radarChart);
                 break;
             }
             case TreemapDiagram treemapDiagram:
             {
+                ClearActiveRendererPart();
                 TreemapRenderer.Render(dc, this, treemapDiagram);
                 break;
             }
             case VennDiagram vennDiagram:
             {
+                ClearActiveRendererPart();
                 VennRenderer.Render(dc, this, vennDiagram);
                 break;
             }
             case PreparedPositionedGraph preparedGraph:
             {
-                DefaultRenderer.Render(dc, this, preparedGraph);
+                UseRendererPart<DefaultRenderer>().RenderGraph(dc, this, preparedGraph, RenderOptions);
                 break;
             }
             case PositionedGraph positionedGraph:
             {
-                DefaultRenderer.Render(dc, this, positionedGraph);
+                UseRendererPart<DefaultRenderer>().RenderGraph(dc, this, PreparedPositionedGraph.Prepare(positionedGraph), RenderOptions);
                 break;
             }
+        }
+    }
+
+    private TRenderer CreateRendererPart<TRenderer>() where TRenderer : MermaidRenderer, new()
+    {
+        var renderer = new TRenderer();
+        renderer.AttachOwner(this);
+        return renderer;
+    }
+
+    private TRenderer UseRendererPart<TRenderer>() where TRenderer : MermaidRenderer, new()
+    {
+        if (_activeRenderer is TRenderer activeRenderer)
+        {
+            return activeRenderer;
+        }
+
+        ClearActiveRendererPart();
+        var renderer = CreateRendererPart<TRenderer>();
+        _activeRenderer = renderer;
+        LogicalChildren.Add(renderer);
+        return renderer;
+    }
+
+    private void ClearActiveRendererPart()
+    {
+        if (_activeRenderer is null)
+        {
+            return;
+        }
+
+        LogicalChildren.Remove(_activeRenderer);
+        _activeRenderer = null;
+    }
+
+    private void UseRendererPart(DiagramType diagramType)
+    {
+        switch (diagramType)
+        {
+            case DiagramType.Flowchart:
+            case DiagramType.State:
+                UseRendererPart<DefaultRenderer>();
+                break;
+            case DiagramType.Sequence:
+                UseRendererPart<SequenceRenderer>();
+                break;
+            case DiagramType.Class:
+                UseRendererPart<ClassRenderer>();
+                break;
+            case DiagramType.Er:
+                UseRendererPart<ErRenderer>();
+                break;
+            default:
+                ClearActiveRendererPart();
+                break;
         }
     }
 
@@ -826,6 +912,7 @@ public class MermaidPresenter : Control
     {
         if (string.IsNullOrWhiteSpace(text))
         {
+            ClearActiveRendererPart();
             return MermaidDiagramState.Empty;
         }
 
@@ -835,16 +922,23 @@ public class MermaidPresenter : Control
             input = MermaidInputPreprocessor.Process(text);
             if (input.Lines.Length == 0)
             {
+                ClearActiveRendererPart();
                 return MermaidDiagramState.Empty;
             }
 
             var size = default(Size);
+            var options = RenderOptions;
+            if (options?.Strict is { } strict)
+            {
+                StrictModeValidator.Validate(input.Lines, strict);
+            }
+
             var diagramType = DiagramDetector.Detect(input.CleanedText.AsSpan());
             object diagram = diagramType switch
             {
                 DiagramType.Sequence => LayoutSequence(input, out size),
-                DiagramType.Class => LayoutClass(input, out size),
-                DiagramType.Er => LayoutEr(input, out size),
+                DiagramType.Class => LayoutClass(input, options, out size),
+                DiagramType.Er => LayoutEr(input, options, out size),
                 DiagramType.Pie => PieParser.Parse(input.Lines),
                 DiagramType.Quadrant => QuadrantParser.Parse(input.Lines),
                 DiagramType.Timeline => TimelineParser.Parse(input.Lines),
@@ -852,15 +946,17 @@ public class MermaidPresenter : Control
                 DiagramType.Radar => RadarParser.Parse(input.Lines),
                 DiagramType.Treemap => TreemapParser.Parse(input.PreserveIndentLines),
                 DiagramType.Venn => VennParser.Parse(input.Lines),
-                DiagramType.Flowchart => LayoutFlowchart(input, out size),
-                DiagramType.State => LayoutState(input, out size),
+                DiagramType.Flowchart => LayoutFlowchart(input, options, out size),
+                DiagramType.State => LayoutState(input, options, out size),
                 _ => throw new NotSupportedException($"Diagram type '{diagramType}' is not supported by the native Mermaid presenter yet.")
             };
 
+            UseRendererPart(diagramType);
             return MermaidDiagramState.Success(diagramType, diagram, size, input);
         }
         catch (Exception ex)
         {
+            ClearActiveRendererPart();
             return MermaidDiagramState.Failed(ex, MeasureError(ex), input);
         }
     }
@@ -872,30 +968,34 @@ public class MermaidPresenter : Control
         return diagram;
     }
 
-    private static PositionedClassDiagram LayoutClass(MermaidInput input, out Size size)
+    private static PositionedClassDiagram LayoutClass(MermaidInput input, MermaidRenderOptions? options, out Size size)
     {
-        var diagram = MermaidRenderer.LayoutProvider.LayoutClass(ClassParser.Parse(input.Lines));
+        var provider = options?.LayoutProvider ?? Mermaider.MermaidRenderer.LayoutProvider;
+        var diagram = provider.LayoutClass(ClassParser.Parse(input.Lines));
         size = new Size(diagram.Width, diagram.Height);
         return diagram;
     }
 
-    private static PositionedErDiagram LayoutEr(MermaidInput input, out Size size)
+    private static PositionedErDiagram LayoutEr(MermaidInput input, MermaidRenderOptions? options, out Size size)
     {
-        var diagram = MermaidRenderer.LayoutProvider.LayoutEr(ErParser.Parse(input.Lines));
+        var provider = options?.LayoutProvider ?? Mermaider.MermaidRenderer.LayoutProvider;
+        var diagram = provider.LayoutEr(ErParser.Parse(input.Lines));
         size = new Size(diagram.Width, diagram.Height);
         return diagram;
     }
 
-    private static PreparedPositionedGraph LayoutFlowchart(MermaidInput input, out Size size)
+    private static PreparedPositionedGraph LayoutFlowchart(MermaidInput input, MermaidRenderOptions? options, out Size size)
     {
-        var diagram = MermaidRenderer.LayoutProvider.LayoutFlowchart(FlowchartParser.Parse(input.Lines));
+        var provider = options?.LayoutProvider ?? Mermaider.MermaidRenderer.LayoutProvider;
+        var diagram = provider.LayoutFlowchart(FlowchartParser.Parse(input.Lines), options, options?.Strict);
         size = new Size(diagram.Width, diagram.Height);
         return PreparedPositionedGraph.Prepare(diagram);
     }
 
-    private static PreparedPositionedGraph LayoutState(MermaidInput input, out Size size)
+    private static PreparedPositionedGraph LayoutState(MermaidInput input, MermaidRenderOptions? options, out Size size)
     {
-        var diagram = MermaidRenderer.LayoutProvider.LayoutFlowchart(StateParser.Parse(input.Lines));
+        var provider = options?.LayoutProvider ?? Mermaider.MermaidRenderer.LayoutProvider;
+        var diagram = provider.LayoutFlowchart(StateParser.Parse(input.Lines), options, options?.Strict);
         size = new Size(diagram.Width, diagram.Height);
         return PreparedPositionedGraph.Prepare(diagram);
     }
@@ -913,7 +1013,7 @@ public class MermaidPresenter : Control
     private void DrawError(DrawingContext dc, Exception error)
     {
         var text = CreateErrorText(error, Bounds.Width > 16 ? Bounds.Width - 16 : double.PositiveInfinity);
-        dc.DrawText(text, new global::Avalonia.Point(8, 8));
+        dc.DrawText(text, new Point(8, 8));
     }
 
     private Size MeasureError(Exception error)
