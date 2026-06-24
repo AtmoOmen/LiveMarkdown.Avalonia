@@ -64,7 +64,7 @@ public partial class MarkdownRenderer : Control
             if (value is not null)
             {
                 value.Changed += CommitChange;
-                CommitChange(new ObservableStringBuilderChangedEventArgs(value.ToString(), 0, value.Length));
+                CommitChange(new ObservableStringBuilderChangedEventArgs(0, value.Length, value.Length, value.Version));
             }
         }
     }
@@ -199,7 +199,7 @@ public partial class MarkdownRenderer : Control
 
             try
             {
-                var markdown = e.NewString;
+                var markdown = MarkdownBuilder?.ToString() ?? string.Empty;
                 var time = DateTimeOffset.UtcNow;
                 var document = await Task.Run(() => Markdown.Parse(markdown, pipeline));
                 VerboseLogger?.Log(this, "Parse markdown in {TotalMicroseconds} ms.", (DateTimeOffset.UtcNow - time).TotalMilliseconds);
@@ -228,9 +228,10 @@ public partial class MarkdownRenderer : Control
             var startIndex = Math.Min(pendingChange.Value.StartIndex, e.StartIndex);
             var endIndex = Math.Max(pendingChange.Value.StartIndex + pendingChange.Value.Length, e.StartIndex + e.Length);
             pendingChange = new ObservableStringBuilderChangedEventArgs(
-                e.NewString,
                 startIndex,
-                endIndex - startIndex);
+                endIndex - startIndex,
+                e.NewLength,
+                e.Version);
         }
 
         InvalidateArrange();

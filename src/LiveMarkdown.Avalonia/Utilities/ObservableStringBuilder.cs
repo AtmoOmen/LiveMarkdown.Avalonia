@@ -8,18 +8,19 @@ namespace LiveMarkdown.Avalonia;
 /// <summary>
 /// Event arguments for changes in the ObservableStringBuilder.
 /// </summary>
-/// <param name="NewString">The new content of the string builder.</param>
 /// <param name="StartIndex">The starting index of the change.</param>
 /// <param name="Length">The length of the change.</param>
+/// <param name="NewLength">The length of the string builder after the change.</param>
+/// <param name="Version">The version of the string builder after the change.</param>
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
-public readonly record struct ObservableStringBuilderChangedEventArgs(string NewString, int StartIndex, int Length)
+public readonly record struct ObservableStringBuilderChangedEventArgs(int StartIndex, int Length, int NewLength, long Version)
 {
     private string DebuggerDisplay
     {
         get
         {
             var endIndex = StartIndex + Length;
-            return $"[{StartIndex}..{endIndex}]{NewString[StartIndex..endIndex]}";
+            return $"[{StartIndex}..{endIndex}] length={NewLength} version={Version}";
         }
     }
 }
@@ -47,6 +48,11 @@ public class ObservableStringBuilder : INotifyPropertyChanged
     /// Gets the current length of the string builder.
     /// </summary>
     public int Length { get; private set; }
+
+    /// <summary>
+    /// Gets the content version. It increments once for each actual text change.
+    /// </summary>
+    public long Version { get; private set; }
 
     /// <summary>
     /// Raised when the content of the string builder changes.
@@ -82,14 +88,16 @@ public class ObservableStringBuilder : INotifyPropertyChanged
     public ObservableStringBuilder Append(string? value)
     {
         if (string.IsNullOrEmpty(value)) return this;
+        var startIndex = stringBuilder.Length;
         stringBuilder.Append(value);
-        UpdateLength();
+        UpdateState();
         Changed?.Invoke(
             new ObservableStringBuilderChangedEventArgs(
-                ToString(),
                 // ReSharper disable once RedundantSuppressNullableWarningExpression
-                stringBuilder.Length - value!.Length,
-                value.Length));
+                startIndex,
+                value!.Length,
+                Length,
+                Version));
         return this;
     }
 
@@ -101,14 +109,16 @@ public class ObservableStringBuilder : INotifyPropertyChanged
     public ObservableStringBuilder AppendLine(string? value = null)
     {
         if (string.IsNullOrEmpty(value)) return this;
+        var startIndex = stringBuilder.Length;
         stringBuilder.AppendLine(value);
-        UpdateLength();
+        UpdateState();
         Changed?.Invoke(
             new ObservableStringBuilderChangedEventArgs(
-                ToString(),
                 // ReSharper disable once RedundantSuppressNullableWarningExpression
-                stringBuilder.Length - value!.Length - Environment.NewLine.Length,
-                value.Length + Environment.NewLine.Length));
+                startIndex,
+                value!.Length + Environment.NewLine.Length,
+                Length,
+                Version));
         return this;
     }
 
@@ -119,13 +129,15 @@ public class ObservableStringBuilder : INotifyPropertyChanged
     public ObservableStringBuilder Clear()
     {
         var length = stringBuilder.Length;
+        if (length == 0) return this;
         stringBuilder.Clear();
-        UpdateLength();
+        UpdateState();
         Changed?.Invoke(
             new ObservableStringBuilderChangedEventArgs(
-                string.Empty,
                 0,
-                length));
+                length,
+                Length,
+                Version));
         return this;
     }
 
@@ -141,8 +153,11 @@ public class ObservableStringBuilder : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    private void UpdateLength()
+    private void UpdateState()
     {
+        Version++;
+        OnPropertyChanged(nameof(Version));
+
         if (Length == stringBuilder.Length) return;
 
         Length = stringBuilder.Length;

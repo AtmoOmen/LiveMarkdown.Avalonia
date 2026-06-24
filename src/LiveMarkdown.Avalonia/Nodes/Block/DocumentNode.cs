@@ -15,6 +15,14 @@ public sealed class DocumentNode : ContainerBlockNode<MarkdownDocument>
         Control.Classes.Add("MarkdownDocument");
     }
 
+    /// <remarks>
+    /// This method always returns true because the DocumentNode is the root node and should always be considered dirty when any change occurs in the document.
+    /// </remarks>
+    /// <param name="markdownObject"></param>
+    /// <param name="change"></param>
+    /// <returns></returns>
+    protected override bool IsDirty(MarkdownObject markdownObject, in ObservableStringBuilderChangedEventArgs change) => true;
+
     protected override bool UpdateCore(
         DocumentNode documentNode,
         MarkdownDocument markdownObject,

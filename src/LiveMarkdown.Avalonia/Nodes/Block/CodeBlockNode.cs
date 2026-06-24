@@ -19,8 +19,16 @@ public class CodeBlockNode : BlockNode<Markdig.Syntax.CodeBlock>
         _codeBlock.ApplyTemplate(); // Ensure the template is applied to initialize the CodeTextBlock
     }
 
-    // ReSharper disable once ConvertTypeCheckPatternToNullCheck
-    protected override bool MatchesBlock(Markdig.Syntax.CodeBlock block) => block is Markdig.Syntax.CodeBlock or FencedCodeBlock;
+    protected override bool MatchesBlock(Markdig.Syntax.CodeBlock block)
+    {
+        var blockType = block.GetType();
+        if (blockType == typeof(Markdig.Syntax.CodeBlock) || blockType == typeof(FencedCodeBlock))
+        {
+            return true;
+        }
+
+        return !HasMoreSpecificBlockNodeFactory(blockType, typeof(Markdig.Syntax.CodeBlock));
+    }
 
     protected override bool UpdateCore(
         DocumentNode documentNode,

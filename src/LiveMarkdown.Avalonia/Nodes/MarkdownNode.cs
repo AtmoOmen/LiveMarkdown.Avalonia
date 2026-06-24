@@ -65,7 +65,7 @@ public abstract class MarkdownNode
     /// </summary>
     private SourceSpan span;
 
-    private bool IsDirty(MarkdownObject markdownObject, in ObservableStringBuilderChangedEventArgs change)
+    protected virtual bool IsDirty(MarkdownObject markdownObject, in ObservableStringBuilderChangedEventArgs change)
     {
         return !span.Equals(markdownObject.Span) || span.End >= change.StartIndex && change.StartIndex + change.Length > span.Start;
     }

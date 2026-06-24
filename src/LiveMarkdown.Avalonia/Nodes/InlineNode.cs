@@ -32,13 +32,29 @@ public abstract class InlineNode : MarkdownNode
 
 public abstract class InlineNode<TInline> : InlineNode where TInline : Markdig.Syntax.Inlines.Inline
 {
+    protected override bool IsDirty(MarkdownObject markdownObject, in ObservableStringBuilderChangedEventArgs change)
+    {
+        return base.IsDirty(markdownObject, in change) ||
+            markdownObject is not TInline inline ||
+            !MatchesInline(inline);
+    }
+
+    /// <summary>
+    /// Determines whether the given inline matches the type TBlock.
+    /// Default implementation checks for exact type match.
+    /// </summary>
+    /// <param name="inline"></param>
+    /// <returns></returns>
+    protected virtual bool MatchesInline(TInline inline) => inline.GetType() == typeof(TInline);
+
     protected sealed override bool UpdateCore(
         DocumentNode documentNode,
         MarkdownObject markdownObject,
         in ObservableStringBuilderChangedEventArgs change,
         CancellationToken cancellationToken)
     {
-        return markdownObject.GetType() == typeof(TInline) &&
+        return markdownObject is TInline inline &&
+            MatchesInline(inline) &&
             UpdateCore(documentNode, Unsafe.As<TInline>(markdownObject), change, cancellationToken);
     }
 
