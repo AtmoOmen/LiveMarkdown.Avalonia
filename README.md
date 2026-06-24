@@ -39,6 +39,9 @@ updating, **especially when streaming large model outputs**.
 - 📜 **Code block syntax highlighting**: Supports multiple languages with [TextMateSharp](https://github.com/danipen/TextMateSharp)
 - 🖼️ **Image support**: Load online, local even `avares` images asynchronously
 - ✍️ **Selectable text**: Text can be selected across different Markdown elements
+- 🧮 **LaTeX support**: Render mathematical expressions using [CSharpMath](https://github.com/verybadcat/CSharpMath)
+- 🖋️ **Mermaid diagram full support**: Render flowcharts, sequence diagrams, and more using [Mermaider](https://github.com/nullean/mermaider)
+- 🛠️ **Extensible Markdown pipeline**: Register custom Markdown nodes and extend the rendering pipeline
 
 > [!NOTE]
 > This library currently only supports `Append` and `Clear` operations on the Markdown content, which is enough for LLM
@@ -55,7 +58,6 @@ updating, **especially when streaming large model outputs**.
 This project is fully open-source and free. Your support will improve this project a lot. I sincerely thank all my
 sponsors!
 
-<a href="https://www.buymeacoffee.com/artemisli"><img src="https://img.buymeacoffee.com/button-api/?text=Support%20%20Me&emoji=&slug=artemisli&button_colour=FFDD00&font_colour=000000&font_family=Comic&outline_colour=000000&coffee_colour=ffffff" alt="Buy me a coffee"/></a>
 <a href="https://afdian.com/a/DearVa"><img width="200" src="https://pic1.afdiancdn.com/static/img/welcome/button-sponsorme.png" alt="爱发电"></a>
 <a href="https://app.fossa.com/projects/git%2Bgithub.com%2FDearVa%2FLiveMarkdown.Avalonia?ref=badge_shield" alt="FOSSA Status"><img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FDearVa%2FLiveMarkdown.Avalonia.svg?type=shield"/></a>
 
@@ -77,20 +79,20 @@ sponsors!
 - [x] Selectable text across elements
 - [x] LaTeX support
 - [ ] HTML support
-- [ ] 🚧 Mermaid diagram support
+- [x] Mermaid diagram support
   - [x] Pan&Zoom support
   - [x] Flowchart
   - [x] State diagram
-  - [ ] Sequence diagram
-  - [ ] Class diagram
-  - [ ] ER diagram
+  - [x] Sequence diagram
+  - [x] Class diagram
+  - [x] ER diagram
   - [x] Pie chart
   - [x] Quadrant chart
   - [x] Timeline chart
-  - [ ] Git Graph
-  - [ ] Radar Graph
-  - [ ] Treemap
-  - [ ] Venn diagram
+  - [x] Git Graph
+  - [x] Radar Graph
+  - [x] Treemap
+  - [x] Venn diagram
 - [x] Extensible Markdown pipeline and node registration
 - [x] Customizable styles for Markdown elements
 
@@ -216,10 +218,6 @@ AsyncImageLoader.DefaultDecoders =
 You can also set the `AsyncImageLoader.Decoders` property on a per-renderer basis if you want different renderers to use different decoders.
 
 ### 6. (Optional) Enable Mermaid diagram rendering
-
-> [!WARNING]
-> Mermaid diagram rendering is currently in early preview stage, and may have some issues.
-> Some diagram types are still being implemented, and advanced Mermaid theme semantics are not fully mapped to native Avalonia rendering yet.
 
 Mermaid diagram rendering is supported via the `LiveMarkdown.Avalonia.Mermaid` package. You can install it via NuGet:
 
