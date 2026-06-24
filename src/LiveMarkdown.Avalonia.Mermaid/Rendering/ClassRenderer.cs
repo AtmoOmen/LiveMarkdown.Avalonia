@@ -118,7 +118,7 @@ public class ClassRenderer : MermaidRenderer
     /// <summary>
     /// Draws a positioned class diagram using this renderer part's current styled values.
     /// </summary>
-    internal void RenderDiagram(DrawingContext dc, MermaidPresenter presenter, PositionedClassDiagram diagram)
+    public void RenderDiagram(DrawingContext dc, MermaidPresenter presenter, PositionedClassDiagram diagram)
     {
         var style = CreateStyleSnapshot();
         foreach (var relationship in diagram.Relationships)

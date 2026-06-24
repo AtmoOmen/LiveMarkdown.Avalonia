@@ -800,20 +800,17 @@ public class MermaidPresenter : Control
             }
             case PieChart pieChart:
             {
-                ClearActiveRendererPart();
-                PieRenderer.Render(dc, this, pieChart);
+                UseRendererPart<PieRenderer>().RenderDiagram(dc, this, pieChart);
                 break;
             }
             case QuadrantChart quadrantChart:
             {
-                ClearActiveRendererPart();
-                QuadrantRenderer.Render(dc, this, quadrantChart);
+                UseRendererPart<QuadrantRenderer>().RenderDiagram(dc, this, quadrantChart);
                 break;
             }
             case TimelineDiagram timelineDiagram:
             {
-                ClearActiveRendererPart();
-                TimelineRenderer.Render(dc, this, timelineDiagram);
+                UseRendererPart<TimelineRenderer>().RenderDiagram(dc, this, timelineDiagram);
                 break;
             }
             case GitGraph gitGraph:
@@ -902,6 +899,15 @@ public class MermaidPresenter : Control
             case DiagramType.Er:
                 UseRendererPart<ErRenderer>();
                 break;
+            case DiagramType.Pie:
+                UseRendererPart<PieRenderer>();
+                break;
+            case DiagramType.Quadrant:
+                UseRendererPart<QuadrantRenderer>();
+                break;
+            case DiagramType.Timeline:
+                UseRendererPart<TimelineRenderer>();
+                break;
             default:
                 ClearActiveRendererPart();
                 break;
@@ -939,9 +945,9 @@ public class MermaidPresenter : Control
                 DiagramType.Sequence => LayoutSequence(input, out size),
                 DiagramType.Class => LayoutClass(input, options, out size),
                 DiagramType.Er => LayoutEr(input, options, out size),
-                DiagramType.Pie => PieParser.Parse(input.Lines),
-                DiagramType.Quadrant => QuadrantParser.Parse(input.Lines),
-                DiagramType.Timeline => TimelineParser.Parse(input.Lines),
+                DiagramType.Pie => LayoutPie(input, UseRendererPart<PieRenderer>(), out size),
+                DiagramType.Quadrant => LayoutQuadrant(input, UseRendererPart<QuadrantRenderer>(), out size),
+                DiagramType.Timeline => LayoutTimeline(input, UseRendererPart<TimelineRenderer>(), out size),
                 DiagramType.GitGraph => GitGraphParser.Parse(input.Lines),
                 DiagramType.Radar => RadarParser.Parse(input.Lines),
                 DiagramType.Treemap => TreemapParser.Parse(input.PreserveIndentLines),
@@ -959,6 +965,27 @@ public class MermaidPresenter : Control
             ClearActiveRendererPart();
             return MermaidDiagramState.Failed(ex, MeasureError(ex), input);
         }
+    }
+
+    private static PieChart LayoutPie(MermaidInput input, PieRenderer renderer, out Size size)
+    {
+        var diagram = PieParser.Parse(input.Lines);
+        size = renderer.MeasureDiagram(diagram);
+        return diagram;
+    }
+
+    private static QuadrantChart LayoutQuadrant(MermaidInput input, QuadrantRenderer renderer, out Size size)
+    {
+        var diagram = QuadrantParser.Parse(input.Lines);
+        size = renderer.MeasureDiagram(diagram);
+        return diagram;
+    }
+
+    private static TimelineDiagram LayoutTimeline(MermaidInput input, TimelineRenderer renderer, out Size size)
+    {
+        var diagram = TimelineParser.Parse(input.Lines);
+        size = renderer.MeasureDiagram(diagram);
+        return diagram;
     }
 
     private static PositionedSequenceDiagram LayoutSequence(MermaidInput input, out Size size)

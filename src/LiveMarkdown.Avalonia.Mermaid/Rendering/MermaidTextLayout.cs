@@ -8,7 +8,7 @@ namespace LiveMarkdown.Avalonia;
 /// <c>***important***</c> produces a span whose style is <see cref="Bold"/> | <see cref="Italic"/>.
 /// </remarks>
 [Flags]
-internal enum MermaidTextStyle
+public enum MermaidTextStyle
 {
     /// <summary>
     /// No additional inline style is applied.
@@ -49,7 +49,7 @@ internal enum MermaidTextStyle
 /// not in the original Markdown or Mermaider HTML-like source. This keeps drawing independent from
 /// parser-specific source spans.
 /// </remarks>
-internal readonly record struct MermaidTextSpan(int Start, int Length, MermaidTextStyle Style);
+public readonly record struct MermaidTextSpan(int Start, int Length, MermaidTextStyle Style);
 
 /// <summary>
 /// Represents Mermaid label text after inline markup has been flattened for Avalonia text rendering.
@@ -59,7 +59,7 @@ internal readonly record struct MermaidTextSpan(int Start, int Length, MermaidTe
 /// labels only need shallow inline formatting today, and this shape maps directly to
 /// <c>FormattedText</c> range APIs.
 /// </remarks>
-internal sealed record MermaidTextLayout(string Text, IReadOnlyList<MermaidTextSpan> Spans)
+public sealed record MermaidTextLayout(string Text, IReadOnlyList<MermaidTextSpan> Spans)
 {
     /// <summary>
     /// Creates a layout with no inline style ranges.
