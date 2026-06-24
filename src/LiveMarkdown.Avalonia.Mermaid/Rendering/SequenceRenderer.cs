@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Media;
 using Mermaider.Models;
-using Mermaider.Rendering;
 using Point = Avalonia.Point;
 
 namespace LiveMarkdown.Avalonia;
@@ -13,29 +12,241 @@ namespace LiveMarkdown.Avalonia;
 /// Sequence diagrams are expected to share text measurement and arrow helpers with flowcharts, while
 /// keeping participant/lifeline/message ordering logic inside this renderer.
 /// </remarks>
-internal static class SequenceRenderer
+public class SequenceRenderer : MermaidRenderer
 {
-    private const double ArrowSize = 8;
-    private const double SelfMessageWidth = 30;
-    private const double SelfMessageHeight = 20;
-    private const double ConditionBadgePaddingX = 8;
-    private const double ConditionBadgePaddingY = 4;
-    private const double AutoNumberBadgeRadius = 11;
-    private const double ActorIconSize = 24;
+    /// <summary>
+    /// Defines the <see cref="ArrowSize"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> ArrowSizeProperty =
+        AvaloniaProperty.Register<SequenceRenderer, double>(nameof(ArrowSize), 8);
+
+    /// <summary>
+    /// Size of sequence message arrowheads.
+    /// </summary>
+    public double ArrowSize
+    {
+        get => GetValue(ArrowSizeProperty);
+        set => SetValue(ArrowSizeProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="SelfMessageWidth"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> SelfMessageWidthProperty =
+        AvaloniaProperty.Register<SequenceRenderer, double>(nameof(SelfMessageWidth), 30);
+
+    /// <summary>
+    /// Horizontal width of the loop used for self messages.
+    /// </summary>
+    public double SelfMessageWidth
+    {
+        get => GetValue(SelfMessageWidthProperty);
+        set => SetValue(SelfMessageWidthProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="SelfMessageHeight"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> SelfMessageHeightProperty =
+        AvaloniaProperty.Register<SequenceRenderer, double>(nameof(SelfMessageHeight), 20);
+
+    /// <summary>
+    /// Vertical height of the loop used for self messages.
+    /// </summary>
+    public double SelfMessageHeight
+    {
+        get => GetValue(SelfMessageHeightProperty);
+        set => SetValue(SelfMessageHeightProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="ConditionBadgePaddingX"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> ConditionBadgePaddingXProperty =
+        AvaloniaProperty.Register<SequenceRenderer, double>(nameof(ConditionBadgePaddingX), 8);
+
+    /// <summary>
+    /// Horizontal padding inside loop/alt/opt condition badges.
+    /// </summary>
+    public double ConditionBadgePaddingX
+    {
+        get => GetValue(ConditionBadgePaddingXProperty);
+        set => SetValue(ConditionBadgePaddingXProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="ConditionBadgePaddingY"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> ConditionBadgePaddingYProperty =
+        AvaloniaProperty.Register<SequenceRenderer, double>(nameof(ConditionBadgePaddingY), 4);
+
+    /// <summary>
+    /// Vertical padding inside loop/alt/opt condition badges.
+    /// </summary>
+    public double ConditionBadgePaddingY
+    {
+        get => GetValue(ConditionBadgePaddingYProperty);
+        set => SetValue(ConditionBadgePaddingYProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="AutoNumberBadgeRadius"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> AutoNumberBadgeRadiusProperty =
+        AvaloniaProperty.Register<SequenceRenderer, double>(nameof(AutoNumberBadgeRadius), 11);
+
+    /// <summary>
+    /// Radius of auto-number badges drawn beside sequence messages.
+    /// </summary>
+    public double AutoNumberBadgeRadius
+    {
+        get => GetValue(AutoNumberBadgeRadiusProperty);
+        set => SetValue(AutoNumberBadgeRadiusProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="ActorIconSize"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> ActorIconSizeProperty =
+        AvaloniaProperty.Register<SequenceRenderer, double>(nameof(ActorIconSize), 24);
+
+    /// <summary>
+    /// Natural size of the stick-figure actor icon before it is scaled to the layout box.
+    /// </summary>
+    public double ActorIconSize
+    {
+        get => GetValue(ActorIconSizeProperty);
+        set => SetValue(ActorIconSizeProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="ParticipantCornerRadius"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> ParticipantCornerRadiusProperty =
+        AvaloniaProperty.Register<SequenceRenderer, double>(nameof(ParticipantCornerRadius), 6);
+
+    /// <summary>
+    /// Corner radius for participant boxes.
+    /// </summary>
+    public double ParticipantCornerRadius
+    {
+        get => GetValue(ParticipantCornerRadiusProperty);
+        set => SetValue(ParticipantCornerRadiusProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="BlockCornerRadius"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> BlockCornerRadiusProperty =
+        AvaloniaProperty.Register<SequenceRenderer, double>(nameof(BlockCornerRadius), 8);
+
+    /// <summary>
+    /// Corner radius for sequence blocks and boxes.
+    /// </summary>
+    public double BlockCornerRadius
+    {
+        get => GetValue(BlockCornerRadiusProperty);
+        set => SetValue(BlockCornerRadiusProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="BlockTabHeight"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> BlockTabHeightProperty =
+        AvaloniaProperty.Register<SequenceRenderer, double>(nameof(BlockTabHeight), 18);
+
+    /// <summary>
+    /// Height of the small block type tab in loop/alt/opt/par regions.
+    /// </summary>
+    public double BlockTabHeight
+    {
+        get => GetValue(BlockTabHeightProperty);
+        set => SetValue(BlockTabHeightProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="SmallCornerRadius"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> SmallCornerRadiusProperty =
+        AvaloniaProperty.Register<SequenceRenderer, double>(nameof(SmallCornerRadius), 4);
+
+    /// <summary>
+    /// Small radius used for activation bars and compact condition badges.
+    /// </summary>
+    public double SmallCornerRadius
+    {
+        get => GetValue(SmallCornerRadiusProperty);
+        set => SetValue(SmallCornerRadiusProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="NoteCornerRadius"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> NoteCornerRadiusProperty =
+        AvaloniaProperty.Register<SequenceRenderer, double>(nameof(NoteCornerRadius), 6);
+
+    /// <summary>
+    /// Corner radius for sequence notes.
+    /// </summary>
+    public double NoteCornerRadius
+    {
+        get => GetValue(NoteCornerRadiusProperty);
+        set => SetValue(NoteCornerRadiusProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="DestroyMarkerSize"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> DestroyMarkerSizeProperty =
+        AvaloniaProperty.Register<SequenceRenderer, double>(nameof(DestroyMarkerSize), 12);
+
+    /// <summary>
+    /// Half-size of the cross drawn for destroy markers.
+    /// </summary>
+    public double DestroyMarkerSize
+    {
+        get => GetValue(DestroyMarkerSizeProperty);
+        set => SetValue(DestroyMarkerSizeProperty, value);
+    }
+
+    private readonly record struct Style(
+        double ArrowSize,
+        double SelfMessageWidth,
+        double SelfMessageHeight,
+        double ConditionBadgePaddingX,
+        double ConditionBadgePaddingY,
+        double AutoNumberBadgeRadius,
+        double ActorIconSize,
+        double ParticipantCornerRadius,
+        double BlockCornerRadius,
+        double BlockTabHeight,
+        double SmallCornerRadius,
+        double NoteCornerRadius,
+        double DestroyMarkerSize
+    );
 
     /// <summary>
     /// Draws a positioned sequence diagram.
     /// </summary>
     public static void Render(DrawingContext dc, MermaidPresenter presenter, PositionedSequenceDiagram diagram)
     {
+        new SequenceRenderer().RenderDiagram(dc, presenter, diagram);
+    }
+
+    /// <summary>
+    /// Draws a positioned sequence diagram using this renderer part's current styled values.
+    /// </summary>
+    internal void RenderDiagram(DrawingContext dc, MermaidPresenter presenter, PositionedSequenceDiagram diagram)
+    {
+        var style = CreateStyleSnapshot();
         foreach (var box in diagram.Boxes)
         {
-            DrawBox(dc, presenter, box);
+            DrawBox(dc, presenter, style, box);
         }
 
         foreach (var block in diagram.Blocks)
         {
-            DrawBlock(dc, presenter, block);
+            DrawBlock(dc, presenter, style, block);
         }
 
         foreach (var lifeline in diagram.Lifelines)
@@ -45,22 +256,22 @@ internal static class SequenceRenderer
 
         foreach (var activation in diagram.Activations)
         {
-            DrawActivation(dc, presenter, activation);
+            DrawActivation(dc, presenter, style, activation);
         }
 
         foreach (var message in diagram.Messages)
         {
-            DrawMessage(dc, presenter, message);
+            DrawMessage(dc, presenter, style, message);
         }
 
         foreach (var note in diagram.Notes)
         {
-            DrawNote(dc, presenter, note);
+            DrawNote(dc, presenter, style, note);
         }
 
         foreach (var actor in diagram.Actors)
         {
-            DrawActor(dc, presenter, actor);
+            DrawActor(dc, presenter, style, actor);
         }
 
         if (diagram.Actors.Count > 0)
@@ -69,21 +280,37 @@ internal static class SequenceRenderer
             var bottomActorY = diagram.Height - actorHeight - 30;
             foreach (var actor in diagram.Actors)
             {
-                DrawActor(dc, presenter, actor with { Y = bottomActorY });
+                DrawActor(dc, presenter, style, actor with { Y = bottomActorY });
             }
         }
 
         foreach (var marker in diagram.DestroyMarkers)
         {
-            DrawDestroyMarker(dc, presenter, marker);
+            DrawDestroyMarker(dc, presenter, style, marker);
         }
     }
 
-    private static void DrawActor(DrawingContext dc, MermaidPresenter presenter, PositionedSequenceActor actor)
+    private Style CreateStyleSnapshot() =>
+        new(
+            ArrowSize,
+            SelfMessageWidth,
+            SelfMessageHeight,
+            ConditionBadgePaddingX,
+            ConditionBadgePaddingY,
+            AutoNumberBadgeRadius,
+            ActorIconSize,
+            ParticipantCornerRadius,
+            BlockCornerRadius,
+            BlockTabHeight,
+            SmallCornerRadius,
+            NoteCornerRadius,
+            DestroyMarkerSize);
+
+    private static void DrawActor(DrawingContext dc, MermaidPresenter presenter, Style style, PositionedSequenceActor actor)
     {
         if (actor.Type == SequenceActorType.Actor)
         {
-            DrawActorIcon(dc, presenter, actor);
+            DrawActorIcon(dc, presenter, style, actor);
             MermaidTextRenderer.DrawInlineText(
                 dc,
                 presenter,
@@ -103,8 +330,8 @@ internal static class SequenceRenderer
             presenter.NodeFill,
             presenter.NodePen,
             rect,
-            RenderConstants.Radii.Rectangle,
-            RenderConstants.Radii.Rectangle);
+            style.ParticipantCornerRadius,
+            style.ParticipantCornerRadius);
         MermaidTextRenderer.DrawInlineText(
             dc,
             presenter,
@@ -119,16 +346,16 @@ internal static class SequenceRenderer
             FontWeight.SemiBold);
     }
 
-    private static void DrawActorIcon(DrawingContext dc, MermaidPresenter presenter, PositionedSequenceActor actor)
+    private static void DrawActorIcon(DrawingContext dc, MermaidPresenter presenter, Style style, PositionedSequenceActor actor)
     {
         if (presenter.LinePen is not { } pen)
         {
             return;
         }
 
-        var scale = actor.Height / ActorIconSize * 0.9;
+        var scale = actor.Height / style.ActorIconSize * 0.9;
         var centerX = actor.X;
-        var top = actor.Y + (actor.Height - ActorIconSize * scale) / 2;
+        var top = actor.Y + (actor.Height - style.ActorIconSize * scale) / 2;
         var headCenter = new Point(centerX, top + 7 * scale);
         var bodyTop = top + 11 * scale;
         var bodyBottom = top + 18 * scale;
@@ -154,17 +381,17 @@ internal static class SequenceRenderer
             new Point(lifeline.X, lifeline.BottomY));
     }
 
-    private static void DrawActivation(DrawingContext dc, MermaidPresenter presenter, Activation activation)
+    private static void DrawActivation(DrawingContext dc, MermaidPresenter presenter, Style style, Activation activation)
     {
         dc.DrawRectangle(
             presenter.NodeFill,
             presenter.NodePen,
             new Rect(activation.X, activation.TopY, activation.Width, activation.BottomY - activation.TopY),
-            4,
-            4);
+            style.SmallCornerRadius,
+            style.SmallCornerRadius);
     }
 
-    private static void DrawMessage(DrawingContext dc, MermaidPresenter presenter, PositionedSequenceMessage message)
+    private static void DrawMessage(DrawingContext dc, MermaidPresenter presenter, Style style, PositionedSequenceMessage message)
     {
         var pen = message.LineStyle == SequenceLineStyle.Dashed ? presenter.DottedLinePen : presenter.LinePen;
         if (pen is null)
@@ -174,21 +401,28 @@ internal static class SequenceRenderer
 
         if (message.IsSelf)
         {
-            DrawSelfMessage(dc, presenter, message, pen);
+            DrawSelfMessage(dc, presenter, style, message, pen);
             return;
         }
 
         var from = new Point(message.X1, message.Y);
         var to = new Point(message.X2, message.Y);
         dc.DrawLine(pen, from, to);
-        MermaidDrawingHelpers.DrawArrowHead(dc, presenter.ArrowFill, pen, from, to, ArrowSize, message.ArrowHead == SequenceArrowHead.Filled);
+        MermaidDrawingHelpers.DrawArrowHead(dc, presenter.ArrowFill, pen, from, to, style.ArrowSize, message.ArrowHead == SequenceArrowHead.Filled);
         if (message.Bidirectional)
         {
-            MermaidDrawingHelpers.DrawArrowHead(dc, presenter.ArrowFill, pen, to, from, ArrowSize, message.ArrowHead == SequenceArrowHead.Filled);
+            MermaidDrawingHelpers.DrawArrowHead(
+                dc,
+                presenter.ArrowFill,
+                pen,
+                to,
+                from,
+                style.ArrowSize,
+                message.ArrowHead == SequenceArrowHead.Filled);
         }
 
         var label = message.Label;
-        DrawAutoNumberBadge(dc, presenter, message, ref label);
+        DrawAutoNumberBadge(dc, presenter, style, message, ref label);
         MermaidTextRenderer.DrawInlineText(
             dc,
             presenter,
@@ -205,26 +439,27 @@ internal static class SequenceRenderer
     private static void DrawSelfMessage(
         DrawingContext dc,
         MermaidPresenter presenter,
+        Style style,
         PositionedSequenceMessage message,
         IPen pen)
     {
         var p1 = new Point(message.X1, message.Y);
-        var p2 = new Point(message.X1 + SelfMessageWidth, message.Y);
-        var p3 = new Point(message.X1 + SelfMessageWidth, message.Y + SelfMessageHeight);
-        var p4 = new Point(message.X2, message.Y + SelfMessageHeight);
+        var p2 = new Point(message.X1 + style.SelfMessageWidth, message.Y);
+        var p3 = new Point(message.X1 + style.SelfMessageWidth, message.Y + style.SelfMessageHeight);
+        var p4 = new Point(message.X2, message.Y + style.SelfMessageHeight);
 
         dc.DrawLine(pen, p1, p2);
         dc.DrawLine(pen, p2, p3);
         dc.DrawLine(pen, p3, p4);
-        MermaidDrawingHelpers.DrawArrowHead(dc, presenter.ArrowFill, pen, p3, p4, ArrowSize, message.ArrowHead == SequenceArrowHead.Filled);
+        MermaidDrawingHelpers.DrawArrowHead(dc, presenter.ArrowFill, pen, p3, p4, style.ArrowSize, message.ArrowHead == SequenceArrowHead.Filled);
 
         MermaidTextRenderer.DrawInlineText(
             dc,
             presenter,
             message.Label,
             isMarkdown: false,
-            message.X1 + SelfMessageWidth + 8,
-            message.Y + SelfMessageHeight / 2,
+            message.X1 + style.SelfMessageWidth + 8,
+            message.Y + style.SelfMessageHeight / 2,
             presenter.EdgeLabelFontSize,
             presenter.SecondaryForeground,
             TextAlignment.Left,
@@ -234,6 +469,7 @@ internal static class SequenceRenderer
     private static void DrawAutoNumberBadge(
         DrawingContext dc,
         MermaidPresenter presenter,
+        Style style,
         PositionedSequenceMessage message,
         ref string label)
     {
@@ -254,7 +490,7 @@ internal static class SequenceRenderer
 
         label = label[(dotIndex + 2)..];
         var center = new Point(message.X1, message.Y);
-        dc.DrawEllipse(presenter.Foreground, null, center, AutoNumberBadgeRadius, AutoNumberBadgeRadius);
+        dc.DrawEllipse(presenter.Foreground, null, center, style.AutoNumberBadgeRadius, style.AutoNumberBadgeRadius);
         MermaidTextRenderer.DrawText(
             dc,
             presenter,
@@ -268,14 +504,14 @@ internal static class SequenceRenderer
             FontWeight.Bold);
     }
 
-    private static void DrawBlock(DrawingContext dc, MermaidPresenter presenter, PositionedSequenceBlock block)
+    private static void DrawBlock(DrawingContext dc, MermaidPresenter presenter, Style style, PositionedSequenceBlock block)
     {
         dc.DrawRectangle(
             null,
             presenter.LinePen,
             new Rect(block.X, block.Y, block.Width, block.Height),
-            RenderConstants.Radii.Group,
-            RenderConstants.Radii.Group);
+            style.BlockCornerRadius,
+            style.BlockCornerRadius);
 
         var typeName = block.Type.ToString().ToLowerInvariant();
         var tabText = MermaidTextRenderer.CreateFormattedText(
@@ -286,18 +522,17 @@ internal static class SequenceRenderer
             TextAlignment.Left,
             FontWeight.SemiBold);
         var tabWidth = tabText.Width + 16;
-        const double tabHeight = 18;
         dc.DrawRectangle(
             presenter.GroupHeaderFill,
             presenter.LinePen,
-            new Rect(block.X, block.Y, tabWidth, tabHeight),
-            6,
-            6);
-        dc.DrawText(tabText, new Point(block.X + 6, block.Y + (tabHeight - tabText.Height) / 2));
+            new Rect(block.X, block.Y, tabWidth, style.BlockTabHeight),
+            style.NoteCornerRadius,
+            style.NoteCornerRadius);
+        dc.DrawText(tabText, new Point(block.X + 6, block.Y + (style.BlockTabHeight - tabText.Height) / 2));
 
         if (block.Label.Length > 0)
         {
-            DrawConditionBadge(dc, presenter, block.Label, block.X + block.Width / 2, block.Y + tabHeight / 2);
+            DrawConditionBadge(dc, presenter, style, block.Label, block.X + block.Width / 2, block.Y + style.BlockTabHeight / 2);
         }
 
         foreach (var divider in block.Dividers)
@@ -312,12 +547,12 @@ internal static class SequenceRenderer
 
             if (divider.Label.Length > 0)
             {
-                DrawConditionBadge(dc, presenter, divider.Label, block.X + block.Width / 2, divider.Y + 14);
+                DrawConditionBadge(dc, presenter, style, divider.Label, block.X + block.Width / 2, divider.Y + 14);
             }
         }
     }
 
-    private static void DrawConditionBadge(DrawingContext dc, MermaidPresenter presenter, string label, double centerX, double centerY)
+    private static void DrawConditionBadge(DrawingContext dc, MermaidPresenter presenter, Style style, string label, double centerX, double centerY)
     {
         var text = MermaidTextRenderer.CreateFormattedText(
             presenter,
@@ -326,22 +561,22 @@ internal static class SequenceRenderer
             presenter.EdgeLabelBackground,
             TextAlignment.Center,
             FontWeight.SemiBold);
-        var width = text.Width + ConditionBadgePaddingX * 2;
-        var height = text.Height + ConditionBadgePaddingY * 2;
+        var width = text.Width + style.ConditionBadgePaddingX * 2;
+        var height = text.Height + style.ConditionBadgePaddingY * 2;
         var rect = new Rect(centerX - width / 2, centerY - height / 2, width, height);
 
-        dc.DrawRectangle(presenter.Foreground, null, rect, 4, 4);
+        dc.DrawRectangle(presenter.Foreground, null, rect, style.SmallCornerRadius, style.SmallCornerRadius);
         dc.DrawText(text, new Point(rect.X + (width - text.Width) / 2, rect.Y + (height - text.Height) / 2));
     }
 
-    private static void DrawNote(DrawingContext dc, MermaidPresenter presenter, PositionedSequenceNote note)
+    private static void DrawNote(DrawingContext dc, MermaidPresenter presenter, Style style, PositionedSequenceNote note)
     {
         dc.DrawRectangle(
             presenter.AccentFill,
             presenter.AccentPen,
             new Rect(note.X, note.Y, note.Width, note.Height),
-            6,
-            6);
+            style.NoteCornerRadius,
+            style.NoteCornerRadius);
 
         var textX = note.X + note.Width / 2;
         if (note.Position == SequenceNotePosition.Right)
@@ -366,28 +601,33 @@ internal static class SequenceRenderer
             centerVertically: true);
     }
 
-    private static void DrawDestroyMarker(DrawingContext dc, MermaidPresenter presenter, PositionedDestroyMarker marker)
+    private static void DrawDestroyMarker(DrawingContext dc, MermaidPresenter presenter, Style style, PositionedDestroyMarker marker)
     {
-        const double size = 12;
         var pen = presenter.ThickLinePen ?? presenter.LinePen;
         if (pen is null)
         {
             return;
         }
 
-        dc.DrawLine(pen, new Point(marker.X - size, marker.Y - size), new Point(marker.X + size, marker.Y + size));
-        dc.DrawLine(pen, new Point(marker.X + size, marker.Y - size), new Point(marker.X - size, marker.Y + size));
+        dc.DrawLine(
+            pen,
+            new Point(marker.X - style.DestroyMarkerSize, marker.Y - style.DestroyMarkerSize),
+            new Point(marker.X + style.DestroyMarkerSize, marker.Y + style.DestroyMarkerSize));
+        dc.DrawLine(
+            pen,
+            new Point(marker.X + style.DestroyMarkerSize, marker.Y - style.DestroyMarkerSize),
+            new Point(marker.X - style.DestroyMarkerSize, marker.Y + style.DestroyMarkerSize));
     }
 
-    private static void DrawBox(DrawingContext dc, MermaidPresenter presenter, PositionedSequenceBox box)
+    private static void DrawBox(DrawingContext dc, MermaidPresenter presenter, Style style, PositionedSequenceBox box)
     {
         var fill = presenter.GetCachedBrush(box.Color, presenter.GroupFill);
         dc.DrawRectangle(
             fill,
             presenter.GroupPen,
             new Rect(box.X, box.Y, box.Width, box.Height),
-            RenderConstants.Radii.Group,
-            RenderConstants.Radii.Group);
+            style.BlockCornerRadius,
+            style.BlockCornerRadius);
 
         if (box.Title.Length > 0)
         {

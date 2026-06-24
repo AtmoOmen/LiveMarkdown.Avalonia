@@ -1,4 +1,3 @@
-using Mermaider;
 using Mermaider.Models;
 using Mermaider.Parsing;
 
@@ -37,13 +36,13 @@ internal static class MermaidInputPreprocessor
     public static MermaidInput Process(string text)
     {
         var (cleaned, metadata) = DiagramPreprocessor.Process(text);
-        var lines = MermaidRenderer.PreprocessLines(cleaned);
+        var lines = Mermaider.MermaidRenderer.PreprocessLines(cleaned);
         var (accessibility, filteredLines) = AccessibilityParser.Extract(lines);
 
         return new MermaidInput(
             cleaned,
             filteredLines,
-            MermaidRenderer.PreprocessLinesPreserveIndent(cleaned, accessibility),
+            Mermaider.MermaidRenderer.PreprocessLinesPreserveIndent(cleaned, accessibility),
             metadata,
             accessibility);
     }

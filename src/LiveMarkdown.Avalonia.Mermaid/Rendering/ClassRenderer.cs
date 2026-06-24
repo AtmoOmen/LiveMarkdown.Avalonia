@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Media;
 using Mermaider.Models;
-using Mermaider.Rendering;
 using Point = Avalonia.Point;
 
 namespace LiveMarkdown.Avalonia;
@@ -13,28 +12,123 @@ namespace LiveMarkdown.Avalonia;
 /// This type is intentionally shaped like the flowchart renderer: Mermaider owns parsing and layout,
 /// while this renderer converts the positioned model to <see cref="DrawingContext"/> calls.
 /// </remarks>
-public static class ClassRenderer
+public class ClassRenderer : MermaidRenderer
 {
-    private const double RelationshipCornerRadius = 6;
-    private const double MarkerSize = 12;
-    private const double MemberRowHeight = 20;
-    private const double MemberPaddingX = 8;
-
-    private static readonly FontFamily MemberFontFamily = FontFamily.Parse("Cascadia Mono, Consolas, Menlo, monospace");
+    /// <summary>
+    /// Defines the <see cref="RelationshipCornerRadius"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> RelationshipCornerRadiusProperty =
+        AvaloniaProperty.Register<ClassRenderer, double>(nameof(RelationshipCornerRadius), 6);
 
     /// <summary>
-    /// Draws a positioned class diagram.
+    /// Radius used when rounding class relationship connector corners.
     /// </summary>
-    public static void Render(DrawingContext dc, MermaidPresenter presenter, PositionedClassDiagram diagram)
+    public double RelationshipCornerRadius
     {
+        get => GetValue(RelationshipCornerRadiusProperty);
+        set => SetValue(RelationshipCornerRadiusProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="MarkerSize"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> MarkerSizeProperty =
+        AvaloniaProperty.Register<ClassRenderer, double>(nameof(MarkerSize), 12);
+
+    /// <summary>
+    /// Size of relationship markers such as inheritance triangles and composition diamonds.
+    /// </summary>
+    public double MarkerSize
+    {
+        get => GetValue(MarkerSizeProperty);
+        set => SetValue(MarkerSizeProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="MemberRowHeight"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> MemberRowHeightProperty =
+        AvaloniaProperty.Register<ClassRenderer, double>(nameof(MemberRowHeight), 20);
+
+    /// <summary>
+    /// Vertical spacing allocated to each attribute or method row.
+    /// </summary>
+    public double MemberRowHeight
+    {
+        get => GetValue(MemberRowHeightProperty);
+        set => SetValue(MemberRowHeightProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="MemberPaddingX"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> MemberPaddingXProperty =
+        AvaloniaProperty.Register<ClassRenderer, double>(nameof(MemberPaddingX), 8);
+
+    /// <summary>
+    /// Left padding used when drawing class attributes and methods.
+    /// </summary>
+    public double MemberPaddingX
+    {
+        get => GetValue(MemberPaddingXProperty);
+        set => SetValue(MemberPaddingXProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="MemberFontFamily"/> property.
+    /// </summary>
+    public static readonly StyledProperty<FontFamily> MemberFontFamilyProperty =
+        AvaloniaProperty.Register<ClassRenderer, FontFamily>(
+            nameof(MemberFontFamily),
+            FontFamily.Parse("Cascadia Mono, Consolas, Menlo, monospace"));
+
+    /// <summary>
+    /// Font family used for class attributes and methods.
+    /// </summary>
+    public FontFamily MemberFontFamily
+    {
+        get => GetValue(MemberFontFamilyProperty);
+        set => SetValue(MemberFontFamilyProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="BoxCornerRadius"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> BoxCornerRadiusProperty =
+        AvaloniaProperty.Register<ClassRenderer, double>(nameof(BoxCornerRadius), 6);
+
+    /// <summary>
+    /// Corner radius for class boxes and their clipped header area.
+    /// </summary>
+    public double BoxCornerRadius
+    {
+        get => GetValue(BoxCornerRadiusProperty);
+        set => SetValue(BoxCornerRadiusProperty, value);
+    }
+
+    private readonly record struct Style(
+        double RelationshipCornerRadius,
+        double MarkerSize,
+        double MemberRowHeight,
+        double MemberPaddingX,
+        FontFamily MemberFontFamily,
+        double BoxCornerRadius
+    );
+
+    /// <summary>
+    /// Draws a positioned class diagram using this renderer part's current styled values.
+    /// </summary>
+    internal void RenderDiagram(DrawingContext dc, MermaidPresenter presenter, PositionedClassDiagram diagram)
+    {
+        var style = CreateStyleSnapshot();
         foreach (var relationship in diagram.Relationships)
         {
-            DrawRelationship(dc, presenter, relationship);
+            DrawRelationship(dc, presenter, style, relationship);
         }
 
         foreach (var cls in diagram.Classes)
         {
-            DrawClassBox(dc, presenter, cls);
+            DrawClassBox(dc, presenter, style, cls);
         }
 
         foreach (var relationship in diagram.Relationships)
@@ -48,15 +142,24 @@ public static class ClassRenderer
         }
     }
 
-    private static void DrawClassBox(DrawingContext dc, MermaidPresenter presenter, PositionedClassNode cls)
+    private Style CreateStyleSnapshot() =>
+        new(
+            RelationshipCornerRadius,
+            MarkerSize,
+            MemberRowHeight,
+            MemberPaddingX,
+            MemberFontFamily,
+            BoxCornerRadius);
+
+    private static void DrawClassBox(DrawingContext dc, MermaidPresenter presenter, Style style, PositionedClassNode cls)
     {
         var rect = new Rect(cls.X, cls.Y, cls.Width, cls.Height);
-        using (dc.PushClip(new RoundedRect(rect, RenderConstants.Radii.Rectangle, RenderConstants.Radii.Rectangle)))
+        using (dc.PushClip(new RoundedRect(rect, style.BoxCornerRadius, style.BoxCornerRadius)))
         {
             var headerRect = new Rect(cls.X, cls.Y, cls.Width, cls.HeaderHeight);
             dc.DrawRectangle(presenter.GroupHeaderFill, presenter.NodePen, headerRect);
         }
-        dc.DrawRectangle(presenter.NodeFill, presenter.NodePen, rect, RenderConstants.Radii.Rectangle, RenderConstants.Radii.Rectangle);
+        dc.DrawRectangle(presenter.NodeFill, presenter.NodePen, rect, style.BoxCornerRadius, style.BoxCornerRadius);
 
         var nameY = cls.Y + cls.HeaderHeight / 2;
         if (cls.Annotation is { Length: > 0 } annotation)
@@ -97,8 +200,8 @@ public static class ClassRenderer
 
         for (var i = 0; i < cls.Attributes.Count; i++)
         {
-            var y = attrTop + 4 + i * MemberRowHeight + MemberRowHeight / 2;
-            DrawMember(dc, presenter, cls.Attributes[i], cls.X + MemberPaddingX, y);
+            var y = attrTop + 4 + i * style.MemberRowHeight + style.MemberRowHeight / 2;
+            DrawMember(dc, presenter, style, cls.Attributes[i], cls.X + style.MemberPaddingX, y);
         }
 
         var methodTop = attrTop + cls.AttrHeight;
@@ -106,12 +209,12 @@ public static class ClassRenderer
 
         for (var i = 0; i < cls.Methods.Count; i++)
         {
-            var y = methodTop + 4 + i * MemberRowHeight + MemberRowHeight / 2;
-            DrawMember(dc, presenter, cls.Methods[i], cls.X + MemberPaddingX, y);
+            var y = methodTop + 4 + i * style.MemberRowHeight + style.MemberRowHeight / 2;
+            DrawMember(dc, presenter, style, cls.Methods[i], cls.X + style.MemberPaddingX, y);
         }
     }
 
-    private static void DrawMember(DrawingContext dc, MermaidPresenter presenter, ClassMember member, double x, double y)
+    private static void DrawMember(DrawingContext dc, MermaidPresenter presenter, Style style, ClassMember member, double x, double y)
     {
         var text = BuildMemberText(member);
         var formatted = MermaidTextRenderer.CreateFormattedText(
@@ -122,7 +225,7 @@ public static class ClassRenderer
             TextAlignment.Left,
             FontWeight.Medium);
 
-        formatted.SetFontFamily(MemberFontFamily);
+        formatted.SetFontFamily(style.MemberFontFamily);
         if (member.IsAbstract)
         {
             formatted.SetFontStyle(FontStyle.Italic);
@@ -147,27 +250,23 @@ public static class ClassRenderer
             _ => string.Empty
         };
         var name = member.IsMethod ? $"{member.Name}({member.Params ?? string.Empty})" : member.Name;
-        return member.Type is { Length: > 0 }
-            ? $"{visibility}{name}: {member.Type}"
-            : $"{visibility}{name}";
+        return member.Type is { Length: > 0 } ? $"{visibility}{name}: {member.Type}" : $"{visibility}{name}";
     }
 
-    private static void DrawRelationship(DrawingContext dc, MermaidPresenter presenter, PositionedClassRelationship relationship)
+    private static void DrawRelationship(DrawingContext dc, MermaidPresenter presenter, Style style, PositionedClassRelationship relationship)
     {
         if (relationship.Points.Count < 2)
         {
             return;
         }
 
-        var pen = relationship.Type is ClassRelationType.Dependency or ClassRelationType.Realization
-            ? presenter.DottedLinePen
-            : presenter.LinePen;
-        MermaidDrawingHelpers.DrawRoundedPath(dc, relationship.Points, pen, RelationshipCornerRadius);
+        var pen = relationship.Type is ClassRelationType.Dependency or ClassRelationType.Realization ? presenter.DottedLinePen : presenter.LinePen;
+        MermaidDrawingHelpers.DrawRoundedPath(dc, relationship.Points, pen, style.RelationshipCornerRadius);
 
-        DrawRelationshipMarker(dc, presenter, relationship);
+        DrawRelationshipMarker(dc, presenter, style, relationship);
     }
 
-    private static void DrawRelationshipMarker(DrawingContext dc, MermaidPresenter presenter, PositionedClassRelationship relationship)
+    private static void DrawRelationshipMarker(DrawingContext dc, MermaidPresenter presenter, Style style, PositionedClassRelationship relationship)
     {
         if (relationship.Points.Count < 2)
         {
@@ -185,20 +284,20 @@ public static class ClassRenderer
         {
             case ClassRelationType.Inheritance:
             case ClassRelationType.Realization:
-                DrawTriangleMarker(dc, background, presenter.LinePen, from, to, MarkerSize);
+                DrawTriangleMarker(dc, background, presenter.LinePen, from, to, style.MarkerSize);
                 break;
             case ClassRelationType.Composition:
-                MermaidDrawingHelpers.DrawDiamondMarker(dc, presenter.ArrowFill, presenter.LinePen, from, to, MarkerSize);
+                MermaidDrawingHelpers.DrawDiamondMarker(dc, presenter.ArrowFill, presenter.LinePen, from, to, style.MarkerSize);
                 break;
             case ClassRelationType.Aggregation:
-                MermaidDrawingHelpers.DrawDiamondMarker(dc, background, presenter.LinePen, from, to, MarkerSize);
+                MermaidDrawingHelpers.DrawDiamondMarker(dc, background, presenter.LinePen, from, to, style.MarkerSize);
                 break;
             case ClassRelationType.Association:
             case ClassRelationType.Dependency:
-                MermaidDrawingHelpers.DrawArrowHead(dc, null, presenter.LinePen, from, to, MarkerSize, filled: false);
+                MermaidDrawingHelpers.DrawArrowHead(dc, null, presenter.LinePen, from, to, style.MarkerSize, filled: false);
                 break;
             case ClassRelationType.Lollipop:
-                MermaidDrawingHelpers.DrawCircleMarker(dc, background, presenter.LinePen, to, MarkerSize / 2);
+                MermaidDrawingHelpers.DrawCircleMarker(dc, background, presenter.LinePen, to, style.MarkerSize / 2);
                 break;
         }
     }
@@ -289,9 +388,7 @@ public static class ClassRenderer
     {
         var dx = to.X - from.X;
         var dy = to.Y - from.Y;
-        return Math.Abs(dx) > Math.Abs(dy)
-            ? (dx > 0 ? 14 : -14, -10)
-            : (-14, dy > 0 ? 14 : -14);
+        return Math.Abs(dx) > Math.Abs(dy) ? (dx > 0 ? 14 : -14, -10) : (-14, dy > 0 ? 14 : -14);
     }
 
     private static void DrawNote(DrawingContext dc, MermaidPresenter presenter, PositionedGraphNote note)

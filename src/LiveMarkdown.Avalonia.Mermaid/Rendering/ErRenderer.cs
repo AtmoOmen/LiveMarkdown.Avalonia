@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Media;
 using Mermaider.Models;
-using Mermaider.Rendering;
 using Point = Avalonia.Point;
 
 namespace LiveMarkdown.Avalonia;
@@ -13,50 +12,307 @@ namespace LiveMarkdown.Avalonia;
 /// The parser and layout model come from Mermaider; this renderer is responsible only for translating
 /// the positioned diagram into Avalonia drawing primitives.
 /// </remarks>
-public static class ErRenderer
+public class ErRenderer : MermaidRenderer
 {
-    private const double RelationshipCornerRadius = 6;
-    private const double AttributePaddingX = 8;
-    private const double KeyBadgePaddingX = 8;
-    private const double KeyBadgeHeight = 14;
-
-    private static readonly FontFamily AttributeFontFamily = FontFamily.Parse("Cascadia Mono, Consolas, Menlo, monospace");
+    /// <summary>
+    /// Defines the <see cref="RelationshipCornerRadius"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> RelationshipCornerRadiusProperty =
+        AvaloniaProperty.Register<ErRenderer, double>(nameof(RelationshipCornerRadius), 6);
 
     /// <summary>
-    /// Draws a positioned entity-relationship diagram.
+    /// Radius used when rounding ER relationship connector corners.
     /// </summary>
-    public static void Render(DrawingContext dc, MermaidPresenter presenter, PositionedErDiagram diagram)
+    public double RelationshipCornerRadius
     {
+        get => GetValue(RelationshipCornerRadiusProperty);
+        set => SetValue(RelationshipCornerRadiusProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="AttributePaddingX"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> AttributePaddingXProperty =
+        AvaloniaProperty.Register<ErRenderer, double>(nameof(AttributePaddingX), 8);
+
+    /// <summary>
+    /// Horizontal padding for attribute rows inside entity boxes.
+    /// </summary>
+    public double AttributePaddingX
+    {
+        get => GetValue(AttributePaddingXProperty);
+        set => SetValue(AttributePaddingXProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="KeyBadgePaddingX"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> KeyBadgePaddingXProperty =
+        AvaloniaProperty.Register<ErRenderer, double>(nameof(KeyBadgePaddingX), 8);
+
+    /// <summary>
+    /// Horizontal padding inside PK/FK/UK badges.
+    /// </summary>
+    public double KeyBadgePaddingX
+    {
+        get => GetValue(KeyBadgePaddingXProperty);
+        set => SetValue(KeyBadgePaddingXProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="KeyBadgeHeight"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> KeyBadgeHeightProperty =
+        AvaloniaProperty.Register<ErRenderer, double>(nameof(KeyBadgeHeight), 14);
+
+    /// <summary>
+    /// Height of compact PK/FK/UK badges.
+    /// </summary>
+    public double KeyBadgeHeight
+    {
+        get => GetValue(KeyBadgeHeightProperty);
+        set => SetValue(KeyBadgeHeightProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="AttributeFontFamily"/> property.
+    /// </summary>
+    public static readonly StyledProperty<FontFamily> AttributeFontFamilyProperty =
+        AvaloniaProperty.Register<ErRenderer, FontFamily>(
+            nameof(AttributeFontFamily),
+            FontFamily.Parse("Cascadia Mono, Consolas, Menlo, monospace"));
+
+    /// <summary>
+    /// Font family used for ER attribute type and name columns.
+    /// </summary>
+    public FontFamily AttributeFontFamily
+    {
+        get => GetValue(AttributeFontFamilyProperty);
+        set => SetValue(AttributeFontFamilyProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="BoxCornerRadius"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> BoxCornerRadiusProperty =
+        AvaloniaProperty.Register<ErRenderer, double>(nameof(BoxCornerRadius), 6);
+
+    /// <summary>
+    /// Corner radius for entity boxes and their clipped header area.
+    /// </summary>
+    public double BoxCornerRadius
+    {
+        get => GetValue(BoxCornerRadiusProperty);
+        set => SetValue(BoxCornerRadiusProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="CardinalityLineHalfWidth"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> CardinalityLineHalfWidthProperty =
+        AvaloniaProperty.Register<ErRenderer, double>(nameof(CardinalityLineHalfWidth), 6);
+
+    /// <summary>
+    /// Half width of the perpendicular bars used by one-cardinality markers.
+    /// </summary>
+    public double CardinalityLineHalfWidth
+    {
+        get => GetValue(CardinalityLineHalfWidthProperty);
+        set => SetValue(CardinalityLineHalfWidthProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="CrowsFootFanWidth"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> CrowsFootFanWidthProperty =
+        AvaloniaProperty.Register<ErRenderer, double>(nameof(CrowsFootFanWidth), 7);
+
+    /// <summary>
+    /// Fan width of the outer lines in many-cardinality crow's-foot markers.
+    /// </summary>
+    public double CrowsFootFanWidth
+    {
+        get => GetValue(CrowsFootFanWidthProperty);
+        set => SetValue(CrowsFootFanWidthProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="CardinalityTipOffset"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> CardinalityTipOffsetProperty =
+        AvaloniaProperty.Register<ErRenderer, double>(nameof(CardinalityTipOffset), 4);
+
+    /// <summary>
+    /// Distance from relationship endpoint to the first cardinality marker point.
+    /// </summary>
+    public double CardinalityTipOffset
+    {
+        get => GetValue(CardinalityTipOffsetProperty);
+        set => SetValue(CardinalityTipOffsetProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="CardinalityBackOffset"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> CardinalityBackOffsetProperty =
+        AvaloniaProperty.Register<ErRenderer, double>(nameof(CardinalityBackOffset), 16);
+
+    /// <summary>
+    /// Distance from relationship endpoint to the rear point of crow's-foot markers.
+    /// </summary>
+    public double CardinalityBackOffset
+    {
+        get => GetValue(CardinalityBackOffsetProperty);
+        set => SetValue(CardinalityBackOffsetProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="CardinalityCircleRadius"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> CardinalityCircleRadiusProperty =
+        AvaloniaProperty.Register<ErRenderer, double>(nameof(CardinalityCircleRadius), 4);
+
+    /// <summary>
+    /// Radius of optional zero-cardinality circles.
+    /// </summary>
+    public double CardinalityCircleRadius
+    {
+        get => GetValue(CardinalityCircleRadiusProperty);
+        set => SetValue(CardinalityCircleRadiusProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="ZeroManyCircleOffset"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> ZeroManyCircleOffsetProperty =
+        AvaloniaProperty.Register<ErRenderer, double>(nameof(ZeroManyCircleOffset), 20);
+
+    /// <summary>
+    /// Circle offset used for zero-or-many cardinality markers.
+    /// </summary>
+    public double ZeroManyCircleOffset
+    {
+        get => GetValue(ZeroManyCircleOffsetProperty);
+        set => SetValue(ZeroManyCircleOffsetProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="ZeroOneCircleOffset"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> ZeroOneCircleOffsetProperty =
+        AvaloniaProperty.Register<ErRenderer, double>(nameof(ZeroOneCircleOffset), 12);
+
+    /// <summary>
+    /// Circle offset used for zero-or-one cardinality markers.
+    /// </summary>
+    public double ZeroOneCircleOffset
+    {
+        get => GetValue(ZeroOneCircleOffsetProperty);
+        set => SetValue(ZeroOneCircleOffsetProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="EdgeLabelPadding"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> EdgeLabelPaddingProperty =
+        AvaloniaProperty.Register<ErRenderer, double>(nameof(EdgeLabelPadding), 8);
+
+    /// <summary>
+    /// Padding around ER relationship label backgrounds.
+    /// </summary>
+    public double EdgeLabelPadding
+    {
+        get => GetValue(EdgeLabelPaddingProperty);
+        set => SetValue(EdgeLabelPaddingProperty, value);
+    }
+
+    /// <summary>
+    /// Defines the <see cref="EdgeLabelCornerRadius"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> EdgeLabelCornerRadiusProperty =
+        AvaloniaProperty.Register<ErRenderer, double>(nameof(EdgeLabelCornerRadius), 10);
+
+    /// <summary>
+    /// Corner radius for ER relationship label backgrounds.
+    /// </summary>
+    public double EdgeLabelCornerRadius
+    {
+        get => GetValue(EdgeLabelCornerRadiusProperty);
+        set => SetValue(EdgeLabelCornerRadiusProperty, value);
+    }
+
+    private readonly record struct Style(
+        double RelationshipCornerRadius,
+        double AttributePaddingX,
+        double KeyBadgePaddingX,
+        double KeyBadgeHeight,
+        FontFamily AttributeFontFamily,
+        double BoxCornerRadius,
+        double CardinalityLineHalfWidth,
+        double CrowsFootFanWidth,
+        double CardinalityTipOffset,
+        double CardinalityBackOffset,
+        double CardinalityCircleRadius,
+        double ZeroManyCircleOffset,
+        double ZeroOneCircleOffset,
+        double EdgeLabelPadding,
+        double EdgeLabelCornerRadius
+    );
+
+    /// <summary>
+    /// Draws a positioned entity-relationship diagram using this renderer part's styled values.
+    /// </summary>
+    internal void RenderDiagram(DrawingContext dc, MermaidPresenter presenter, PositionedErDiagram diagram)
+    {
+        var style = CreateStyleSnapshot();
         foreach (var relationship in diagram.Relationships)
         {
-            DrawRelationshipLine(dc, presenter, relationship);
+            DrawRelationshipLine(dc, presenter, style, relationship);
         }
 
         foreach (var entity in diagram.Entities)
         {
-            DrawEntityBox(dc, presenter, entity);
+            DrawEntityBox(dc, presenter, style, entity);
         }
 
         foreach (var relationship in diagram.Relationships)
         {
-            DrawCardinality(dc, presenter, relationship);
+            DrawCardinality(dc, presenter, style, relationship);
         }
 
         foreach (var relationship in diagram.Relationships)
         {
-            DrawRelationshipLabel(dc, presenter, relationship);
+            DrawRelationshipLabel(dc, presenter, style, relationship);
         }
     }
 
-    private static void DrawEntityBox(DrawingContext dc, MermaidPresenter presenter, PositionedErEntity entity)
+    private Style CreateStyleSnapshot() =>
+        new(
+            RelationshipCornerRadius,
+            AttributePaddingX,
+            KeyBadgePaddingX,
+            KeyBadgeHeight,
+            AttributeFontFamily,
+            BoxCornerRadius,
+            CardinalityLineHalfWidth,
+            CrowsFootFanWidth,
+            CardinalityTipOffset,
+            CardinalityBackOffset,
+            CardinalityCircleRadius,
+            ZeroManyCircleOffset,
+            ZeroOneCircleOffset,
+            EdgeLabelPadding,
+            EdgeLabelCornerRadius);
+
+    private static void DrawEntityBox(DrawingContext dc, MermaidPresenter presenter, Style style, PositionedErEntity entity)
     {
         var rect = new Rect(entity.X, entity.Y, entity.Width, entity.Height);
-        using (dc.PushClip(new RoundedRect(rect, RenderConstants.Radii.Rectangle, RenderConstants.Radii.Rectangle)))
+        using (dc.PushClip(new RoundedRect(rect, style.BoxCornerRadius, style.BoxCornerRadius)))
         {
             var headerRect = new Rect(entity.X, entity.Y, entity.Width, entity.HeaderHeight);
             dc.DrawRectangle(presenter.GroupHeaderFill, presenter.NodePen, headerRect);
         }
-        dc.DrawRectangle(presenter.NodeFill, presenter.NodePen, rect, RenderConstants.Radii.Rectangle, RenderConstants.Radii.Rectangle);
+        dc.DrawRectangle(presenter.NodeFill, presenter.NodePen, rect, style.BoxCornerRadius, style.BoxCornerRadius);
 
         MermaidTextRenderer.DrawInlineText(
             dc,
@@ -86,7 +342,7 @@ public static class ErRenderer
         for (var i = 0; i < entity.Attributes.Count; i++)
         {
             var rowY = attrTop + i * entity.RowHeight + entity.RowHeight / 2;
-            DrawAttribute(dc, presenter, entity.Attributes[i], entity.X, rowY, entity.Width);
+            DrawAttribute(dc, presenter, style, entity.Attributes[i], entity.X, rowY, entity.Width);
         }
     }
 
@@ -115,6 +371,7 @@ public static class ErRenderer
     private static void DrawAttribute(
         DrawingContext dc,
         MermaidPresenter presenter,
+        Style style,
         ErAttributeInfo attribute,
         double boxX,
         double y,
@@ -123,10 +380,10 @@ public static class ErRenderer
         var keyWidth = 0.0;
         if (attribute.Keys.Count > 0)
         {
-            keyWidth = DrawKeyBadge(dc, presenter, attribute, boxX + 6, y);
+            keyWidth = DrawKeyBadge(dc, presenter, style, attribute, boxX + 6, y);
         }
 
-        var typeX = boxX + AttributePaddingX + (keyWidth > 0 ? keyWidth + 6 : 0);
+        var typeX = boxX + style.AttributePaddingX + (keyWidth > 0 ? keyWidth + 6 : 0);
         var typeText = MermaidTextRenderer.CreateFormattedText(
             presenter,
             attribute.Type,
@@ -134,7 +391,7 @@ public static class ErRenderer
             presenter.SecondaryForeground,
             TextAlignment.Left,
             FontWeight.Medium);
-        typeText.SetFontFamily(AttributeFontFamily);
+        typeText.SetFontFamily(style.AttributeFontFamily);
         MermaidTextRenderer.DrawFormattedText(dc, typeText, typeX, y, TextAlignment.Left, centerVertically: true);
 
         var nameText = MermaidTextRenderer.CreateFormattedText(
@@ -144,17 +401,23 @@ public static class ErRenderer
             presenter.Foreground,
             TextAlignment.Right,
             FontWeight.Medium);
-        nameText.SetFontFamily(AttributeFontFamily);
+        nameText.SetFontFamily(style.AttributeFontFamily);
         MermaidTextRenderer.DrawFormattedText(
             dc,
             nameText,
-            boxX + boxWidth - AttributePaddingX,
+            boxX + boxWidth - style.AttributePaddingX,
             y,
             TextAlignment.Right,
             centerVertically: true);
     }
 
-    private static double DrawKeyBadge(DrawingContext dc, MermaidPresenter presenter, ErAttributeInfo attribute, double x, double centerY)
+    private static double DrawKeyBadge(
+        DrawingContext dc,
+        MermaidPresenter presenter,
+        Style style,
+        ErAttributeInfo attribute,
+        double x,
+        double centerY)
     {
         var keyText = string.Join(",", attribute.Keys);
         var text = MermaidTextRenderer.CreateFormattedText(
@@ -164,15 +427,15 @@ public static class ErRenderer
             presenter.SecondaryForeground,
             TextAlignment.Center,
             FontWeight.Bold);
-        var width = text.Width + KeyBadgePaddingX;
-        var rect = new Rect(x, centerY - KeyBadgeHeight / 2, width, KeyBadgeHeight);
+        var width = text.Width + style.KeyBadgePaddingX;
+        var rect = new Rect(x, centerY - style.KeyBadgeHeight / 2, width, style.KeyBadgeHeight);
 
-        dc.DrawRectangle(presenter.AccentFill, null, rect, KeyBadgeHeight / 2, KeyBadgeHeight / 2);
+        dc.DrawRectangle(presenter.AccentFill, null, rect, style.KeyBadgeHeight / 2, style.KeyBadgeHeight / 2);
         dc.DrawText(text, new Point(rect.X + (rect.Width - text.Width) / 2, rect.Y + (rect.Height - text.Height) / 2));
         return width;
     }
 
-    private static void DrawRelationshipLine(DrawingContext dc, MermaidPresenter presenter, PositionedErRelationship relationship)
+    private static void DrawRelationshipLine(DrawingContext dc, MermaidPresenter presenter, Style style, PositionedErRelationship relationship)
     {
         if (relationship.Points.Count < 2)
         {
@@ -180,10 +443,10 @@ public static class ErRenderer
         }
 
         var pen = relationship.Identifying ? presenter.LinePen : presenter.DottedLinePen;
-        MermaidDrawingHelpers.DrawRoundedPath(dc, relationship.Points, pen, RelationshipCornerRadius);
+        MermaidDrawingHelpers.DrawRoundedPath(dc, relationship.Points, pen, style.RelationshipCornerRadius);
     }
 
-    private static void DrawRelationshipLabel(DrawingContext dc, MermaidPresenter presenter, PositionedErRelationship relationship)
+    private static void DrawRelationshipLabel(DrawingContext dc, MermaidPresenter presenter, Style style, PositionedErRelationship relationship)
     {
         if (relationship.Label.Length == 0 || relationship.Points.Count < 2)
         {
@@ -202,24 +465,25 @@ public static class ErRenderer
             presenter.SecondaryForeground,
             presenter.EdgeLabelBackground,
             presenter.EdgeLabelPen,
-            padding: 8,
-            radius: RenderConstants.Radii.EdgeLabel);
+            padding: style.EdgeLabelPadding,
+            radius: style.EdgeLabelCornerRadius);
     }
 
-    private static void DrawCardinality(DrawingContext dc, MermaidPresenter presenter, PositionedErRelationship relationship)
+    private static void DrawCardinality(DrawingContext dc, MermaidPresenter presenter, Style style, PositionedErRelationship relationship)
     {
         if (relationship.Points.Count < 2)
         {
             return;
         }
 
-        DrawCrowsFoot(dc, presenter, relationship.Points[0], relationship.Points[1], relationship.Cardinality1);
-        DrawCrowsFoot(dc, presenter, relationship.Points[^1], relationship.Points[^2], relationship.Cardinality2);
+        DrawCrowsFoot(dc, presenter, style, relationship.Points[0], relationship.Points[1], relationship.Cardinality1);
+        DrawCrowsFoot(dc, presenter, style, relationship.Points[^1], relationship.Points[^2], relationship.Cardinality2);
     }
 
     private static void DrawCrowsFoot(
         DrawingContext dc,
         MermaidPresenter presenter,
+        Style style,
         Mermaider.Models.Point point,
         Mermaider.Models.Point toward,
         ErCardinality cardinality)
@@ -242,10 +506,10 @@ public static class ErRenderer
         var px = -uy;
         var py = ux;
 
-        var tipX = point.X - ux * 4;
-        var tipY = point.Y - uy * 4;
-        var backX = point.X - ux * 16;
-        var backY = point.Y - uy * 16;
+        var tipX = point.X - ux * style.CardinalityTipOffset;
+        var tipY = point.Y - uy * style.CardinalityTipOffset;
+        var backX = point.X - ux * style.CardinalityBackOffset;
+        var backY = point.Y - uy * style.CardinalityBackOffset;
 
         var hasOneLine = cardinality is ErCardinality.One or ErCardinality.ZeroOne;
         var hasCrowsFoot = cardinality is ErCardinality.Many or ErCardinality.ZeroMany;
@@ -253,24 +517,34 @@ public static class ErRenderer
 
         if (hasOneLine)
         {
-            const double halfWidth = 6;
-            DrawCardinalityLine(dc, pen, tipX, tipY, px, py, halfWidth);
-            DrawCardinalityLine(dc, pen, tipX - ux * 4, tipY - uy * 4, px, py, halfWidth);
+            DrawCardinalityLine(dc, pen, tipX, tipY, px, py, style.CardinalityLineHalfWidth);
+            DrawCardinalityLine(
+                dc,
+                pen,
+                tipX - ux * style.CardinalityTipOffset,
+                tipY - uy * style.CardinalityTipOffset,
+                px,
+                py,
+                style.CardinalityLineHalfWidth);
         }
 
         if (hasCrowsFoot)
         {
-            const double fanWidth = 7;
-            dc.DrawLine(pen, new Point(tipX + px * fanWidth, tipY + py * fanWidth), new Point(backX, backY));
+            dc.DrawLine(pen, new Point(tipX + px * style.CrowsFootFanWidth, tipY + py * style.CrowsFootFanWidth), new Point(backX, backY));
             dc.DrawLine(pen, new Point(tipX, tipY), new Point(backX, backY));
-            dc.DrawLine(pen, new Point(tipX - px * fanWidth, tipY - py * fanWidth), new Point(backX, backY));
+            dc.DrawLine(pen, new Point(tipX - px * style.CrowsFootFanWidth, tipY - py * style.CrowsFootFanWidth), new Point(backX, backY));
         }
 
         if (hasCircle)
         {
-            var circleOffset = hasCrowsFoot ? 20 : 12;
+            var circleOffset = hasCrowsFoot ? style.ZeroManyCircleOffset : style.ZeroOneCircleOffset;
             var circleCenter = new Point(point.X - ux * circleOffset, point.Y - uy * circleOffset);
-            dc.DrawEllipse(presenter.BackgroundBrush ?? presenter.EdgeLabelBackground, pen, circleCenter, 4, 4);
+            dc.DrawEllipse(
+                presenter.BackgroundBrush ?? presenter.EdgeLabelBackground,
+                pen,
+                circleCenter,
+                style.CardinalityCircleRadius,
+                style.CardinalityCircleRadius);
         }
     }
 
