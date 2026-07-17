@@ -72,6 +72,11 @@ public class MarkdownTextBlock : SelectableTextBlock
 
     public SourceSpan SourceSpan { get; internal set; }
 
+    // Link markers are scoped to this text block. The dictionary is maintained by
+    // Link's logical-tree lifetime callbacks, so rebuilding a TextLayout does not
+    // require walking the inline tree again.
+    private readonly Dictionary<string, Link> linksByTag = [];
+
     public string ActualText
     {
         get
@@ -262,6 +267,42 @@ public class MarkdownTextBlock : SelectableTextBlock
         }
     }
 
+    protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
+    {
+        linksByTag.Clear();
+        pointerLink = null;
+        pressingLink = null;
+        UpdatePseudoClass();
+
+        base.OnDetachedFromLogicalTree(e);
+    }
+
+    internal void RegisterLink(Link link)
+    {
+        if (linksByTag.TryGetValue(link.Tag, out var existing) && !ReferenceEquals(existing, link))
+        {
+            throw new InvalidOperationException($"Duplicate link marker '{link.Tag}'.");
+        }
+
+        linksByTag[link.Tag] = link;
+    }
+
+    internal int RegisteredLinkCount => linksByTag.Count;
+
+    internal void UnregisterLink(Link link)
+    {
+        if (linksByTag.TryGetValue(link.Tag, out var existing) && ReferenceEquals(existing, link))
+        {
+            linksByTag.Remove(link.Tag);
+        }
+
+        if (ReferenceEquals(pointerLink, link))
+        {
+            pointerLink = null;
+            UpdatePseudoClass();
+        }
+    }
+
     // As a workaround to fix selection rendering bugs in SelectableTextBlock,
     // we override CreateTextLayout methods to handle selection rendering ourselves.
     private readonly PropertyInfo _lineSpacingPropertyInfo =
@@ -434,19 +475,26 @@ public class MarkdownTextBlock : SelectableTextBlock
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
-        HitTestLink(e.GetPosition(this));
-        pressingLink = pointerLink;
+        UpdatePointerOverLink(e.GetPosition(this));
 
         if (this.GetVisualAncestors().OfType<MarkdownRenderer>().FirstOrDefault() is not null)
         {
+            pressingLink = null;
             return;
         }
 
+        pressingLink = pointerLink;
         base.OnPointerPressed(e);
     }
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
+        if (this.GetVisualAncestors().OfType<MarkdownRenderer>().FirstOrDefault() is not null)
+        {
+            pressingLink = null;
+            return;
+        }
+
         if (pressingLink is not null && pointerLink == pressingLink)
         {
             switch (e.InitialPressMouseButton)
@@ -471,17 +519,12 @@ public class MarkdownTextBlock : SelectableTextBlock
 
         pressingLink = null;
 
-        if (this.GetVisualAncestors().OfType<MarkdownRenderer>().FirstOrDefault() is not null)
-        {
-            return;
-        }
-
         base.OnPointerReleased(e);
     }
 
     protected override void OnPointerMoved(PointerEventArgs e)
     {
-        HitTestLink(e.GetPosition(this));
+        UpdatePointerOverLink(e.GetPosition(this));
 
         if (this.GetVisualAncestors().OfType<MarkdownRenderer>().FirstOrDefault() is not null)
         {
@@ -494,6 +537,7 @@ public class MarkdownTextBlock : SelectableTextBlock
     protected override void OnPointerExited(PointerEventArgs e)
     {
         pointerLink = null;
+        UpdatePseudoClass();
 
         base.OnPointerExited(e);
     }
@@ -504,17 +548,22 @@ public class MarkdownTextBlock : SelectableTextBlock
         SetCurrentValue(SelectionEndProperty, EscapedTextLength);
     }
 
-    private void HitTestLink(Point point)
+    internal Link? UpdatePointerOverLink(Point point)
     {
-        if (Link.HitTestPoint(TextLayout, point) is { } link)
+        pointerLink = Link.HitTestPoint(TextLayout, point, linksByTag);
+
+        UpdatePseudoClass();
+        return pointerLink;
+    }
+
+    internal void ClearPointerOverLink()
+    {
+        if (pointerLink is null)
         {
-            pointerLink = link;
-        }
-        else
-        {
-            pointerLink = null;
+            return;
         }
 
+        pointerLink = null;
         UpdatePseudoClass();
     }
 

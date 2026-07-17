@@ -78,8 +78,10 @@ public class Link : Span
         }
     }
 
-    private static readonly Dictionary<string, Link> TagToLinkMap = new();
-    private readonly string tag;
+    internal string Tag { get; }
+
+    private static long nextTagId;
+    private WeakReference<MarkdownTextBlock>? registeredTextBlock;
 
     public Link()
     {
@@ -88,16 +90,39 @@ public class Link : Span
         [
             new FontFeature
             {
-                Tag = tag = $"LINK:{Guid.NewGuid():N}"
+                Tag = Tag = $"LINK:{Interlocked.Increment(ref nextTagId)}"
             },
         ];
-        TagToLinkMap[tag] = this;
         UpdatePseudoClasses();
     }
 
-    ~Link()
+    protected override void OnAttachedToLogicalTree(LogicalTreeAttachmentEventArgs e)
     {
-        TagToLinkMap.Remove(tag);
+        base.OnAttachedToLogicalTree(e);
+
+        if (this.FindLogicalAncestorOfType<MarkdownTextBlock>() is not { } textBlock)
+        {
+            return;
+        }
+
+        if (registeredTextBlock?.TryGetTarget(out var oldTextBlock) == true && oldTextBlock != textBlock)
+        {
+            oldTextBlock.UnregisterLink(this);
+        }
+
+        registeredTextBlock = new WeakReference<MarkdownTextBlock>(textBlock);
+        textBlock.RegisterLink(this);
+    }
+
+    protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
+    {
+        if (registeredTextBlock?.TryGetTarget(out var textBlock) == true)
+        {
+            textBlock.UnregisterLink(this);
+        }
+
+        registeredTextBlock = null;
+        base.OnDetachedFromLogicalTree(e);
     }
 
     public ICommand OpenCommand => openCommand ??= new SimpleCommand(Open, () => HRef is not null);
@@ -150,15 +175,14 @@ public class Link : Span
     /// </summary>
     /// <param name="textLayout"></param>
     /// <param name="point"></param>
+    /// <param name="linksByTag">The link index owned by the containing text block.</param>
     /// <returns></returns>
-    internal static Link? HitTestPoint(TextLayout textLayout, Point point)
+    internal static Link? HitTestPoint(TextLayout textLayout, Point point, IReadOnlyDictionary<string, Link> linksByTag)
     {
         var textLine = HitTestTextLine(textLayout, point);
         var textRun = HitTestTextRun(textLine, point);
-        var fontFeature = textRun?.Properties?.FontFeatures?.FirstOrDefault(f => f.Tag.StartsWith("LINK:"));
-        if (fontFeature is null) return null;
-        if (TagToLinkMap.TryGetValue(fontFeature.Tag, out var link)) return link;
-        return null;
+        var tag = textRun?.Properties?.FontFeatures?.FirstOrDefault(f => f.Tag.StartsWith("LINK:", StringComparison.Ordinal))?.Tag;
+        return tag is not null && linksByTag.TryGetValue(tag, out var link) ? link : null;
     }
 
     // Following code is copied from Avalonia's TextLine implementation

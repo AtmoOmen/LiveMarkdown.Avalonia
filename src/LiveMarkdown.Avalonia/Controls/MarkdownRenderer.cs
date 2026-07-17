@@ -5,6 +5,7 @@
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Metadata;
 using Avalonia.Logging;
 using Avalonia.Threading;
 using Markdig;
@@ -12,6 +13,7 @@ using TextMateSharp.Grammars;
 
 namespace LiveMarkdown.Avalonia;
 
+[PseudoClasses(":link-pending", ":selecting")]
 public partial class MarkdownRenderer : Control
 {
     /// <summary>

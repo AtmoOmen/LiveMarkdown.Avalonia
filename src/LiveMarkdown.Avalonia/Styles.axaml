@@ -115,6 +115,14 @@
     <Setter Property="Focusable" Value="True"/>
     <Setter Property="md:MarkdownTextBlock.IsSelectionScope" Value="True"/>
 
+    <Style Selector="^:link-pending">
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+
+    <Style Selector="^:selecting">
+      <Setter Property="Cursor" Value="IBeam"/>
+    </Style>
+
     <Style Selector="^ StackPanel">
       <Setter Property="Spacing" Value="4"/>
     </Style>
@@ -207,6 +215,7 @@
     </Style>
 
     <Style Selector="^ md|MarkdownTextBlock">
+      <Setter Property="Focusable" Value="False"/>
       <Setter Property="LinkContextMenu" Value="{Binding $parent[md:MarkdownRenderer].LinkContextMenu}"/>
 
       <Style Selector="^:pointerover-link">
