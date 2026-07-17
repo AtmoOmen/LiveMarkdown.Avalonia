@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Logging;
 using Avalonia.Markup.Xaml;
+using ClassicDiagnostics.Avalonia;
 using LiveMarkdown.Avalonia.Demo.Views;
 
 namespace LiveMarkdown.Avalonia.Demo;
@@ -30,6 +31,8 @@ public partial class App : Application, ILogSink
         AsyncImageLoader.DefaultCache = FileBasedAsyncImageLoaderCache.Shared;
 
         AvaloniaXamlLoader.Load(this);
+
+        this.AttachDevTools();
     }
 
     public override void OnFrameworkInitializationCompleted()
