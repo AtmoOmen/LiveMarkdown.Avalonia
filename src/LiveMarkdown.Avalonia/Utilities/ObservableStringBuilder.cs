@@ -101,6 +101,30 @@ public class ObservableStringBuilder : INotifyPropertyChanged
         return this;
     }
 
+    public ObservableStringBuilder Set(string? value)
+    {
+        value ??= string.Empty;
+
+        if (stringBuilder.Length == value.Length && stringBuilder.ToString().Equals(value, StringComparison.Ordinal))
+            return this;
+
+        var oldLength = stringBuilder.Length;
+        stringBuilder.Clear();
+        stringBuilder.Append(value);
+        UpdateState();
+        Changed?.Invoke
+        (
+            new ObservableStringBuilderChangedEventArgs
+            (
+                0,
+                Math.Max(oldLength, value.Length),
+                Length,
+                Version
+            )
+        );
+        return this;
+    }
+
     /// <summary>
     /// Appends a string followed by a newline to the string builder and raises an event.
     /// </summary>

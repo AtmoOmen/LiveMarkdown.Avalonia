@@ -9,6 +9,7 @@ using Avalonia.Controls.Metadata;
 using Avalonia.Logging;
 using Avalonia.Threading;
 using Markdig;
+using Markdig.Syntax;
 using TextMateSharp.Grammars;
 
 namespace LiveMarkdown.Avalonia;
@@ -129,6 +130,8 @@ public partial class MarkdownRenderer : Control
         remove => RemoveHandler(MarkdownTextBlock.LinkClickEvent, value);
     }
 
+    public event EventHandler? Rendered;
+
     public static readonly StyledProperty<ICommand?> LinkCommandProperty =
         AvaloniaProperty.Register<MarkdownRenderer, ICommand?>(nameof(LinkCommand));
 
@@ -147,6 +150,7 @@ public partial class MarkdownRenderer : Control
     private bool                                       isRendering;
     private long                                       renderVersion;
 
+    private static readonly SemaphoreSlim RenderGate = new(2);
     private readonly DocumentNode documentNode;
     private readonly MarkdownPipeline pipeline = CreatePipeline();
 
@@ -217,7 +221,18 @@ public partial class MarkdownRenderer : Control
         {
             var markdown = MarkdownBuilder?.ToString() ?? string.Empty;
             var time = DateTimeOffset.UtcNow;
-            var document = await Task.Run(() => Markdown.Parse(markdown, pipeline), cancellation.Token);
+            await RenderGate.WaitAsync(cancellation.Token);
+            MarkdownDocument document;
+
+            try
+            {
+                document = await Task.Run(() => Markdown.Parse(markdown, pipeline), cancellation.Token);
+            }
+            finally
+            {
+                RenderGate.Release();
+            }
+
             VerboseLogger?.Log(this, "Parse markdown in {TotalMicroseconds} ms.", (DateTimeOffset.UtcNow - time).TotalMilliseconds);
 
             if (cancellation.IsCancellationRequested || version != renderVersion)
@@ -226,6 +241,7 @@ public partial class MarkdownRenderer : Control
             time = DateTimeOffset.UtcNow;
             documentNode.Update(documentNode, document, change, cancellation.Token);
             VerboseLogger?.Log(this, "Render markdown in {TotalMicroseconds} ms.", (DateTimeOffset.UtcNow - time).TotalMilliseconds);
+            Rendered?.Invoke(this, EventArgs.Empty);
             InvalidateMeasure();
         }
         catch (OperationCanceledException)
