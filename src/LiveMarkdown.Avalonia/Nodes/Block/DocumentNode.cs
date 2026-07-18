@@ -1,4 +1,4 @@
-﻿using Markdig.Syntax;
+using Markdig.Syntax;
 
 namespace LiveMarkdown.Avalonia;
 
@@ -36,4 +36,6 @@ public sealed class DocumentNode : ContainerBlockNode<MarkdownDocument>
 
         return result;
     }
+
+    internal void Clear() => proxy.Clear();
 }

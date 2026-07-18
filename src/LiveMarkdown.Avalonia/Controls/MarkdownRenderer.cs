@@ -1,4 +1,4 @@
-﻿// @author https://github.com/DearVa
+// @author https://github.com/DearVa
 // @author https://github.com/AuroraZiling
 // @author https://github.com/SlimeNull
 
@@ -63,6 +63,8 @@ public partial class MarkdownRenderer : Control
             if (!SetAndRaise(MarkdownBuilderProperty, ref field, value)) return;
 
             if (oldValue is not null) oldValue.Changed -= CommitChange;
+            ResetDocument();
+
             if (value is not null)
             {
                 value.Changed += CommitChange;
@@ -140,6 +142,10 @@ public partial class MarkdownRenderer : Control
     }
 
     private ObservableStringBuilderChangedEventArgs? pendingChange;
+    private CancellationTokenSource?                   renderCancellation;
+    private bool                                       renderScheduled;
+    private bool                                       isRendering;
+    private long                                       renderVersion;
 
     private readonly DocumentNode documentNode;
     private readonly MarkdownPipeline pipeline = CreatePipeline();
@@ -193,31 +199,53 @@ public partial class MarkdownRenderer : Control
         AddHandler(KeyDownEvent, HandleKeyDown);
     }
 
-    protected override async void ArrangeCore(Rect finalRect)
+    private async void RenderLatestChange()
     {
-        if (pendingChange is { } e)
+        Dispatcher.UIThread.VerifyAccess();
+        renderScheduled = false;
+
+        if (isRendering || pendingChange is not { } change)
+            return;
+
+        pendingChange = null;
+        isRendering = true;
+        var version = renderVersion;
+        var cancellation = new CancellationTokenSource();
+        renderCancellation = cancellation;
+
+        try
         {
-            pendingChange = null;
+            var markdown = MarkdownBuilder?.ToString() ?? string.Empty;
+            var time = DateTimeOffset.UtcNow;
+            var document = await Task.Run(() => Markdown.Parse(markdown, pipeline), cancellation.Token);
+            VerboseLogger?.Log(this, "Parse markdown in {TotalMicroseconds} ms.", (DateTimeOffset.UtcNow - time).TotalMilliseconds);
 
-            try
-            {
-                var markdown = MarkdownBuilder?.ToString() ?? string.Empty;
-                var time = DateTimeOffset.UtcNow;
-                var document = await Task.Run(() => Markdown.Parse(markdown, pipeline));
-                VerboseLogger?.Log(this, "Parse markdown in {TotalMicroseconds} ms.", (DateTimeOffset.UtcNow - time).TotalMilliseconds);
+            if (cancellation.IsCancellationRequested || version != renderVersion)
+                return;
 
-                time = DateTimeOffset.UtcNow;
-                documentNode.Update(documentNode, document, e, CancellationToken.None);
-                VerboseLogger?.Log(this, "Render markdown in {TotalMicroseconds} ms.", (DateTimeOffset.UtcNow - time).TotalMilliseconds);
-            }
-            catch (OperationCanceledException) { }
-            catch (Exception ex)
-            {
-                await Console.Error.WriteAsync($"Error while rendering markdown: {ex.Message}");
-            }
+            time = DateTimeOffset.UtcNow;
+            documentNode.Update(documentNode, document, change, cancellation.Token);
+            VerboseLogger?.Log(this, "Render markdown in {TotalMicroseconds} ms.", (DateTimeOffset.UtcNow - time).TotalMilliseconds);
+            InvalidateMeasure();
         }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            await Console.Error.WriteAsync($"Error while rendering markdown: {ex.Message}");
+        }
+        finally
+        {
+            if (ReferenceEquals(renderCancellation, cancellation))
+                renderCancellation = null;
 
-        base.ArrangeCore(finalRect);
+            cancellation.Dispose();
+            isRendering = false;
+
+            if (pendingChange is not null)
+                ScheduleRender();
+        }
     }
 
     private void CommitChange(in ObservableStringBuilderChangedEventArgs e)
@@ -236,6 +264,26 @@ public partial class MarkdownRenderer : Control
                 e.Version);
         }
 
-        InvalidateArrange();
+        renderVersion++;
+        renderCancellation?.Cancel();
+        ScheduleRender();
+    }
+
+    private void ScheduleRender()
+    {
+        if (renderScheduled || isRendering)
+            return;
+
+        renderScheduled = true;
+        Dispatcher.UIThread.Post(RenderLatestChange, DispatcherPriority.Background);
+    }
+
+    private void ResetDocument()
+    {
+        renderVersion++;
+        pendingChange = null;
+        renderCancellation?.Cancel();
+        documentNode.Clear();
+        InvalidateMeasure();
     }
 }
