@@ -74,6 +74,36 @@ public partial class MarkdownRenderer : Control
         }
     }
 
+    public static readonly DirectProperty<MarkdownRenderer, MarkdownDocument?> MarkdownDocumentProperty =
+        AvaloniaProperty.RegisterDirect<MarkdownRenderer, MarkdownDocument?>(
+            nameof(MarkdownDocument),
+            o => o.MarkdownDocument,
+            (o, v) => o.MarkdownDocument = v);
+
+    public MarkdownDocument? MarkdownDocument
+    {
+        get;
+        set
+        {
+            if (!SetAndRaise(MarkdownDocumentProperty, ref field, value)) return;
+
+            ResetDocument();
+
+            if (value is null)
+                return;
+
+            documentNode.Update
+            (
+                documentNode,
+                value,
+                new ObservableStringBuilderChangedEventArgs(0, 0, 0, 0),
+                CancellationToken.None
+            );
+            Rendered?.Invoke(this, EventArgs.Empty);
+            InvalidateMeasure();
+        }
+    }
+
     /// <summary>
     /// Defines the <see cref="ImageBasePath"/> property.
     /// </summary>
@@ -168,6 +198,9 @@ public partial class MarkdownRenderer : Control
         ConfigurePipeline?.Invoke(builder);
         return builder.Build();
     }
+
+    public static MarkdownDocument ParseDocument(string markdown) =>
+        Markdown.Parse(markdown, CreatePipeline());
 
     internal static readonly ParametrizedLogger? VerboseLogger;
 
@@ -267,6 +300,9 @@ public partial class MarkdownRenderer : Control
     private void CommitChange(in ObservableStringBuilderChangedEventArgs e)
     {
         Dispatcher.UIThread.VerifyAccess();
+
+        if (MarkdownDocument is not null)
+            return;
 
         if (pendingChange is null) pendingChange = e;
         else
